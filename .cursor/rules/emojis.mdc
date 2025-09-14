@@ -1,4 +1,54 @@
----
+Here’s a purpose-built emoji guide — each with a specific meaning tailored to off-market wholesaling, buyers, and renovations:
+🏠 Properties (General Use)
+🏠 House → Standard single-family property (baseline marker)
+🏡 House w/ garden → Family-ready, suburban property w/ yard potential
+🏚️ Derelict house → Fixer-upper, distressed, foreclosure, heavy rehab lead
+🏘️ Houses → Multi-family units, duplex/triplex, or rental clusters
+🏙️ Cityscape → Condo/apartment opportunities in Minneapolis/St. Paul
+🔑 Transaction Status
+📍 Pin → New lead entered (basic location marker on map)
+📌 Pushpin → Hot lead (needs immediate follow-up)
+🔑 Key → Under contract / locked up deal
+🗝️ Old key → Closed / handed off property (sold or assigned)
+🤝 Handshake → Buyer-seller agreement in progress
+📝 Memo → Contract needs to be drafted or signed
+💰 Money / Buyers
+💵 Cash stack → Cash buyer interested
+💰 Money bag → High-profit potential deal (assignment spread)
+📈 Up chart → Appreciation area (long-term buy & hold opportunity)
+📉 Down chart → Declining market/value (high risk, discount only)
+💳 Credit card → Financing required / not cash ready
+🛠️ Renovations (R3)
+🛠️ Hammer & wrench → General rehab needed
+🧱 Brick → Foundation/structural issues flagged
+🛋️ Couch → Interior work (cosmetics, staging potential)
+🪟 Window → Windows/energy updates needed
+🚪 Door → Entry/security issues (locks, doors, access)
+🪚 Saw → Heavy demo/tear-down candidate
+🏗️ Construction crane → Major renovation / new build opportunity
+🌳 Land / Lot Characteristics
+🌳 Tree → Large lot / acreage (rural Minnesota properties)
+🌲 Evergreen tree → Cabin/seasonal property
+🌴 Palm tree → Out-of-state vacation rental (if you expand)
+🚗 Car → Garage or parking availability noted
+🏊 Pool → Bonus amenity (rare in MN, but high value if present)
+📂 Workflow / Docs
+✏️ Pencil → Property still in analysis (needs ARV/rehab calc)
+🖊️ Pen → Offer written, waiting on acceptance
+📄 Document → Disclosures/title paperwork in progress
+🗂️ File folder → Archived deal (keep for comps or future follow-up)
+🧾 Receipt → Expenses logged (inspection, utility bills, rehab cost)
+📞 Communication / Outreach
+📞 Phone → Call made or scheduled with seller
+📧 Email → Sent follow-up or buyer’s list blast
+🧭 Compass → Driving for dollars / scouting trips
+🗺️ Map → Area comp check / neighborhood analysis
+⚡ How to use this internally:
+Use property type emojis 🏠 🏚️ 🏘️ for the main map pin.
+Add status emojis 📍 🔑 📝 as tags to track where the deal sits.
+Attach renovation emojis 🛠️ 🧱 🪚 as “rehab flags” when evaluating.
+Use finance emojis 💵 💰 📈 to rank priority buyers + exit strategy.
+Keep workflow emojis ✏️ 🖊️ 📄 for doc & contract stages.---
 description:
 globs:
 alwaysApply: true

@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   // Production optimizations
   compress: true,
   poweredByHeader: false,
@@ -32,10 +29,6 @@ const nextConfig = {
         ],
       },
     ];
-  },
-  // Environment variables validation
-  env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
   // Image optimization
   images: {

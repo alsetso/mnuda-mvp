@@ -1,0 +1,11 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# Host
+Host: https://mnuda.com
+
+# Sitemaps
+Sitemap: https://mnuda.com/sitemap.xml
