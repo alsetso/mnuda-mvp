@@ -16,6 +16,8 @@ export default function Login() {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
+      if (!supabase) return;
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         router.push('/');
@@ -28,6 +30,12 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    if (!supabase) {
+      setError('Authentication service not available');
+      setLoading(false);
+      return;
+    }
 
     try {
       const { error } = await supabase.auth.signInWithPassword({

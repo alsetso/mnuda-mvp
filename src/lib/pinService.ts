@@ -3,20 +3,31 @@ import { Pin, CreatePinData } from '@/types/pin';
 
 export class PinService {
   /**
+   * Check if Supabase is available
+   */
+  private static checkSupabase(): void {
+    if (!supabase) {
+      throw new Error('Database service not available');
+    }
+  }
+
+  /**
    * Create a new pin
    * Simple, production-ready implementation
    */
   static async createPin(pinData: CreatePinData): Promise<Pin> {
     try {
+      this.checkSupabase();
+
       // Simple session check
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase!.auth.getSession();
       
       if (!session?.user) {
         throw new Error('Please log in to save pins');
       }
 
       // Insert pin with user_id manually set
-      const { data, error } = await supabase
+      const { data, error } = await supabase!!
         .from('pins')
         .insert([{
           ...pinData,
@@ -42,14 +53,16 @@ export class PinService {
    */
   static async getPins(): Promise<Pin[]> {
     try {
+      this.checkSupabase();
+
       // Get current session
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase!.auth.getSession();
       
       if (!session?.user) {
         throw new Error('Please log in to view pins');
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('pins')
         .select('*')
         .eq('user_id', session.user.id)
@@ -71,7 +84,9 @@ export class PinService {
    */
   static async getPinsByUserId(userId: string): Promise<Pin[]> {
     try {
-      const { data, error } = await supabase
+      this.checkSupabase();
+      
+      const { data, error } = await supabase!
         .from('pins')
         .select('*')
         .eq('user_id', userId)
@@ -93,7 +108,9 @@ export class PinService {
    */
   static async getPinById(id: string): Promise<Pin | null> {
     try {
-      const { data, error } = await supabase
+      this.checkSupabase();
+      
+      const { data, error } = await supabase!
         .from('pins')
         .select('*')
         .eq('id', id)
@@ -118,7 +135,9 @@ export class PinService {
    */
   static async updatePin(id: string, updates: Partial<CreatePinData>): Promise<Pin> {
     try {
-      const { data, error } = await supabase
+      this.checkSupabase();
+      
+      const { data, error } = await supabase!
         .from('pins')
         .update({
           ...updates,
@@ -148,7 +167,9 @@ export class PinService {
    */
   static async deletePin(id: string): Promise<void> {
     try {
-      const { error } = await supabase
+      this.checkSupabase();
+      
+      const { error } = await supabase!
         .from('pins')
         .delete()
         .eq('id', id);
@@ -167,7 +188,9 @@ export class PinService {
    */
   static async searchPins(query: string): Promise<Pin[]> {
     try {
-      const { data, error } = await supabase
+      this.checkSupabase();
+      
+      const { data, error } = await supabase!
         .from('pins')
         .select('*')
         .or(`name.ilike.%${query}%,full_address.ilike.%${query}%`)
@@ -193,11 +216,13 @@ export class PinService {
     radiusKm: number = 10
   ): Promise<Pin[]> {
     try {
+      this.checkSupabase();
+      
       // TODO: Implement radius-based filtering
       // For now, return all pins (this is a placeholder implementation)
       console.log(`Getting pins near ${lat}, ${lng} within ${radiusKm}km radius`);
       
-      const { data, error } = await supabase
+      const { data, error } = await supabase!
         .from('pins')
         .select('*')
         .order('created_at', { ascending: false });

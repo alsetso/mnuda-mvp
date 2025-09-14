@@ -18,6 +18,8 @@ export default function Signup() {
   useEffect(() => {
     // Check if user is already logged in
     const checkUser = async () => {
+      if (!supabase) return;
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         router.push('/');
@@ -41,6 +43,12 @@ export default function Signup() {
     // Validate password length
     if (password.length < 6) {
       setError('Password must be at least 6 characters long');
+      setLoading(false);
+      return;
+    }
+
+    if (!supabase) {
+      setError('Authentication service not available');
       setLoading(false);
       return;
     }

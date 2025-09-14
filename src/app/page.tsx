@@ -17,6 +17,11 @@ export default function Home() {
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+      
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       setLoading(false);
@@ -25,18 +30,25 @@ export default function Home() {
     getSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+    if (supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      );
 
-    return () => subscription.unsubscribe();
+      return () => subscription.unsubscribe();
+    }
+    
+    // Return empty cleanup function if supabase is not available
+    return () => {};
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
   };
 
   const handlePinDrop = useCallback((lng: number, lat: number) => {
