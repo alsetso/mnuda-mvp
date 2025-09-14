@@ -1,0 +1,78 @@
+# MNUDA Styling Guidelines
+
+## Primary Color Palette
+
+
+
+### Tailwind Classes
+- `text-mnuda-light-blue` - Light blue text
+- `bg-mnuda-light-blue` - Light blue background
+- `border-mnuda-light-blue` - Light blue border
+- `text-mnuda-dark-blue` - Dark navy text
+- `bg-mnuda-dark-blue` - Dark navy background
+- `border-mnuda-dark-blue` - Dark navy border
+
+## Design Principles
+
+### Typography
+- Use clean, modern sans-serif fonts
+- Maintain good contrast with dark navy (#014463) on light backgrounds
+- Use light blue (#1dd1f5) sparingly for emphasis and CTAs
+
+### Components
+- Buttons: Use dark navy background with white text for primary actions
+- Secondary buttons: Use light blue background with dark navy text
+- Cards/Modals: White background with subtle shadows
+- Borders: Use light blue for active states, dark navy for subtle borders
+
+### Spacing & Layout
+- Use consistent padding and margins
+- Maintain proper visual hierarchy
+- Ensure responsive design across all screen sizes
+
+### Interactive Elements
+- Hover states: Slightly darker shade of the base color
+- Focus states: Light blue outline for accessibility
+- Disabled states: Muted colors with reduced opacity
+
+## Component Guidelines
+
+### Buttons
+```tsx
+// Primary Button
+<button className="bg-mnuda-dark-blue text-white px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors">
+  Primary Action
+</button>
+
+// Secondary Button  
+<button className="bg-mnuda-light-blue text-mnuda-dark-blue px-4 py-2 rounded-md hover:bg-opacity-90 transition-colors">
+  Secondary Action
+</button>
+```
+
+### Cards/Modals
+```tsx
+<div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
+  Content here
+</div>
+```
+
+### Text Hierarchy
+```tsx
+<h1 className="text-2xl font-bold text-mnuda-dark-blue">Main Heading</h1>
+<h2 className="text-xl font-semibold text-mnuda-dark-blue">Sub Heading</h2>
+<p className="text-gray-700">Body text</p>
+<span className="text-mnuda-light-blue">Highlighted text</span>
+```
+
+## Accessibility
+- Ensure sufficient color contrast ratios
+- Use focus indicators for keyboard navigation
+- Provide alternative text for icons and images
+- Test with screen readers
+
+## Brand Consistency
+- Always use the defined color palette
+- Maintain consistent spacing and typography
+- Follow the established component patterns
+- Keep the design clean and professional
