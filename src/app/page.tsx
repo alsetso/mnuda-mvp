@@ -81,10 +81,11 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mnuda-light-blue mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Loading MNUDA...</p>
+          <p className="text-sm text-gray-500 mt-2">Minnesota Realtors Platform</p>
         </div>
       </div>
     );
