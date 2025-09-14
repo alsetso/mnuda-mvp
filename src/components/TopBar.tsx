@@ -8,14 +8,22 @@ import MapSearch from './MapSearch';
 
 import { Pin } from '@/types/pin';
 
+interface GeocodeSuggestion {
+  address: string;
+  confidence: number;
+  place_name: string;
+  center: [number, number];
+  feature: any;
+}
+
 interface TopBarProps {
   user?: any;
-  onLogout?: () => void;
-  showUserLocation?: boolean;
-  isTrackingLocation?: boolean;
-  onLocationToggle?: () => void;
-  onLocationSelect?: (suggestion: any) => void;
-  onFlyToLocation?: (coordinates: [number, number], address: string) => void;
+  onLogout?: (() => void) | undefined;
+  showUserLocation?: boolean | undefined;
+  isTrackingLocation?: boolean | undefined;
+  onLocationToggle?: (() => void) | undefined;
+  onLocationSelect?: ((suggestion: GeocodeSuggestion) => void) | undefined;
+  onFlyToLocation?: ((coordinates: [number, number], address: string) => void) | undefined;
   pins?: Pin[];
 }
 

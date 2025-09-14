@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import TopBar from './TopBar';
 import { Pin } from '@/types/pin';
 

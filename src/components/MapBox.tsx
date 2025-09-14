@@ -15,7 +15,6 @@ interface MapBoxProps {
   onPinDrop?: (lng: number, lat: number) => void;
   showUserLocation?: boolean;
   onLocationToggle?: () => void;
-  onFlyToLocation?: (coordinates: [number, number], address: string) => void;
   onPinsChange?: (pins: Pin[]) => void;
 }
 
@@ -23,7 +22,6 @@ const MapBox: React.FC<MapBoxProps> = ({
   onPinDrop, 
   showUserLocation: shouldShowUserLocation, 
   onLocationToggle,
-  onFlyToLocation,
   onPinsChange
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -36,7 +34,7 @@ const MapBox: React.FC<MapBoxProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [userLocation, setUserLocation] = useState<LocationData | null>(null);
-  const [isTrackingLocation, setIsTrackingLocation] = useState(false);
+  const [_isTrackingLocation, setIsTrackingLocation] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [pinDialogData, setPinDialogData] = useState<{
@@ -44,7 +42,7 @@ const MapBox: React.FC<MapBoxProps> = ({
     coordinates: [number, number];
   } | null>(null);
   const [pins, setPins] = useState<Pin[]>([]);
-  const [pinMarkers, setPinMarkers] = useState<mapboxgl.Marker[]>([]);
+  const [_pinMarkers, setPinMarkers] = useState<mapboxgl.Marker[]>([]);
   const pinMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const isInitializing = useRef<boolean>(false);
   const [hoveredPin, setHoveredPin] = useState<Pin | null>(null);
@@ -144,7 +142,7 @@ const MapBox: React.FC<MapBoxProps> = ({
       markerElement.innerHTML = '<div class="w-2 h-2 bg-white rounded-full"></div>';
       
       // Add hover handlers for popup
-      markerElement.addEventListener('mouseenter', (e) => {
+      markerElement.addEventListener('mouseenter', (_e) => {
         if (map.current) {
           const rect = map.current.getContainer().getBoundingClientRect();
           const point = map.current.project([pin.lng, pin.lat]);

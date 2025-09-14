@@ -46,8 +46,8 @@ interface GeocodeSuggestion {
 }
 
 interface MapSearchProps {
-  onLocationSelect?: (suggestion: GeocodeSuggestion) => void;
-  onFlyToLocation?: (coordinates: [number, number], address: string) => void;
+  onLocationSelect?: ((suggestion: GeocodeSuggestion) => void) | undefined;
+  onFlyToLocation?: ((coordinates: [number, number], address: string) => void) | undefined;
   placeholder?: string;
   proximity?: [number, number]; // [longitude, latitude] for proximity bias
   isFocusMode?: boolean; // When true, disables input and shows focus mode placeholder
@@ -255,11 +255,13 @@ const MapSearch: React.FC<MapSearchProps> = ({
     // If there's a selected suggestion, use it
     if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
       const suggestion = suggestions[selectedIndex];
-      handleSuggestionSelect(suggestion);
-      onFlyToLocation?.(suggestion.center, suggestion.address);
-      // Also call the global flyToAddress function if available
-      if ((window as any).flyToAddress) {
-        (window as any).flyToAddress(suggestion.center, suggestion.address);
+      if (suggestion) {
+        handleSuggestionSelect(suggestion);
+        onFlyToLocation?.(suggestion.center, suggestion.address);
+        // Also call the global flyToAddress function if available
+        if ((window as any).flyToAddress) {
+          (window as any).flyToAddress(suggestion.center, suggestion.address);
+        }
       }
       return;
     }
@@ -288,8 +290,9 @@ const MapSearch: React.FC<MapSearchProps> = ({
         
         if (data.features.length > 0) {
           const feature = data.features[0];
-          const address = feature.place_name;
-          const coordinates = feature.center;
+          if (feature) {
+            const address = feature.place_name;
+            const coordinates = feature.center;
           
           // Verify it's a Minnesota address
           const isMinnesota = address.toLowerCase().includes('minnesota') || 
@@ -352,6 +355,7 @@ const MapSearch: React.FC<MapSearchProps> = ({
             }
           } else {
             console.log('Address is not in Minnesota:', address);
+          }
           }
         }
       } catch (error) {
