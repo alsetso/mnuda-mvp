@@ -7,7 +7,13 @@ const isSupabaseConfigured =
   supabaseUrl && 
   supabaseAnonKey && 
   !supabaseUrl.startsWith('placeholder_') && 
-  !supabaseAnonKey.startsWith('placeholder_');
+  !supabaseAnonKey.startsWith('placeholder_') &&
+  supabaseUrl !== 'your_supabase_url_here' &&
+  supabaseAnonKey !== 'your_supabase_anon_key_here';
+
+if (!isSupabaseConfigured) {
+  console.warn('Supabase is not configured. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables.');
+}
 
 export const supabase = isSupabaseConfigured 
   ? createClient(supabaseUrl, supabaseAnonKey, {
