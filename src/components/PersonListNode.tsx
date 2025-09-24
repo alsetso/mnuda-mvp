@@ -26,15 +26,15 @@ export default function PersonListNode({ records, onPersonTrace }: PersonListNod
   }
 
   return (
-    <div className="px-6 py-3 border-b border-gray-100">
-      <div className="flex items-center justify-between mb-3">
+    <div className="px-3 sm:px-4 lg:px-6 py-3 border-b border-gray-100">
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
         <h4 className="text-sm font-semibold text-gray-800">Person List</h4>
         <div className="text-xs text-gray-400">
-          {records.length} total record{records.length !== 1 ? 's' : ''}
+          {records.length} record{records.length !== 1 ? 's' : ''}
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {records.map((person, index) => (
           <PersonCard key={`person-${index}`} person={person} onPersonTrace={onPersonTrace} />
         ))}
@@ -71,60 +71,59 @@ function PersonCard({ person, onPersonTrace }: { person: PersonRecord; onPersonT
   };
 
   return (
-    <div className="w-full bg-transparent p-3 rounded border border-gray-100 hover:border-gray-200 transition-colors">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h6 className="text-sm font-semibold text-gray-800 mb-1.5">{person.name}</h6>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1.5 text-xs text-gray-500">
+    <div className="w-full bg-gray-50 p-2.5 sm:p-3 rounded border border-gray-100 hover:border-gray-200 transition-colors">
+      <div className="flex items-start justify-between space-x-3">
+        <div className="flex-1 min-w-0">
+          <h6 className="text-sm font-semibold text-gray-800 mb-1 truncate">{person.name}</h6>
+          <div className="space-y-0.5">
             {person.age && (
-              <div>
-                <span className="font-medium text-gray-400">Age:</span> <span className="text-gray-600">{person.age}</span>
+              <div className="text-xs text-gray-600">
+                <span className="text-gray-500">Age:</span> {person.age}
               </div>
             )}
             {person.lives_in && (
-              <div>
-                <span className="font-medium text-gray-400">Lives in:</span> <span className="text-gray-600">{person.lives_in}</span>
+              <div className="text-xs text-gray-600 truncate">
+                <span className="text-gray-500">Lives in:</span> {person.lives_in}
               </div>
             )}
             {person.used_to_live_in && (
-              <div>
-                <span className="font-medium text-gray-400">Used to live in:</span> <span className="text-gray-600">{person.used_to_live_in}</span>
+              <div className="text-xs text-gray-600 truncate">
+                <span className="text-gray-500">Used to live in:</span> {person.used_to_live_in}
               </div>
             )}
             {person.related_to && (
-              <div>
-                <span className="font-medium text-gray-400">Related to:</span> <span className="text-gray-600">{person.related_to}</span>
+              <div className="text-xs text-gray-600 truncate">
+                <span className="text-gray-500">Related to:</span> {person.related_to}
               </div>
             )}
             {person.person_id && (
-              <div>
-                <span className="font-medium text-gray-400">ID:</span> 
-                <span className="font-mono ml-1 text-gray-600">{person.person_id}</span>
+              <div className="text-xs text-gray-500 font-mono truncate">
+                ID: {person.person_id}
               </div>
             )}
           </div>
         </div>
-        <div className="flex items-center space-x-2 ml-4">
+        <div className="flex items-center space-x-1.5 flex-shrink-0">
           {person.person_link && (
             <a
               href={person.person_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 text-blue-600 hover:text-blue-700 transition-colors"
+              className="p-1.5 text-blue-600 hover:text-blue-700 transition-colors touch-manipulation"
               title="View person details"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </a>
           )}
-                  <button
-                    onClick={handleTrace}
-                    disabled={!person.person_id}
-                    className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded hover:bg-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Trace
-                  </button>
+          <button
+            onClick={handleTrace}
+            disabled={!person.person_id}
+            className="px-3 py-1.5 text-xs font-medium text-[#1dd1f5] bg-white border border-[#1dd1f5]/30 rounded hover:bg-[#1dd1f5]/10 focus:outline-none focus:ring-1 focus:ring-[#1dd1f5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[32px]"
+          >
+            Trace
+          </button>
         </div>
       </div>
     </div>

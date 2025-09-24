@@ -53,26 +53,22 @@ export default function PersonDetailNode({ personId, personData, apiName }: Pers
       )}
 
       {/* Response Data */}
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-t border-gray-100">
+        <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium text-gray-900">Raw Response</h4>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+            className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
           >
             {isExpanded ? 'Collapse' : 'Expand'}
           </button>
         </div>
 
-        <div className={`bg-gray-50 border border-gray-200 rounded p-4 ${isExpanded ? 'max-h-none' : 'max-h-32 overflow-hidden'}`}>
-          <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
-            {JSON.stringify(personData, null, 2)}
-          </pre>
-        </div>
-
-        {!isExpanded && (
-          <div className="mt-2 text-xs text-gray-500">
-            Click &quot;Expand&quot; to view full response
+        {isExpanded && (
+          <div className="mt-3 bg-gray-50 border border-gray-200 rounded p-3 sm:p-4">
+            <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono overflow-x-auto">
+              {JSON.stringify(personData, null, 2)}
+            </pre>
           </div>
         )}
       </div>

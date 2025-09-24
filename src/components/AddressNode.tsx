@@ -247,10 +247,10 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
               )}
             </div>
 
-            {/* Address Fields Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {/* Address Fields - Horizontal Layout */}
+            <div className="flex flex-row gap-2 sm:gap-4">
               {/* City */}
-              <div>
+              <div className="flex-1 min-w-0">
                 <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
                   City
                 </label>
@@ -264,7 +264,7 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
               </div>
 
               {/* State */}
-              <div>
+              <div className="w-16 sm:w-20">
                 <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
                   State
                 </label>
@@ -273,21 +273,21 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
                   value={address.state}
                   onChange={(e) => handleInputChange('state', e.target.value)}
                   placeholder="NY"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
                 />
               </div>
               
               {/* ZIP */}
-              <div className="sm:col-span-2 lg:col-span-1">
+              <div className="w-20 sm:w-24">
                 <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                  ZIP Code
+                  ZIP
                 </label>
                 <input
                   type="text"
                   value={address.zip}
                   onChange={(e) => handleInputChange('zip', e.target.value)}
                   placeholder="10001"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
                 />
               </div>
             </div>

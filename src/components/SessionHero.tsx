@@ -114,9 +114,9 @@ export default function SessionHero({ currentSession, onSessionRename, refreshTr
 
   return (
     <div className="bg-white border-b border-gray-100">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Centered Title Section */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-4 sm:mb-6">
           {isEditing ? (
             <div className="flex items-center justify-center space-x-3">
               <input
@@ -166,27 +166,27 @@ export default function SessionHero({ currentSession, onSessionRename, refreshTr
         </div>
 
         {/* Timestamps and Actions */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6 text-sm text-gray-500">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm text-gray-500">
             <div className="flex items-center space-x-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>Created {formatDate(sessionData.createdAt)}</span>
+              <span className="truncate">Created {formatDate(sessionData.createdAt)}</span>
             </div>
             <div className="flex items-center space-x-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span>Updated {formatRelativeTime(sessionData.lastAccessed)}</span>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             {/* Session Stats */}
-            <div className="flex items-center space-x-4 text-sm text-gray-500">
+            <div className="flex items-center space-x-3 sm:space-x-4 text-sm text-gray-500">
               <span>{sessionData.nodes.length} nodes</span>
-              <span>•</span>
+              <span className="hidden sm:inline">•</span>
               <span>{sessionStorageService.getEntitySummary().total} entities</span>
             </div>
 

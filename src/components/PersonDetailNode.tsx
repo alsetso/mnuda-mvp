@@ -71,41 +71,41 @@ export default function PersonDetailNode({ personId, personData, apiName, onAddr
 
       {/* Entity Summary */}
       <div className="px-3 sm:px-4 lg:px-6 py-3 border-b border-gray-100">
-        <h4 className="text-sm font-semibold text-gray-800 mb-3">Entity Summary</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+        <h4 className="text-sm font-semibold text-gray-800 mb-2 sm:mb-3">Entity Summary</h4>
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-2">
           {parsedData.entityCounts.properties > 0 && (
-            <div className="text-center p-2 bg-slate-50 rounded">
-              <div className="text-base font-semibold text-slate-700">{parsedData.entityCounts.properties}</div>
+            <div className="text-center p-1.5 sm:p-2 bg-slate-50 rounded">
+              <div className="text-sm sm:text-base font-semibold text-slate-700">{parsedData.entityCounts.properties}</div>
               <div className="text-xs text-slate-500">Properties</div>
             </div>
           )}
           {parsedData.entityCounts.addresses > 0 && (
-            <div className="text-center p-2 bg-slate-50 rounded">
-              <div className="text-base font-semibold text-slate-700">{parsedData.entityCounts.addresses}</div>
+            <div className="text-center p-1.5 sm:p-2 bg-slate-50 rounded">
+              <div className="text-sm sm:text-base font-semibold text-slate-700">{parsedData.entityCounts.addresses}</div>
               <div className="text-xs text-slate-500">Addresses</div>
             </div>
           )}
           {parsedData.entityCounts.phones > 0 && (
-            <div className="text-center p-2 bg-slate-50 rounded">
-              <div className="text-base font-semibold text-slate-700">{parsedData.entityCounts.phones}</div>
+            <div className="text-center p-1.5 sm:p-2 bg-slate-50 rounded">
+              <div className="text-sm sm:text-base font-semibold text-slate-700">{parsedData.entityCounts.phones}</div>
               <div className="text-xs text-slate-500">Phones</div>
             </div>
           )}
           {parsedData.entityCounts.emails > 0 && (
-            <div className="text-center p-2 bg-slate-50 rounded">
-              <div className="text-base font-semibold text-slate-700">{parsedData.entityCounts.emails}</div>
+            <div className="text-center p-1.5 sm:p-2 bg-slate-50 rounded">
+              <div className="text-sm sm:text-base font-semibold text-slate-700">{parsedData.entityCounts.emails}</div>
               <div className="text-xs text-slate-500">Emails</div>
             </div>
           )}
           {parsedData.entityCounts.persons > 0 && (
-            <div className="text-center p-2 bg-slate-50 rounded">
-              <div className="text-base font-semibold text-slate-700">{parsedData.entityCounts.persons}</div>
+            <div className="text-center p-1.5 sm:p-2 bg-slate-50 rounded">
+              <div className="text-sm sm:text-base font-semibold text-slate-700">{parsedData.entityCounts.persons}</div>
               <div className="text-xs text-slate-500">Persons</div>
             </div>
           )}
           {parsedData.entityCounts.images > 0 && (
-            <div className="text-center p-2 bg-slate-50 rounded">
-              <div className="text-base font-semibold text-slate-700">{parsedData.entityCounts.images}</div>
+            <div className="text-center p-1.5 sm:p-2 bg-slate-50 rounded">
+              <div className="text-sm sm:text-base font-semibold text-slate-700">{parsedData.entityCounts.images}</div>
               <div className="text-xs text-slate-500">Images</div>
             </div>
           )}
@@ -113,8 +113,8 @@ export default function PersonDetailNode({ personId, personData, apiName, onAddr
       </div>
 
       {/* Structured Entities - Collapsible Groups */}
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h4 className="text-sm font-medium text-gray-900 mb-4">Structured Entities</h4>
+      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-b border-gray-200">
+        <h4 className="text-sm font-medium text-gray-900 mb-3 sm:mb-4">Structured Entities</h4>
         <div className="space-y-3">
           {/* Properties Group */}
           {groupedEntities.properties.length > 0 && (
@@ -209,26 +209,22 @@ export default function PersonDetailNode({ personId, personData, apiName, onAddr
       </div>
 
       {/* Raw Response Data */}
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-t border-gray-100">
+        <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium text-gray-900">Raw Response</h4>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+            className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
           >
             {isExpanded ? 'Collapse' : 'Expand'}
           </button>
         </div>
 
-        <div className={`bg-gray-50 border border-gray-200 rounded p-4 ${isExpanded ? 'max-h-none' : 'max-h-32 overflow-hidden'}`}>
-          <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
-            {JSON.stringify(personData, null, 2)}
-          </pre>
-        </div>
-
-        {!isExpanded && (
-          <div className="mt-2 text-xs text-gray-500">
-            Click &quot;Expand&quot; to view full response
+        {isExpanded && (
+          <div className="mt-3 bg-gray-50 border border-gray-200 rounded p-3 sm:p-4">
+            <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono overflow-x-auto">
+              {JSON.stringify(personData, null, 2)}
+            </pre>
           </div>
         )}
       </div>
