@@ -13,9 +13,9 @@ export interface NodeData {
   type: 'api-result' | 'people-result';
   address?: { street: string; city: string; state: string; zip: string };
   apiName: string;
-  response?: any;
+  response?: unknown;
   personId?: string;
-  personData?: any;
+  personData?: unknown;
   timestamp: number;
 }
 
@@ -176,9 +176,10 @@ class SessionStorageService {
     nodes.forEach(node => {
       if (node.type === 'api-result' && node.response) {
         // Count entities from API responses
-        if (node.apiName === 'Skip Trace' && node.response.people) {
-          persons += node.response.people.length || 0;
-          total += node.response.people.length || 0;
+        if (node.apiName === 'Skip Trace' && (node.response as { people?: unknown[] }).people) {
+          const people = (node.response as { people: unknown[] }).people;
+          persons += people.length || 0;
+          total += people.length || 0;
         }
         if (node.apiName === 'Zillow Search') {
           properties += 1;
@@ -186,7 +187,7 @@ class SessionStorageService {
         }
       } else if (node.type === 'people-result' && node.personData) {
         // Count entities from person detail responses
-        const data = node.personData;
+        const data = node.personData as Record<string, unknown[]>;
         if (data['Current Address Details List']) addresses += data['Current Address Details List'].length;
         if (data['Previous Address Details']) addresses += data['Previous Address Details'].length;
         if (data['All Phone Details']) phones += data['All Phone Details'].length;
@@ -216,7 +217,7 @@ class SessionStorageService {
 
     nodes.forEach(node => {
       if (node.type === 'people-result' && node.personData) {
-        const data = node.personData;
+        const data = node.personData as Record<string, unknown[]>;
         if (data['Current Address Details List']) addresses += data['Current Address Details List'].length;
         if (data['Previous Address Details']) addresses += data['Previous Address Details'].length;
         if (data['All Relatives']) persons += data['All Relatives'].length;

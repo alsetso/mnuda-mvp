@@ -11,9 +11,9 @@ interface AddressResultNodeProps {
     state: string;
     zip: string;
   };
-  apiResponse: any;
+  apiResponse: unknown;
   apiName: string;
-  onPersonTrace?: (personId: string, personData: any, apiName: string) => void;
+  onPersonTrace?: (personId: string, personData: unknown, apiName: string) => void;
 }
 
 export default function AddressResultNode({ address, apiResponse, apiName, onPersonTrace }: AddressResultNodeProps) {
@@ -21,7 +21,7 @@ export default function AddressResultNode({ address, apiResponse, apiName, onPer
 
   // Parse people data if this is a Skip Trace response
   const peopleData: FormattedPeopleData | null = apiName === 'Skip Trace' 
-    ? peopleParseService.parsePeopleResponse(apiResponse)
+    ? peopleParseService.parsePeopleResponse(apiResponse as import('@/lib/peopleParse').SkipTracePeopleResponse)
     : null;
 
   const formatAddress = () => {
@@ -83,7 +83,7 @@ export default function AddressResultNode({ address, apiResponse, apiName, onPer
 
         {!isExpanded && (
           <div className="mt-2 text-xs text-gray-500">
-            Click "Expand" to view full response
+            Click &quot;Expand&quot; to view full response
           </div>
         )}
       </div>

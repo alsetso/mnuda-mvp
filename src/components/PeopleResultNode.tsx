@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 interface PersonDetailNodeProps {
   personId: string;
-  personData: any;
+  personData: unknown;
   apiName: string;
 }
 
@@ -36,11 +36,11 @@ export default function PersonDetailNode({ personId, personData, apiName }: Pers
       </div>
 
       {/* Person Details */}
-      {personData && (
+      {Boolean(personData && typeof personData === 'object') && (
         <div className="px-6 py-4 border-b border-gray-200">
           <h4 className="text-sm font-medium text-gray-900 mb-3">Person Details</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(personData).map(([key, value]) => (
+            {Object.entries(personData as Record<string, unknown>).map(([key, value]) => (
               <div key={key} className="text-sm">
                 <span className="text-gray-500 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
                 <span className="ml-2 font-medium text-gray-900">
@@ -72,7 +72,7 @@ export default function PersonDetailNode({ personId, personData, apiName }: Pers
 
         {!isExpanded && (
           <div className="mt-2 text-xs text-gray-500">
-            Click "Expand" to view full response
+            Click &quot;Expand&quot; to view full response
           </div>
         )}
       </div>

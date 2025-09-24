@@ -48,47 +48,109 @@ export interface FormattedPropertyData {
   propertyType?: string;
   
   // Raw data
-  rawResponse: any;
+  rawResponse: unknown;
   source: string;
 }
 
+// API Response Types
+interface PropertyApiResponse {
+  zpid?: string;
+  address?: {
+    streetAddress?: string;
+    city?: string;
+    state?: string;
+    zipcode?: string;
+  };
+  abbreviatedAddress?: string;
+  city?: string;
+  county?: string;
+  latitude?: number;
+  longitude?: number;
+  price?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  livingArea?: number;
+  lotSize?: number;
+  lotAreaValue?: number;
+  homeType?: string;
+  propertyTypeDimension?: string;
+  homeStatus?: string;
+  keystoneHomeStatus?: string;
+  yearBuilt?: number;
+  listPriceLow?: number;
+  currency?: string;
+  description?: string;
+  image?: string;
+  hiResImageLink?: string;
+  desktopWebHdpImageLink?: string;
+  url?: string;
+  hdpUrl?: string;
+  lastSoldPrice?: number;
+}
+
 // Parser function
-export function parseMainProperty(apiResponse: any): PropertyDetails {
+export function parseMainProperty(apiResponse: unknown): PropertyDetails {
+  const response = apiResponse as PropertyApiResponse;
   return {
-    zpid: apiResponse.zpid ?? undefined,
-    address: apiResponse.address?.streetAddress || apiResponse.abbreviatedAddress || "",
-    city: apiResponse.address?.city || apiResponse.city || "",
-    state: apiResponse.address?.state || "",
-    zipcode: apiResponse.address?.zipcode || "",
-    county: apiResponse.county || "",
-    latitude: apiResponse.latitude ?? undefined,
-    longitude: apiResponse.longitude ?? undefined,
-    bedrooms: apiResponse.bedrooms ?? undefined,
-    bathrooms: apiResponse.bathrooms ?? undefined,
-    livingArea: apiResponse.livingArea ?? undefined,
-    lotSize: apiResponse.lotSize ?? apiResponse.lotAreaValue ?? undefined,
-    homeType: apiResponse.homeType ?? apiResponse.propertyTypeDimension ?? "",
-    homeStatus: apiResponse.homeStatus ?? apiResponse.keystoneHomeStatus ?? "",
-    yearBuilt: apiResponse.yearBuilt ?? undefined,
-    price: apiResponse.price ?? apiResponse.listPriceLow ?? undefined,
-    currency: apiResponse.currency ?? "USD",
-    description: apiResponse.description ?? "",
-    image: apiResponse.hiResImageLink || apiResponse.desktopWebHdpImageLink || "",
-    url: apiResponse.hdpUrl
-      ? `https://www.zillow.com${apiResponse.hdpUrl}`
+    zpid: response.zpid ?? undefined,
+    address: response.address?.streetAddress || response.abbreviatedAddress || "",
+    city: response.address?.city || response.city || "",
+    state: response.address?.state || "",
+    zipcode: response.address?.zipcode || "",
+    county: response.county || "",
+    latitude: response.latitude ?? undefined,
+    longitude: response.longitude ?? undefined,
+    bedrooms: response.bedrooms ?? undefined,
+    bathrooms: response.bathrooms ?? undefined,
+    livingArea: response.livingArea ?? undefined,
+    lotSize: response.lotSize ?? response.lotAreaValue ?? undefined,
+    homeType: response.homeType ?? response.propertyTypeDimension ?? "",
+    homeStatus: response.homeStatus ?? response.keystoneHomeStatus ?? "",
+    yearBuilt: response.yearBuilt ?? undefined,
+    price: response.price ?? response.listPriceLow ?? undefined,
+    currency: response.currency ?? "USD",
+    description: response.description ?? "",
+    image: response.hiResImageLink || response.desktopWebHdpImageLink || "",
+    url: response.hdpUrl
+      ? `https://www.zillow.com${response.hdpUrl}`
       : undefined,
-    lastSoldPrice: apiResponse.lastSoldPrice ?? undefined,
+    lastSoldPrice: response.lastSoldPrice ?? undefined,
   };
 }
 
+// Person API Response Types
+interface PersonApiResponse {
+  Source?: string;
+  "Person Details"?: Array<{
+    Person_name?: string;
+    Age?: number;
+    Born?: string;
+    "Lives in"?: string;
+    Telephone?: string;
+  }>;
+  "All Relatives"?: Array<{
+    Name?: string;
+    Age?: number;
+    "Person Link"?: string;
+    "Person ID"?: string;
+  }>;
+  "All Associates"?: Array<{
+    Name?: string;
+    Age?: number;
+    "Person Link"?: string;
+    "Person ID"?: string;
+  }>;
+}
+
 // Parse person records from Skip Trace API
-export function parsePersonRecords(apiResponse: any): PersonRecord[] {
+export function parsePersonRecords(apiResponse: unknown): PersonRecord[] {
+  const response = apiResponse as PersonApiResponse;
   const persons: PersonRecord[] = [];
 
   // -------------------
   // Current Residents
   // -------------------
-  (apiResponse["Person Details"] || []).forEach((p: any) => {
+  (response["Person Details"] || []).forEach((p) => {
     persons.push({
       name: p.Person_name || '',
       age: p.Age || undefined,
@@ -96,35 +158,35 @@ export function parsePersonRecords(apiResponse: any): PersonRecord[] {
       lives_in: p["Lives in"],
       telephone: p.Telephone,
       category: 'resident',
-      source: apiResponse.Source || 'Unknown'
+      source: response.Source || 'Unknown'
     });
   });
 
   // -------------------
   // Relatives
   // -------------------
-  (apiResponse["All Relatives"] || []).forEach((r: any) => {
+  (response["All Relatives"] || []).forEach((r) => {
     persons.push({
       name: r.Name || '',
       age: r.Age || undefined,
       person_link: r["Person Link"],
       person_id: r["Person ID"],
       category: 'relative',
-      source: apiResponse.Source || 'Unknown'
+      source: response.Source || 'Unknown'
     });
   });
 
   // -------------------
   // Associates
   // -------------------
-  (apiResponse["All Associates"] || []).forEach((a: any) => {
+  (response["All Associates"] || []).forEach((a) => {
     persons.push({
       name: a.Name || '',
       age: a.Age || undefined,
       person_link: a["Person Link"],
       person_id: a["Person ID"],
       category: 'associate',
-      source: apiResponse.Source || 'Unknown'
+      source: response.Source || 'Unknown'
     });
   });
 
@@ -132,7 +194,7 @@ export function parsePersonRecords(apiResponse: any): PersonRecord[] {
 }
 
 export const propParseService = {
-  parsePropertyResponse(apiResponse: any): FormattedPropertyData {
+  parsePropertyResponse(apiResponse: unknown): FormattedPropertyData {
     // Use the comprehensive parser
     const propertyDetails = parseMainProperty(apiResponse);
     
@@ -148,7 +210,7 @@ export const propParseService = {
       
       // Raw data
       rawResponse: apiResponse,
-      source: apiResponse.Source || 'Unknown'
+      source: (apiResponse as { Source?: string }).Source || 'Unknown'
     };
   }
 };

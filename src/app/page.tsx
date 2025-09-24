@@ -14,7 +14,7 @@ import { NodeData } from '@/lib/sessionStorage';
 export default function Home() {
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [isUsageModalOpen, setIsUsageModalOpen] = useState(false);
-  const { withApiToast, apiToast } = useToast();
+  const { withApiToast } = useToast();
   const { 
     currentSession, 
     sessions,
@@ -22,7 +22,6 @@ export default function Home() {
     createNewSession, 
     switchSession, 
     renameSession,
-    triggerRefresh,
     getCurrentNodes 
   } = useSessionManager();
 
@@ -32,7 +31,7 @@ export default function Home() {
     setNodes(currentNodes);
   }, [currentSession, getCurrentNodes]);
 
-  const handleApiCall = (address: any, apiName: string, response: any) => {
+  const handleApiCall = (address: { street: string; city: string; state: string; zip: string }, apiName: string, response: unknown) => {
     const newNode: NodeData = {
       id: `api-${Date.now()}`,
       type: 'api-result',
@@ -45,7 +44,7 @@ export default function Home() {
     addNode(newNode); // This will trigger refresh automatically
   };
 
-  const handlePersonTrace = (personId: string, personData: any, apiName: string) => {
+  const handlePersonTrace = (personId: string, personData: unknown, apiName: string) => {
     const newNode: NodeData = {
       id: `person-${Date.now()}`,
       type: 'people-result',
@@ -90,8 +89,8 @@ export default function Home() {
   };
 
   // Session management handlers
-  const handleSessionChange = (newNodes: NodeData[]) => {
-    setNodes(newNodes);
+  const handleSessionChange = (newNodes: unknown[]) => {
+    setNodes(newNodes as NodeData[]);
   };
 
   const handleNewSession = () => {
@@ -124,7 +123,6 @@ export default function Home() {
                 sessions={sessions}
                 onSessionSwitch={handleSessionSwitch}
                 onSessionRename={renameSession}
-                refreshTrigger={currentSession?.lastAccessed}
               />
             </div>
             <div className="flex items-center space-x-4">

@@ -40,7 +40,7 @@ export const apiOptions: ApiOption[] = [
 ];
 
 export const apiService = {
-  async callZillowAPI(address: { street: string; city: string; state: string; zip: string }): Promise<any> {
+  async callZillowAPI(address: { street: string; city: string; state: string; zip: string }): Promise<unknown> {
     console.log('Zillow API - Input address:', address);
     const fullAddress = `${address.street} ${address.city} ${address.state} ${address.zip}`;
     const encodedAddress = encodeURIComponent(fullAddress);
@@ -65,7 +65,7 @@ export const apiService = {
     return response.json();
   },
 
-  async callSkipTraceAPI(address: { street: string; city: string; state: string; zip: string }): Promise<any> {
+  async callSkipTraceAPI(address: { street: string; city: string; state: string; zip: string }): Promise<unknown> {
     console.log('Skip Trace API - Input address:', address);
     const cityStateZip = `${address.city}, ${address.state} ${address.zip}`;
     const encodedStreet = encodeURIComponent(address.street);
@@ -92,7 +92,7 @@ export const apiService = {
     return response.json();
   },
 
-  async callPersonAPI(personId: string): Promise<any> {
+  async callPersonAPI(personId: string): Promise<unknown> {
     console.log('Person API - Input person ID:', personId);
     const url = `https://skip-tracing-working-api.p.rapidapi.com/search/detailsbyID?peo_id=${personId}`;
     

@@ -10,15 +10,15 @@ interface NodeData {
   type: 'api-result' | 'people-result';
   address?: { street: string; city: string; state: string; zip: string };
   apiName: string;
-  response?: any;
+  response?: unknown;
   personId?: string;
-  personData?: any;
+  personData?: unknown;
   timestamp: number;
 }
 
 interface NodeStackProps {
   nodes: NodeData[];
-  onPersonTrace: (personId: string, personData: any, apiName: string) => void;
+  onPersonTrace: (personId: string, personData: unknown, apiName: string) => void;
   onAddressIntel?: (address: { street: string; city: string; state: string; zip: string }) => void;
 }
 

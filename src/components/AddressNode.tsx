@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { geocodingService, AddressSuggestion } from '@/lib/geocoding';
-import { apiOptions, apiService } from '@/lib/apiService';
+import { apiService } from '@/lib/apiService';
 
 interface AddressData {
   street: string;
@@ -12,7 +12,7 @@ interface AddressData {
 }
 
 interface AddressNodeProps {
-  onApiCall?: (address: AddressData, apiName: string, response: any) => void;
+  onApiCall?: (address: AddressData, apiName: string, response: unknown) => void;
   lastSearchedAddress?: AddressData | null;
   hasSearched?: boolean;
 }
@@ -168,7 +168,6 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
 
   // Determine which address to display
   const displayAddress = lastSearchedAddress || address;
-  const isAddressComplete = displayAddress.street && displayAddress.city && displayAddress.state && displayAddress.zip;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg">

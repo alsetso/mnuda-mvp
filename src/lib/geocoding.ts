@@ -9,6 +9,21 @@ export interface AddressSuggestion {
   coordinates: [number, number];
 }
 
+interface MapboxFeature {
+  id?: string;
+  text?: string;
+  place_name?: string;
+  center: [number, number];
+  context?: Array<{
+    id: string;
+    text: string;
+  }>;
+}
+
+interface MapboxResponse {
+  features: MapboxFeature[];
+}
+
 export const geocodingService = {
   async getStreetSuggestions(query: string): Promise<AddressSuggestion[]> {
     try {
@@ -26,19 +41,19 @@ export const geocodingService = {
         throw new Error('Geocoding request failed');
       }
 
-      const data = await response.json();
+      const data: MapboxResponse = await response.json();
       
       if (data.features && data.features.length > 0) {
-        return data.features.map((feature: any, index: number) => {
+        return data.features.map((feature: MapboxFeature, index: number) => {
           const [lng, lat] = feature.center;
           const context = feature.context || [];
           
           // Extract address components from Mapbox response
-          const streetNumber = context.find((c: any) => c.id.startsWith('address'))?.text || '';
-          const streetName = context.find((c: any) => c.id.startsWith('street'))?.text || '';
-          const city = context.find((c: any) => c.id.startsWith('place'))?.text || '';
-          const state = context.find((c: any) => c.id.startsWith('region'))?.text || '';
-          const zip = context.find((c: any) => c.id.startsWith('postcode'))?.text || '';
+          const streetNumber = context.find((c) => c.id.startsWith('address'))?.text || '';
+          const streetName = context.find((c) => c.id.startsWith('street'))?.text || '';
+          const city = context.find((c) => c.id.startsWith('place'))?.text || '';
+          const state = context.find((c) => c.id.startsWith('region'))?.text || '';
+          const zip = context.find((c) => c.id.startsWith('postcode'))?.text || '';
 
           // Build street address with proper house number
           let street = '';
@@ -66,7 +81,7 @@ export const geocodingService = {
           console.log('Mapbox feature:', {
             text: feature.text,
             place_name: feature.place_name,
-            context: context.map((c: any) => ({ id: c.id, text: c.text })),
+            context: context.map((c) => ({ id: c.id, text: c.text })),
             extracted: { streetNumber, streetName, street, city, state, zip }
           });
 
@@ -76,7 +91,7 @@ export const geocodingService = {
             city,
             state,
             zip,
-            fullAddress: feature.place_name || feature.text,
+            fullAddress: feature.place_name || feature.text || 'Address',
             coordinates: [lng, lat]
           };
         });

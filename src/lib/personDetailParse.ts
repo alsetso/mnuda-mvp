@@ -4,7 +4,7 @@ export interface PersonDetailEntity {
   type: 'property' | 'address' | 'phone' | 'email' | 'person' | 'image';
   category?: string;
   source: string;
-  [key: string]: any;
+  [key: string]: string | number | undefined;
 }
 
 export interface PropertyEntity extends PersonDetailEntity {
@@ -67,6 +67,94 @@ export interface ImageEntity extends PersonDetailEntity {
   order?: number;
 }
 
+// API Response Types
+export interface AddressInfo {
+  full?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+}
+
+export interface PropertyInfo {
+  beds?: number;
+  baths?: number;
+  square_feet?: number;
+  lot_size?: string;
+  year_built?: number;
+  type?: string;
+}
+
+export interface ZestimateInfo {
+  amount?: number;
+}
+
+export interface CurrentAddressDetail {
+  street_address?: string;
+  address_locality?: string;
+  address_region?: string;
+  postal_code?: string;
+  county?: string;
+  date_range?: string;
+}
+
+export interface PreviousAddressDetail {
+  streetAddress?: string;
+  addressLocality?: string;
+  addressRegion?: string;
+  postalCode?: string;
+  county?: string;
+  timespan?: string;
+}
+
+export interface PhoneDetail {
+  phone_number?: string;
+  phone_type?: string;
+  last_reported?: string;
+  provider?: string;
+}
+
+export interface PersonDetail {
+  Person_name?: string;
+  Age?: number;
+  Born?: string;
+  "Lives in"?: string;
+  Telephone?: string;
+}
+
+export interface RelativeInfo {
+  Name?: string;
+  Age?: number;
+  "Person Link"?: string;
+  "Person ID"?: string;
+}
+
+export interface AssociateInfo {
+  Name?: string;
+  Age?: number;
+  "Person Link"?: string;
+  "Person ID"?: string;
+}
+
+export interface PhotoInfo {
+  url?: string;
+  caption?: string;
+}
+
+export interface SkipTracePersonDetailResponse {
+  property?: PropertyInfo;
+  address?: AddressInfo;
+  zestimate?: ZestimateInfo;
+  "Current Address Details List"?: CurrentAddressDetail[];
+  "Previous Address Details"?: PreviousAddressDetail[];
+  "All Phone Details"?: PhoneDetail[];
+  "Email Addresses"?: string[];
+  "Person Details"?: PersonDetail[];
+  "All Relatives"?: RelativeInfo[];
+  "All Associates"?: AssociateInfo[];
+  photos?: PhotoInfo[];
+  Source?: string;
+}
+
 export interface ParsedPersonDetailData {
   entities: PersonDetailEntity[];
   totalEntities: number;
@@ -78,12 +166,12 @@ export interface ParsedPersonDetailData {
     persons: number;
     images: number;
   };
-  rawResponse: any;
+  rawResponse: SkipTracePersonDetailResponse;
   source: string;
 }
 
 export const personDetailParseService = {
-  parsePersonDetailResponse(apiResponse: any): ParsedPersonDetailData {
+  parsePersonDetailResponse(apiResponse: SkipTracePersonDetailResponse): ParsedPersonDetailData {
     const entities: PersonDetailEntity[] = [];
 
     // -------------------
@@ -110,7 +198,7 @@ export const personDetailParseService = {
     // -------------------
     // Current Addresses
     // -------------------
-    (apiResponse["Current Address Details List"] || []).forEach((addr: any) => {
+    (apiResponse["Current Address Details List"] || []).forEach((addr: CurrentAddressDetail) => {
       entities.push({
         type: "address",
         category: "current",
@@ -127,7 +215,7 @@ export const personDetailParseService = {
     // -------------------
     // Previous Addresses
     // -------------------
-    (apiResponse["Previous Address Details"] || []).forEach((addr: any) => {
+    (apiResponse["Previous Address Details"] || []).forEach((addr: PreviousAddressDetail) => {
       entities.push({
         type: "address",
         category: "previous",
@@ -144,7 +232,7 @@ export const personDetailParseService = {
     // -------------------
     // Phones
     // -------------------
-    (apiResponse["All Phone Details"] || []).forEach((ph: any) => {
+    (apiResponse["All Phone Details"] || []).forEach((ph: PhoneDetail) => {
       entities.push({
         type: "phone",
         number: ph.phone_number,
@@ -158,7 +246,7 @@ export const personDetailParseService = {
     // -------------------
     // Emails
     // -------------------
-    (apiResponse["Email Addresses"] || []).forEach((e: any) => {
+    (apiResponse["Email Addresses"] || []).forEach((e: string) => {
       entities.push({
         type: "email",
         email: e,
@@ -169,7 +257,7 @@ export const personDetailParseService = {
     // -------------------
     // Persons / Residents
     // -------------------
-    (apiResponse["Person Details"] || []).forEach((p: any) => {
+    (apiResponse["Person Details"] || []).forEach((p: PersonDetail) => {
       entities.push({
         type: "person",
         category: "resident",
@@ -185,7 +273,7 @@ export const personDetailParseService = {
     // -------------------
     // Relatives
     // -------------------
-    (apiResponse["All Relatives"] || []).forEach((r: any) => {
+    (apiResponse["All Relatives"] || []).forEach((r: RelativeInfo) => {
       entities.push({
         type: "person",
         category: "relative",
@@ -200,7 +288,7 @@ export const personDetailParseService = {
     // -------------------
     // Associates
     // -------------------
-    (apiResponse["All Associates"] || []).forEach((a: any) => {
+    (apiResponse["All Associates"] || []).forEach((a: AssociateInfo) => {
       entities.push({
         type: "person",
         category: "associate",
@@ -215,7 +303,7 @@ export const personDetailParseService = {
     // -------------------
     // Images
     // -------------------
-    (apiResponse.photos || []).forEach((photo: any, idx: number) => {
+    (apiResponse.photos || []).forEach((photo: PhotoInfo, idx: number) => {
       entities.push({
         type: "image",
         category: "property_photo",

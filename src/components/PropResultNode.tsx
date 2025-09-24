@@ -10,7 +10,7 @@ interface PropResultNodeProps {
     state: string;
     zip: string;
   };
-  propResponse: any;
+  propResponse: unknown;
   apiName: string;
 }
 
@@ -261,7 +261,7 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
 
         {!isExpanded && (
           <div className="mt-2 text-xs text-gray-500">
-            Click "Expand" to view full response
+            Click &quot;Expand&quot; to view full response
           </div>
         )}
       </div>

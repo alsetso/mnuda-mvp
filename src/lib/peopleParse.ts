@@ -11,6 +11,21 @@ export interface PersonRecord {
   source: string;
 }
 
+export interface SkipTracePersonDetail {
+  Name?: string;
+  Age?: number;
+  "Lives in"?: string;
+  "Used to live in"?: string;
+  "Related to"?: string;
+  Link?: string;
+  "Person ID"?: string;
+}
+
+export interface SkipTracePeopleResponse {
+  PeopleDetails?: SkipTracePersonDetail[];
+  Source?: string;
+}
+
 export interface FormattedPeopleData {
   // Person Records
   people: PersonRecord[];
@@ -19,14 +34,14 @@ export interface FormattedPeopleData {
   totalRecords: number;
   
   // Raw data
-  rawResponse: any;
+  rawResponse: SkipTracePeopleResponse;
   source: string;
 }
 
 export const peopleParseService = {
-  parsePeopleResponse(apiResponse: any): FormattedPeopleData {
+  parsePeopleResponse(apiResponse: SkipTracePeopleResponse): FormattedPeopleData {
     // Extract people from PeopleDetails array
-    const people: PersonRecord[] = (apiResponse.PeopleDetails || []).map((person: any) => ({
+    const people: PersonRecord[] = (apiResponse.PeopleDetails || []).map((person: SkipTracePersonDetail) => ({
       name: person.Name || '',
       age: person.Age || undefined,
       lives_in: person["Lives in"] || undefined,

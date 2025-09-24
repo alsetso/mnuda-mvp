@@ -6,7 +6,7 @@ import { apiService } from '@/lib/apiService';
 
 interface PersonListNodeProps {
   records: PersonRecord[];
-  onPersonTrace?: (personId: string, personData: any, apiName: string) => void;
+  onPersonTrace?: (personId: string, personData: unknown, apiName: string) => void;
 }
 
 export default function PersonListNode({ records, onPersonTrace }: PersonListNodeProps) {
@@ -44,7 +44,7 @@ export default function PersonListNode({ records, onPersonTrace }: PersonListNod
 }
 
 // Individual person card component
-function PersonCard({ person, onPersonTrace }: { person: PersonRecord; onPersonTrace?: (personId: string, personData: any, apiName: string) => void }) {
+function PersonCard({ person, onPersonTrace }: { person: PersonRecord; onPersonTrace?: (personId: string, personData: unknown, apiName: string) => void }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleTrace = async () => {

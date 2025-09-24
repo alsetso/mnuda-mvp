@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { PersonRecord } from '@/lib/peopleParse';
 import { apiService } from '@/lib/apiService';
 import { useToast } from '@/hooks/useToast';
 
 interface PersonListNodeProps {
   records: PersonRecord[];
-  onPersonTrace?: (personId: string, personData: any, apiName: string) => void;
+  onPersonTrace?: (personId: string, personData: unknown, apiName: string) => void;
 }
 
 export default function PersonListNode({ records, onPersonTrace }: PersonListNodeProps) {
@@ -45,7 +44,7 @@ export default function PersonListNode({ records, onPersonTrace }: PersonListNod
 }
 
 // Individual person card component
-function PersonCard({ person, onPersonTrace }: { person: PersonRecord; onPersonTrace?: (personId: string, personData: any, apiName: string) => void }) {
+function PersonCard({ person, onPersonTrace }: { person: PersonRecord; onPersonTrace?: (personId: string, personData: unknown, apiName: string) => void }) {
   const { withApiToast } = useToast();
 
   const handleTrace = async () => {

@@ -6,10 +6,10 @@ import { useToast } from '@/hooks/useToast';
 
 interface PersonDetailNodeProps {
   personId: string;
-  personData: any;
+  personData: unknown;
   apiName: string;
   onAddressIntel?: (address: { street: string; city: string; state: string; zip: string }) => void;
-  onPersonTrace?: (personId: string, personData: any, apiName: string) => void;
+  onPersonTrace?: (personId: string, personData: unknown, apiName: string) => void;
 }
 
 export default function PersonDetailNode({ personId, personData, apiName, onAddressIntel, onPersonTrace }: PersonDetailNodeProps) {
@@ -17,7 +17,7 @@ export default function PersonDetailNode({ personId, personData, apiName, onAddr
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(['addresses', 'phones', 'emails', 'persons']));
   
   // Parse the person detail data
-  const parsedData: ParsedPersonDetailData = personDetailParseService.parsePersonDetailResponse(personData);
+  const parsedData: ParsedPersonDetailData = personDetailParseService.parsePersonDetailResponse(personData as import('@/lib/personDetailParse').SkipTracePersonDetailResponse);
 
   // Group entities by type
   const groupedEntities = {
@@ -228,7 +228,7 @@ export default function PersonDetailNode({ personId, personData, apiName, onAddr
 
         {!isExpanded && (
           <div className="mt-2 text-xs text-gray-500">
-            Click "Expand" to view full response
+            Click &quot;Expand&quot; to view full response
           </div>
         )}
       </div>
@@ -302,7 +302,7 @@ function FlatEntityCard({
 }: { 
   entity: PersonDetailEntity;
   onAddressIntel?: (address: { street: string; city: string; state: string; zip: string }) => void;
-  onPersonTrace?: (personId: string, personData: any, apiName: string) => void;
+  onPersonTrace?: (personId: string, personData: unknown, apiName: string) => void;
 }) {
   const { withApiToast } = useToast();
   const getTypeLabelColor = (type: string) => {
@@ -318,9 +318,9 @@ function FlatEntityCard({
   };
 
   const formatEntityData = (entity: PersonDetailEntity) => {
-    const { type, category, source, ...data } = entity;
+    const { ...data } = entity;
     return Object.entries(data)
-      .filter(([key, value]) => value !== undefined && value !== null && value !== '')
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => ({ key, value }));
   };
 
@@ -339,10 +339,10 @@ function FlatEntityCard({
   const handleAddressIntel = () => {
     if (entity.type === 'address' && onAddressIntel) {
       const address = {
-        street: entity.street || '',
-        city: entity.city || '',
-        state: entity.state || '',
-        zip: entity.postal || ''
+        street: String(entity.street || ''),
+        city: String(entity.city || ''),
+        state: String(entity.state || ''),
+        zip: String(entity.postal || '')
       };
       onAddressIntel(address);
     }
@@ -355,22 +355,22 @@ function FlatEntityCard({
         const { apiService } = await import('@/lib/apiService');
         const personData = await withApiToast(
           'Person Details Lookup',
-          () => apiService.callPersonAPI(entity.person_id!),
+          () => apiService.callPersonAPI(String(entity.person_id!)),
           {
-            loadingMessage: `Tracing person: ${entity.name}`,
+            loadingMessage: `Tracing person: ${String(entity.name)}`,
             successMessage: 'Person details retrieved successfully',
             errorMessage: 'Failed to retrieve person details'
           }
         );
-        onPersonTrace(entity.person_id, personData, 'Person Details');
+        onPersonTrace(String(entity.person_id), personData, 'Person Details');
       } catch (error) {
         console.error('Person API call failed:', error);
         // Fallback to mock data if API fails
         const mockPersonData = {
-          person_id: entity.person_id,
-          name: entity.name,
+          person_id: String(entity.person_id),
+          name: String(entity.name),
         };
-        onPersonTrace(entity.person_id, mockPersonData, 'Person Details');
+        onPersonTrace(String(entity.person_id), mockPersonData, 'Person Details');
       }
     }
   };

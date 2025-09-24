@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { sessionStorageService, SessionData } from '@/lib/sessionStorage';
 
 interface SessionSelectorProps {
-  onSessionChange: (nodes: any[]) => void;
+  onSessionChange: (nodes: unknown[]) => void;
   onNewSession: () => void;
   currentSession: SessionData | null;
   sessions: SessionData[];
-  onSessionSwitch: (sessionId: string) => void;
+  onSessionSwitch: (sessionId: string) => unknown[];
   onSessionRename: (sessionId: string, newName: string) => void;
-  refreshTrigger?: number;
 }
 
 function SessionSelector({ 
@@ -19,8 +18,7 @@ function SessionSelector({
   currentSession,
   sessions,
   onSessionSwitch,
-  onSessionRename,
-  refreshTrigger 
+  onSessionRename
 }: SessionSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
