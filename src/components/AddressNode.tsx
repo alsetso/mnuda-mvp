@@ -172,7 +172,7 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
   return (
     <div className="bg-white border border-gray-200 rounded-lg">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-gray-900">Address Search</h3>
           <div className="flex items-center space-x-2">
@@ -191,10 +191,10 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-3 sm:p-4 lg:p-6">
         {showFullForm ? (
           /* Full Form View - Pre-Search */
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Street Address with Autocomplete */}
             <div className="relative">
               <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
@@ -208,7 +208,7 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
                   onChange={(e) => handleInputChange('street', e.target.value)}
                   onFocus={() => setShowSuggestions(true)}
                   placeholder="123 Main Street"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
                 />
                 {isLoading && (
                   <div className="absolute right-3 top-2.5">
@@ -248,7 +248,7 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
             </div>
 
             {/* Address Fields Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {/* City */}
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
@@ -259,7 +259,7 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
                   value={address.city}
                   onChange={(e) => handleInputChange('city', e.target.value)}
                   placeholder="New York"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
                 />
               </div>
 
@@ -273,12 +273,12 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
                   value={address.state}
                   onChange={(e) => handleInputChange('state', e.target.value)}
                   placeholder="NY"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
                 />
               </div>
               
               {/* ZIP */}
-              <div>
+              <div className="sm:col-span-2 lg:col-span-1">
                 <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
                   ZIP Code
                 </label>
@@ -287,13 +287,13 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
                   value={address.zip}
                   onChange={(e) => handleInputChange('zip', e.target.value)}
                   placeholder="10001"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
                 />
               </div>
             </div>
 
             {/* Action Bar */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t border-gray-200 space-y-3 sm:space-y-0">
               <div className="text-xs text-gray-500">
                 {address.street && address.city && address.state && address.zip 
                   ? '✓ Complete address ready for Skip Trace search' 
@@ -304,7 +304,7 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
               <button
                 onClick={handleApiCall}
                 disabled={!address.street || !address.city || !address.state || !address.zip || isApiLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#1dd1f5] border border-transparent rounded hover:bg-[#1bc4e8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1dd1f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                className="w-full sm:w-auto px-6 py-3 sm:py-2 text-sm font-medium text-white bg-[#1dd1f5] border border-transparent rounded hover:bg-[#1bc4e8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1dd1f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px]"
               >
                 {isApiLoading ? (
                   <>
@@ -321,16 +321,16 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
           /* Compact View - Post-Search */
           <div className="space-y-4">
             {/* Searched Address Display */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between space-y-3 sm:space-y-0">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-2">
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <span className="text-xs font-medium text-gray-700 uppercase tracking-wide">Last Searched</span>
                   </div>
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-gray-900 break-words">
                     {formatAddressForDisplay(displayAddress)}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
@@ -339,7 +339,7 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
                 </div>
                 <button
                   onClick={handleNewSearch}
-                  className="ml-4 px-3 py-1.5 text-xs font-medium text-[#1dd1f5] bg-[#1dd1f5]/10 border border-[#1dd1f5]/30 rounded hover:bg-[#1dd1f5]/20 transition-colors"
+                  className="w-full sm:w-auto px-3 py-2 text-xs font-medium text-[#1dd1f5] bg-[#1dd1f5]/10 border border-[#1dd1f5]/30 rounded hover:bg-[#1dd1f5]/20 transition-colors touch-manipulation min-h-[44px]"
                 >
                   New Search
                 </button>
@@ -347,14 +347,14 @@ export default function AddressNode({ onApiCall, lastSearchedAddress, hasSearche
             </div>
 
             {/* Quick Actions */}
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-2 space-y-3 sm:space-y-0">
               <div className="text-xs text-gray-500">
                 Search completed successfully
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
                 <button
                   onClick={handleNewSearch}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-[#1dd1f5] border border-[#1dd1f5] rounded hover:bg-[#1bc4e8] transition-colors"
+                  className="flex-1 sm:flex-none px-4 py-2 text-xs font-medium text-white bg-[#1dd1f5] border border-[#1dd1f5] rounded hover:bg-[#1bc4e8] transition-colors touch-manipulation min-h-[44px]"
                 >
                   Search Another Address
                 </button>

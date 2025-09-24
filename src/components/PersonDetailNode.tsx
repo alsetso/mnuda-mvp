@@ -44,13 +44,13 @@ export default function PersonDetailNode({ personId, personData, apiName, onAddr
   return (
     <div className="bg-white">
       {/* Header */}
-      <div className="px-6 py-3 border-b border-gray-100">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-800">PersonDetailNode</h3>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold text-gray-800 truncate">PersonDetailNode</h3>
             <p className="text-xs text-gray-400 mt-0.5">{apiName}</p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
             <span className="text-xs text-gray-400">Success</span>
           </div>
@@ -58,10 +58,10 @@ export default function PersonDetailNode({ personId, personData, apiName, onAddr
       </div>
 
       {/* Person ID Info */}
-      <div className="px-6 py-3 border-b border-gray-100">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 border-b border-gray-100">
         <div className="text-sm">
           <span className="text-gray-400 font-medium">Person ID:</span>
-          <span className="ml-2 font-mono text-gray-700">{personId}</span>
+          <span className="ml-2 font-mono text-gray-700 break-all">{personId}</span>
         </div>
         <div className="text-sm mt-1">
           <span className="text-gray-400 font-medium">Total Entities:</span>
@@ -70,9 +70,9 @@ export default function PersonDetailNode({ personId, personData, apiName, onAddr
       </div>
 
       {/* Entity Summary */}
-      <div className="px-6 py-3 border-b border-gray-100">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 border-b border-gray-100">
         <h4 className="text-sm font-semibold text-gray-800 mb-3">Entity Summary</h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           {parsedData.entityCounts.properties > 0 && (
             <div className="text-center p-2 bg-slate-50 rounded">
               <div className="text-base font-semibold text-slate-700">{parsedData.entityCounts.properties}</div>

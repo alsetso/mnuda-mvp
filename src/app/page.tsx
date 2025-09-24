@@ -107,34 +107,39 @@ export default function Home() {
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            {/* Left side - Logo and Session Selector */}
+            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
               <div className="flex-shrink-0">
-                <h1 className="text-lg font-semibold">
+                <h1 className="text-base sm:text-lg font-semibold">
                   <span className="text-[#014463]">MN</span>
                   <span className="text-[#1dd1f5]">UDA</span>
                 </h1>
               </div>
-              <SessionSelector 
-                onSessionChange={handleSessionChange}
-                onNewSession={handleNewSession}
-                currentSession={currentSession}
-                sessions={sessions}
-                onSessionSwitch={handleSessionSwitch}
-                onSessionRename={renameSession}
-              />
+              <div className="min-w-0 flex-1">
+                <SessionSelector 
+                  onSessionChange={handleSessionChange}
+                  onNewSession={handleNewSession}
+                  currentSession={currentSession}
+                  sessions={sessions}
+                  onSessionSwitch={handleSessionSwitch}
+                  onSessionRename={renameSession}
+                />
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Property Lookup API</span>
+            
+            {/* Right side - API Label and Usage Icon */}
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+              <span className="hidden sm:inline text-sm text-gray-500">Property Lookup API</span>
               
               {/* Usage Icon */}
               <button
                 onClick={() => setIsUsageModalOpen(true)}
-                className="p-2 text-gray-400 hover:text-[#1dd1f5] hover:bg-[#1dd1f5]/10 rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-[#1dd1f5] hover:bg-[#1dd1f5]/10 rounded-lg transition-colors touch-manipulation"
                 title="View storage usage"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                 </svg>
               </button>
@@ -151,7 +156,7 @@ export default function Home() {
       />
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         <AddressNode 
           onApiCall={handleApiCall}
           lastSearchedAddress={nodes.length > 0 ? nodes[nodes.length - 1]?.address : null}
@@ -159,7 +164,7 @@ export default function Home() {
         />
         
         {/* Node Stack */}
-        <div className="mt-8">
+        <div className="mt-4 sm:mt-6 lg:mt-8">
         <NodeStack 
           nodes={nodes}
           onPersonTrace={handlePersonTrace}

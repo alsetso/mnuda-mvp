@@ -92,19 +92,19 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
       <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
       
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl">
+      <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
+        <div className="relative w-full max-w-4xl bg-white rounded-lg shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-[#1dd1f5]/10 rounded-lg">
-                <svg className="w-6 h-6 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+              <div className="p-1.5 sm:p-2 bg-[#1dd1f5]/10 rounded-lg flex-shrink-0">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                 </svg>
               </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Storage Usage</h2>
-                <p className="text-sm text-gray-500">Local storage usage breakdown</p>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Storage Usage</h2>
+                <p className="text-xs sm:text-sm text-gray-500 truncate">Local storage usage breakdown</p>
               </div>
             </div>
             <button
@@ -118,50 +118,50 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-3 sm:p-4 lg:p-6 overflow-y-auto flex-1">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1dd1f5]"></div>
                 <span className="ml-3 text-gray-600">Loading storage data...</span>
               </div>
             ) : storageUsage ? (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Total Usage Summary - Compact */}
                 <div className="flex items-center justify-between text-sm text-gray-500 pb-4">
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center space-x-2 min-w-0 flex-1">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                     </svg>
-                    <span>Total usage</span>
+                    <span className="truncate">Total usage</span>
                     {quota && quota.quota > 0 && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 hidden sm:inline">
                         ({formatBytes(quota.usage)} of {formatBytes(quota.quota)})
                       </span>
                     )}
                   </div>
-                  <span className="font-medium text-gray-900">{formatBytes(storageUsage.total)}</span>
+                  <span className="font-medium text-gray-900 flex-shrink-0">{formatBytes(storageUsage.total)}</span>
                 </div>
 
                 {/* Sessions Table */}
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Sessions</h3>
-                  <div className="overflow-hidden border border-gray-200 rounded-lg">
-                    <table className="w-full divide-y divide-gray-200">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Sessions</h3>
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                    <table className="w-full divide-y divide-gray-200 min-w-[600px]">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
                             Session
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
                             Nodes
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4 hidden sm:table-cell">
                             Created
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
                             Size
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                          <th className="px-3 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
                             Usage
                           </th>
                         </tr>
@@ -169,13 +169,13 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
                       <tbody className="bg-white divide-y divide-gray-200">
                         {storageUsage.sessions.map((sessionUsage) => (
                           <tr key={sessionUsage.session.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 w-2/5">
+                            <td className="px-3 sm:px-4 py-3 w-2/5">
                               <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 bg-[#1dd1f5] rounded-full flex-shrink-0"></div>
                                 {onSessionSwitch ? (
                                   <button
                                     onClick={() => handleSessionClick(sessionUsage.session.id)}
-                                    className="text-sm font-medium text-[#1dd1f5] hover:text-[#014463] hover:underline truncate text-left"
+                                    className="text-sm font-medium text-[#1dd1f5] hover:text-[#014463] hover:underline truncate text-left touch-manipulation min-h-[44px] flex items-center"
                                     title={`Click to open "${sessionUsage.session.name}"`}
                                   >
                                     {sessionUsage.session.name}
@@ -187,16 +187,16 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600 w-1/12">
+                            <td className="px-3 sm:px-4 py-3 text-sm text-gray-600 w-1/12">
                               {sessionUsage.session.nodes.length}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600 w-1/4">
+                            <td className="px-3 sm:px-4 py-3 text-sm text-gray-600 w-1/4 hidden sm:table-cell">
                               {formatDate(sessionUsage.session.createdAt)}
                             </td>
-                            <td className="px-4 py-3 text-sm font-medium text-gray-900 w-1/12">
+                            <td className="px-3 sm:px-4 py-3 text-sm font-medium text-gray-900 w-1/12">
                               {formatBytes(sessionUsage.size)}
                             </td>
-                            <td className="px-4 py-3 w-1/4">
+                            <td className="px-3 sm:px-4 py-3 w-1/4">
                               <div className="flex items-center space-x-2">
                                 <div className="flex-1 bg-gray-200 rounded-full h-2 min-w-16">
                                   <div 
@@ -230,19 +230,19 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                  <div className="text-sm text-gray-500">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t border-gray-200 space-y-3 sm:space-y-0">
+                  <div className="text-xs sm:text-sm text-gray-500">
                     Data is stored locally in your browser
                   </div>
-                  <div className="flex space-x-3">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                     {storageUsage && storageUsage.sessions.some(s => s.session.nodes.length === 0) && (
                       <button
                         onClick={handleClearEmptySessions}
                         disabled={clearing}
-                        className="px-3 py-1.5 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
                       >
                         {clearing ? (
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center justify-center space-x-2">
                             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-600"></div>
                             <span>Clearing...</span>
                           </div>
@@ -253,13 +253,13 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
                     )}
                     <button
                       onClick={loadStorageData}
-                      className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] transition-colors"
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] transition-colors touch-manipulation min-h-[44px]"
                     >
                       Refresh
                     </button>
                     <button
                       onClick={onClose}
-                      className="px-3 py-1.5 text-sm font-medium text-white bg-[#1dd1f5] border border-[#1dd1f5] rounded-md hover:bg-[#1bc4e8] focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] transition-colors"
+                      className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-[#1dd1f5] border border-[#1dd1f5] rounded-md hover:bg-[#1bc4e8] focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] transition-colors touch-manipulation min-h-[44px]"
                     >
                       Close
                     </button>

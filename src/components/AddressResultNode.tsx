@@ -31,13 +31,13 @@ export default function AddressResultNode({ address, apiResponse, apiName, onPer
   return (
     <div className="bg-white">
       {/* Header */}
-      <div className="px-6 py-3 border-b border-gray-100">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-800">AddressResultNode</h3>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold text-gray-800 truncate">AddressResultNode</h3>
             <p className="text-xs text-gray-400 mt-0.5">{apiName}</p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
             <span className="text-xs text-gray-400">Success</span>
           </div>
@@ -45,10 +45,10 @@ export default function AddressResultNode({ address, apiResponse, apiName, onPer
       </div>
 
       {/* Address Info */}
-      <div className="px-6 py-3 border-b border-gray-100">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 border-b border-gray-100">
         <div className="text-sm">
           <span className="text-gray-400 font-medium">Address:</span>
-          <span className="ml-2 text-gray-700">{formatAddress()}</span>
+          <span className="ml-2 text-gray-700 break-words">{formatAddress()}</span>
         </div>
         {peopleData && (
           <div className="mt-1 text-sm">
