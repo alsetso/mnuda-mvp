@@ -178,7 +178,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       {/* Shared Header */}
       <AppHeader
         currentSession={currentSession}
@@ -206,6 +206,6 @@ export default function Home() {
         />
       </div>
 
-    </main>
+    </div>
   )
 }

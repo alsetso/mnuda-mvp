@@ -49,8 +49,6 @@ export default function AppHeader({
             
             {/* Right side - Navigation and Usage Icon */}
             <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-              <span className="hidden sm:inline text-sm text-gray-500">Property Lookup API</span>
-              
               {/* Usage Icon */}
               <button
                 onClick={() => setIsUsageModalOpen(true)}
