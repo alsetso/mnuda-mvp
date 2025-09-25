@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import 'mapbox-gl/dist/mapbox-gl.css';
 
 @tailwind base;
 @tailwind components;
@@ -26,4 +27,35 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Mapbox custom styles */
+.mapboxgl-popup-content {
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 18px;
+  color: #6b7280;
+}
+
+.mapboxgl-popup-close-button:hover {
+  color: #374151;
+}
+
+.custom-marker {
+  transition: transform 0.2s ease;
+  /* Ensure proper anchor point for floating markers */
+  transform-origin: center center;
+}
+
+.custom-marker:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Ensure Mapbox markers are properly positioned */
+.mapboxgl-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
 }

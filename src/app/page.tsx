@@ -1,19 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AddressNode from '@/components/AddressNode';
-import NodeStack from '@/components/NodeStack';
-import SessionSelector from '@/components/SessionSelector';
-import SessionHero from '@/components/SessionHero';
-import UsageModal from '@/components/UsageModal';
-import { apiOptions, apiService } from '@/lib/apiService';
-import { useToast } from '@/hooks/useToast';
-import { useSessionManager } from '@/hooks/useSessionManager';
-import { NodeData } from '@/lib/sessionStorage';
+import SessionHero from '@/features/session/components/SessionHero';
+import AppHeader from '@/features/session/components/AppHeader';
+import TabSection from '@/features/ui/components/TabSection';
+import { apiService } from '@/features/api/services/apiService';
+import { useToast } from '@/features/ui/hooks/useToast';
+import { useSessionManager } from '@/features/session/hooks/useSessionManager';
+import { NodeData } from '@/features/session/services/sessionStorage';
+import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
+import { GeocodingService } from '@/features/map/services/geocodingService';
 
 export default function Home() {
   const [nodes, setNodes] = useState<NodeData[]>([]);
-  const [isUsageModalOpen, setIsUsageModalOpen] = useState(false);
   const { withApiToast } = useToast();
   const { 
     currentSession, 
@@ -28,125 +27,166 @@ export default function Home() {
   // Initialize nodes from current session
   useEffect(() => {
     const currentNodes = getCurrentNodes();
-    setNodes(currentNodes);
+    // If no nodes exist, create a start node
+    if (currentNodes.length === 0) {
+      const startNode: NodeData = {
+        id: 'start-node',
+        type: 'start',
+        apiName: 'Skip Trace API',
+        timestamp: Date.now(),
+        mnNodeId: MnudaIdService.generateTypedId('node'),
+      };
+      setNodes([startNode]);
+    } else {
+      setNodes(currentNodes);
+    }
   }, [currentSession, getCurrentNodes]);
 
-  const handleApiCall = (address: { street: string; city: string; state: string; zip: string }, apiName: string, response: unknown) => {
-    const newNode: NodeData = {
-      id: `api-${Date.now()}`,
-      type: 'api-result',
-      address,
-      apiName,
-      response,
-      timestamp: Date.now()
-    };
-    setNodes(prev => [...prev, newNode]);
-    addNode(newNode); // This will trigger refresh automatically
+  const handleAddressSearch = async (address: { street: string; city: string; state: string; zip: string }) => {
+    try {
+      // Geocode the address first
+      const geocodingResult = await GeocodingService.geocodeAddress(address);
+      const addressWithCoordinates = {
+        ...address,
+        coordinates: geocodingResult.success ? geocodingResult.coordinates : undefined,
+      };
+
+      const response = await withApiToast(
+        'Skip Trace Address Search',
+        () => apiService.callSkipTraceAPI(address),
+        {
+          loadingMessage: `Searching address: ${address.street}, ${address.city}, ${address.state} ${address.zip}`,
+          successMessage: 'Address search completed successfully',
+          errorMessage: 'Failed to search address'
+        }
+      );
+
+      const newNode: NodeData = {
+        id: `api-${Date.now()}`,
+        type: 'api-result',
+        address: addressWithCoordinates,
+        apiName: 'Skip Trace',
+        response,
+        timestamp: Date.now(),
+        mnNodeId: MnudaIdService.generateTypedId('node'),
+      };
+      setNodes(prev => [...prev, newNode]);
+      addNode(newNode);
+    } catch (error) {
+      console.error('Address search error:', error);
+    }
   };
 
-  const handlePersonTrace = (personId: string, personData: unknown, apiName: string) => {
+
+  const handlePersonTrace = (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => {
+    console.log('Main page handlePersonTrace received:', {
+      personId,
+      apiName,
+      parentNodeId,
+      entityId,
+      entityData,
+      timestamp: new Date().toISOString()
+    });
+    
     const newNode: NodeData = {
       id: `person-${Date.now()}`,
       type: 'people-result',
       personId,
       personData,
       apiName,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      mnNodeId: MnudaIdService.generateTypedId('node'),
+      // Establish parent-child relationship if parent is provided
+      parentNodeId: parentNodeId,
+      clickedEntityId: entityId, // Store the entity ID that triggered this node
+      clickedEntityData: entityData, // Store the entity data that triggered this node
     };
+    
+    console.log('Created newNode with clickedEntityId:', newNode.clickedEntityId);
+    console.log('Created newNode with clickedEntityData:', newNode.clickedEntityData);
+    console.log('Full newNode object:', newNode);
+    
+    // Update parent node to include this child
+    if (parentNodeId) {
+      setNodes(prev => prev.map(node => 
+        node.mnNodeId === parentNodeId 
+          ? { 
+              ...node, 
+              childMnudaIds: [...(node.childMnudaIds || []), newNode.mnNodeId!],
+              entityCount: (node.entityCount || 0) + 1
+            }
+          : node
+      ));
+    }
+    
     setNodes(prev => [...prev, newNode]);
     addNode(newNode); // This will trigger refresh automatically
   };
 
-  const handleAddressIntel = async (address: { street: string; city: string; state: string; zip: string }) => {
-    // Call Skip Trace API for the address
-    const skipTraceApi = apiOptions.find(api => api.id === 'skip-trace');
-    if (skipTraceApi) {
-      try {
-        const response = await withApiToast(
-          'Skip Trace Address Lookup',
-          () => apiService.callSkipTraceAPI(address),
-          {
-            loadingMessage: `Looking up address data for ${address.street}`,
-            successMessage: 'Address data retrieved successfully',
-            errorMessage: 'Failed to retrieve address data'
-          }
-        );
-        
-        const newNode: NodeData = {
-          id: `intel-${Date.now()}`,
-          type: 'api-result',
-          address,
-          apiName: skipTraceApi.name,
-          response,
-          timestamp: Date.now()
-        };
-        setNodes(prev => [...prev, newNode]);
-        addNode(newNode); // This will trigger refresh automatically
-      } catch (error) {
-        console.error('Skip Trace API call failed:', error);
-      }
+  const handleAddressIntel = async (address: { street: string; city: string; state: string; zip: string }, entityId?: string) => {
+    try {
+      const response = await withApiToast(
+        'Skip Trace Address Lookup',
+        () => apiService.callSkipTraceAPI(address),
+        {
+          loadingMessage: `Looking up address data for ${address.street}`,
+          successMessage: 'Address data retrieved successfully',
+          errorMessage: 'Failed to retrieve address data'
+        }
+      );
+      
+      const newNode: NodeData = {
+        id: `intel-${Date.now()}`,
+        type: 'api-result',
+        address,
+        apiName: 'Skip Trace',
+        response,
+        timestamp: Date.now(),
+        mnNodeId: MnudaIdService.generateTypedId('node'),
+        clickedEntityId: entityId,
+      };
+      setNodes(prev => [...prev, newNode]);
+      addNode(newNode);
+    } catch (error) {
+      console.error('Skip Trace API call failed:', error);
     }
   };
 
   // Session management handlers
-  const handleSessionChange = (newNodes: unknown[]) => {
-    setNodes(newNodes as NodeData[]);
-  };
-
   const handleNewSession = () => {
     createNewSession();
-    setNodes([]);
+    // Create a new start node for the new session
+    const startNode: NodeData = {
+      id: 'start-node',
+      type: 'start',
+      apiName: 'Skip Trace API',
+      timestamp: Date.now(),
+      mnNodeId: MnudaIdService.generateTypedId('node'),
+    };
+    setNodes([startNode]);
   };
 
-  const handleSessionSwitch = (sessionId: string) => {
-    const newNodes = switchSession(sessionId);
-    return newNodes;
+
+  const handleStartNodeCompleteWrapper = () => {
+    // This will be called by NodeStack when it determines the start node should be completed
+    // We'll find the start node and mark it as completed
+    setNodes(prev => prev.map(node => 
+      node.type === 'start' 
+        ? { ...node, hasCompleted: true }
+        : node
+    ));
   };
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            {/* Left side - Logo and Session Selector */}
-            <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
-              <div className="flex-shrink-0">
-                <h1 className="text-base sm:text-lg font-semibold">
-                  <span className="text-[#014463]">MN</span>
-                  <span className="text-[#1dd1f5]">UDA</span>
-                </h1>
-              </div>
-              <div className="min-w-0 flex-1">
-                <SessionSelector 
-                  onSessionChange={handleSessionChange}
-                  onNewSession={handleNewSession}
-                  currentSession={currentSession}
-                  sessions={sessions}
-                  onSessionSwitch={handleSessionSwitch}
-                  onSessionRename={renameSession}
-                />
-              </div>
-            </div>
-            
-            {/* Right side - API Label and Usage Icon */}
-            <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-              <span className="hidden sm:inline text-sm text-gray-500">Property Lookup API</span>
-              
-              {/* Usage Icon */}
-              <button
-                onClick={() => setIsUsageModalOpen(true)}
-                className="p-2 text-gray-400 hover:text-[#1dd1f5] hover:bg-[#1dd1f5]/10 rounded-lg transition-colors touch-manipulation"
-                title="View storage usage"
-              >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Shared Header */}
+      <AppHeader
+        currentSession={currentSession}
+        sessions={sessions}
+        onNewSession={handleNewSession}
+        onSessionSwitch={switchSession}
+        onSessionRename={renameSession}
+      />
 
       {/* Session Hero */}
       <SessionHero 
@@ -155,30 +195,17 @@ export default function Home() {
         refreshTrigger={currentSession?.lastAccessed}
       />
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
-        <AddressNode 
-          onApiCall={handleApiCall}
-          lastSearchedAddress={nodes.length > 0 ? nodes[nodes.length - 1]?.address : null}
-          hasSearched={nodes.length > 0}
-        />
-        
-        {/* Node Stack */}
-        <div className="mt-4 sm:mt-6 lg:mt-8">
-        <NodeStack 
+      {/* Tab Section */}
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-8">
+        <TabSection
           nodes={nodes}
           onPersonTrace={handlePersonTrace}
           onAddressIntel={handleAddressIntel}
+          onAddressSearch={handleAddressSearch}
+          onStartNodeComplete={handleStartNodeCompleteWrapper}
         />
-        </div>
       </div>
 
-      {/* Usage Modal */}
-      <UsageModal 
-        isOpen={isUsageModalOpen}
-        onClose={() => setIsUsageModalOpen(false)}
-        onSessionSwitch={handleSessionSwitch}
-      />
     </main>
   )
 }
