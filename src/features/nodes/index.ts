@@ -6,4 +6,6 @@ export { default as PersonDetailNode } from './components/PersonDetailNode';
 export { default as PersonListSection } from './components/PersonListSection';
 export { default as NodeStack } from './components/NodeStack';
 export { default as RelationshipIndicator } from './components/RelationshipIndicator';
+export { default as AddNode } from './components/AddNode';
+export { default as InputNode } from './components/InputNode';
 export { default as TitleEdit } from './components/TitleEdit';

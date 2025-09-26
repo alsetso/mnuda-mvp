@@ -7,6 +7,10 @@ import { NodeData, SessionData, sessionStorageService } from '@/features/session
 import { Address } from '../types';
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 import { AddressService } from '@/features/api/services/addressService';
+import { NameSearchService } from '@/features/api/services/nameSearchService';
+import { EmailSearchService } from '@/features/api/services/emailSearchService';
+import { PhoneSearchService } from '@/features/api/services/phoneSearchService';
+import { ZillowSearchService } from '@/features/api/services/zillowSearchService';
 import { apiService } from '@/features/api/services/apiService';
 import { GeocodingService } from '@/features/map/services/geocodingService';
 import { useToast } from '@/features/ui/hooks/useToast';
@@ -124,6 +128,90 @@ export default function MapNodeStackPanel({
       }
     } catch (error) {
       console.error('Address search error:', error);
+    }
+  }, [currentSession, withApiToast, onAddNode]);
+
+  // Handle name search using centralized service
+  const handleNameSearch = useCallback(async (nameData: { firstName: string; middleInitial?: string; lastName: string }) => {
+    if (!currentSession) return;
+    
+    try {
+      const result = await NameSearchService.searchNameWithToast(
+        nameData,
+        currentSession.id,
+        withApiToast
+      );
+
+      if (result.success && result.node) {
+        if (onAddNode) {
+          onAddNode(result.node);
+        }
+      }
+    } catch (error) {
+      console.error('Name search error:', error);
+    }
+  }, [currentSession, withApiToast, onAddNode]);
+
+  // Handle email search using centralized service
+  const handleEmailSearch = useCallback(async (emailData: { email: string }) => {
+    if (!currentSession) return;
+    
+    try {
+      const result = await EmailSearchService.searchEmailWithToast(
+        emailData.email,
+        currentSession.id,
+        withApiToast
+      );
+
+      if (result.success && result.node) {
+        if (onAddNode) {
+          onAddNode(result.node);
+        }
+      }
+    } catch (error) {
+      console.error('Email search error:', error);
+    }
+  }, [currentSession, withApiToast, onAddNode]);
+
+  // Handle phone search using centralized service
+  const handlePhoneSearch = useCallback(async (phoneData: { phone: string }) => {
+    if (!currentSession) return;
+    
+    try {
+      const result = await PhoneSearchService.searchPhoneWithToast(
+        phoneData.phone,
+        currentSession.id,
+        withApiToast
+      );
+
+      if (result.success && result.node) {
+        if (onAddNode) {
+          onAddNode(result.node);
+        }
+      }
+    } catch (error) {
+      console.error('Phone search error:', error);
+    }
+  }, [currentSession, withApiToast, onAddNode]);
+
+  // Handle Zillow search using centralized service
+  const handleZillowSearch = useCallback(async (addressData: { street: string; city: string; state: string; zip: string }) => {
+    if (!currentSession) return;
+    
+    try {
+      const result = await ZillowSearchService.searchZillowWithToast(
+        addressData,
+        currentSession.id,
+        withApiToast
+      );
+
+      if (result.success && result.node) {
+        if (onAddNode) {
+          onAddNode(result.node);
+        }
+      }
+    } catch (error) {
+      console.error('Zillow search error:', error);
     }
   }, [currentSession, withApiToast, onAddNode]);
 
@@ -252,8 +340,13 @@ export default function MapNodeStackPanel({
               onPersonTrace={handlePersonTrace}
               onAddressIntel={handleAddressIntel}
               onAddressSearch={handleAddressSearch}
+              onNameSearch={handleNameSearch}
+              onEmailSearch={handleEmailSearch}
+              onPhoneSearch={handlePhoneSearch}
+              onZillowSearch={handleZillowSearch}
               onStartNodeComplete={handleStartNodeComplete}
               onDeleteNode={onDeleteNode}
+              onAddNode={onAddNode}
               onStartNodeAddressChanged={onStartNodeAddressChanged}
               onUserFoundLocationFound={onUserFoundLocationFound}
               onUserFoundStartTracking={onUserFoundStartTracking}

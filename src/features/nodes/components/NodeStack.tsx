@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import SkipTraceResultNode from './SkipTraceResultNode';
 import PropResultNode from './PropResultNode';
 import PersonDetailNode from './PersonDetailNode';
 import StartNode from './StartNode';
 import UserFoundNode from './UserFoundNode';
+import InputNode from './InputNode';
 import RelationshipIndicator from './RelationshipIndicator';
 import TitleEdit from './TitleEdit';
+import AddNode from './AddNode';
 import { sessionStorageService, NodeData } from '@/features/session/services/sessionStorage';
 
 interface NodeStackProps {
@@ -15,8 +17,13 @@ interface NodeStackProps {
   onPersonTrace?: (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => void;
   onAddressIntel?: (address: { street: string; city: string; state: string; zip: string }, entityId?: string) => void;
   onAddressSearch?: (address: { street: string; city: string; state: string; zip: string }) => void;
+  onNameSearch?: (nameData: { firstName: string; middleInitial?: string; lastName: string }) => void;
+  onEmailSearch?: (emailData: { email: string }) => void;
+  onPhoneSearch?: (phoneData: { phone: string }) => void;
+  onZillowSearch?: (addressData: { street: string; city: string; state: string; zip: string }) => void;
   onStartNodeComplete?: (startNodeId: string) => void;
   onDeleteNode?: (nodeId: string) => void;
+  onAddNode?: (node: NodeData) => void;
   onStartNodeAddressChanged?: (address: { street: string; city: string; state: string; zip: string }) => Promise<void>;
   onUserFoundLocationFound?: (nodeId: string, coords: { lat: number; lng: number }, address?: { street: string; city: string; state: string; zip: string; coordinates?: { latitude: number; longitude: number } }) => void;
   onUserFoundStartTracking?: () => void;
@@ -32,8 +39,13 @@ export default function NodeStack({
   onPersonTrace, 
   onAddressIntel, 
   onAddressSearch, 
+  onNameSearch,
+  onEmailSearch,
+  onPhoneSearch,
+  onZillowSearch,
   onStartNodeComplete, 
   onDeleteNode, 
+  onAddNode,
   onStartNodeAddressChanged,
   onUserFoundLocationFound,
   onUserFoundStartTracking,
@@ -44,10 +56,28 @@ export default function NodeStack({
   userLocation
 }: NodeStackProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const nodeRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Handle title updates
   const handleTitleUpdate = (nodeId: string, newTitle: string) => {
     sessionStorageService.updateNodeTitle(nodeId, newTitle);
+  };
+
+  // Handle scrolling to a newly created node
+  const handleNodeCreated = (nodeId: string) => {
+    // Auto-expand the new node
+    setExpandedNodes(prev => new Set([...prev, nodeId]));
+    
+    // Scroll to the node after a short delay to ensure it's rendered
+    setTimeout(() => {
+      const nodeElement = nodeRefs.current.get(nodeId);
+      if (nodeElement) {
+        nodeElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    }, 100);
   };
 
   // Auto-expand the first node when nodes are added (only if no nodes are currently expanded)
@@ -128,18 +158,81 @@ export default function NodeStack({
         />
       );
     } else if (nodeData.type === 'start') {
-      defaultTitle = 'Address Search';
-      subtitle = 'Skip Trace API';
-      
-      component = (
-        <StartNode 
-          onAddressSearch={onAddressSearch || (() => {})}
-          isSearching={false}
-          hasCompleted={nodeData.hasCompleted || false}
-          initialAddress={nodeData.address}
-          onAddressChanged={onStartNodeAddressChanged}
-        />
-      );
+      // Check if this is a new input node type based on customTitle
+      const customTitle = nodeData.customTitle;
+      if (customTitle && customTitle !== 'Address Search') {
+        // This is a new input node type
+        const nodeTypeMap: Record<string, 'name' | 'email' | 'phone' | 'address' | 'zillow'> = {
+          'Name Search': 'name',
+          'Email Search': 'email',
+          'Phone Search': 'phone',
+          'Address Search': 'address',
+          'Zillow Search': 'zillow'
+        };
+        
+        const nodeType = nodeTypeMap[customTitle];
+        if (nodeType) {
+          defaultTitle = customTitle;
+          subtitle = nodeType === 'zillow' ? 'Zillow API' : 'Skip Trace API';
+          
+          component = (
+            <InputNode
+              nodeType={nodeType}
+              onSearch={(searchData) => {
+                // Handle the search based on node type using the proper handlers
+                switch (nodeType) {
+                  case 'name':
+                    onNameSearch?.(searchData as { firstName: string; middleInitial?: string; lastName: string });
+                    break;
+                  case 'email':
+                    onEmailSearch?.(searchData as { email: string });
+                    break;
+                  case 'phone':
+                    onPhoneSearch?.(searchData as { phone: string });
+                    break;
+                  case 'address':
+                    onAddressSearch?.(searchData as { street: string; city: string; state: string; zip: string });
+                    break;
+                  case 'zillow':
+                    onZillowSearch?.(searchData as { street: string; city: string; state: string; zip: string });
+                    break;
+                }
+              }}
+              isSearching={false}
+              hasCompleted={nodeData.hasCompleted || false}
+              initialData={{}}
+            />
+          );
+        } else {
+          // Fallback to original address search node
+          defaultTitle = 'Address Search';
+          subtitle = 'Skip Trace API';
+          
+          component = (
+            <StartNode 
+              onAddressSearch={onAddressSearch || (() => {})}
+              isSearching={false}
+              hasCompleted={nodeData.hasCompleted || false}
+              initialAddress={nodeData.address}
+              onAddressChanged={onStartNodeAddressChanged}
+            />
+          );
+        }
+      } else {
+        // This is the original address search node
+        defaultTitle = 'Address Search';
+        subtitle = 'Skip Trace API';
+        
+        component = (
+          <StartNode 
+            onAddressSearch={onAddressSearch || (() => {})}
+            isSearching={false}
+            hasCompleted={nodeData.hasCompleted || false}
+            initialAddress={nodeData.address}
+            onAddressChanged={onStartNodeAddressChanged}
+          />
+        );
+      }
     } else if (nodeData.type === 'api-result') {
       defaultTitle = nodeData.apiName || 'API Result';
       subtitle = nodeData.address ? `${nodeData.address.street}, ${nodeData.address.city}, ${nodeData.address.state} ${nodeData.address.zip}` : 'API Result';
@@ -204,6 +297,13 @@ export default function NodeStack({
 
   return (
     <div className="space-y-0 w-full max-w-full overflow-hidden">
+      {/* Add Node Button - positioned above the nodes */}
+      {onAddNode && (
+        <div className="flex justify-center mb-4">
+          <AddNode onAddNode={onAddNode} onNodeCreated={handleNodeCreated} />
+        </div>
+      )}
+      
       {validDisplayNodes.map((node, index) => {
         const isExpanded = expandedNodes.has(node.id);
         const isLast = index === validDisplayNodes.length - 1;
@@ -212,7 +312,17 @@ export default function NodeStack({
         const nodeKey = `${node.id}-${index}`;
         
         return (
-          <div key={nodeKey} className="relative">
+          <div 
+            key={nodeKey} 
+            ref={(el) => {
+              if (el) {
+                nodeRefs.current.set(node.id, el);
+              } else {
+                nodeRefs.current.delete(node.id);
+              }
+            }}
+            className="relative"
+          >
             {/* Connection Line */}
             {!isLast && (
               <div className="absolute left-6 top-12 w-0.5 h-6 bg-gray-300 border-l-2 border-dashed border-gray-400 z-0"></div>
@@ -294,8 +404,8 @@ export default function NodeStack({
                   <div className="w-full max-w-full overflow-hidden">
                     {node.component}
                   </div>
-                  {/* Relationship Indicator - Hide for UserFoundNode and SkipTraceResultNode (included internally) */}
-                  {node.type !== 'userFound' && node.type !== 'api-result' && (
+                  {/* Relationship Indicator - Hide for UserFoundNode, SkipTraceResultNode, and search nodes (start type) */}
+                  {node.type !== 'userFound' && node.type !== 'api-result' && node.type !== 'start' && (
                     <RelationshipIndicator node={nodes.find(n => n.id === node.id)!} allNodes={nodes} />
                   )}
                 </div>

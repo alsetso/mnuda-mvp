@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/features/ui/hooks/useToast';
+import AddressAutocomplete from '@/features/ui/components/AddressAutocomplete';
 
 interface StartNodeProps {
   onAddressSearch: (address: { street: string; city: string; state: string; zip: string }) => void;
@@ -54,6 +55,18 @@ export default function StartNode({ onAddressSearch, isSearching = false, hasCom
     setAddress(newAddress);
     handleAddressChange(newAddress);
   }, [address, handleAddressChange]);
+
+  // Handle address autocomplete selection
+  const handleAddressSelect = useCallback((selectedAddress: { street: string; city: string; state: string; zip: string }) => {
+    const newAddress = {
+      street: selectedAddress.street,
+      city: selectedAddress.city,
+      state: selectedAddress.state,
+      zip: selectedAddress.zip
+    };
+    setAddress(newAddress);
+    handleAddressChange(newAddress);
+  }, [handleAddressChange]);
 
   const handleAddressSearch = async () => {
     if (!address.street || !address.city || !address.state || !address.zip) {
@@ -167,17 +180,13 @@ export default function StartNode({ onAddressSearch, isSearching = false, hasCom
               <label className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
                 Street Address
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={address.street}
-                  onChange={(e) => handleFieldChange('street', e.target.value)}
-                  readOnly={hasCompleted}
-                  placeholder="123 Main Street"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
-                />
-              </div>
-              
+              <AddressAutocomplete
+                value={address.street}
+                onChange={(value) => handleFieldChange('street', value)}
+                onAddressSelect={handleAddressSelect}
+                placeholder="123 Main Street"
+                disabled={hasCompleted}
+              />
             </div>
 
             {/* Address Fields - Horizontal Layout */}

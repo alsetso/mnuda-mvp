@@ -1,5 +1,51 @@
 // Property parsing service for converting raw API responses into formatted data
 
+export interface PriceHistoryEntry {
+  date: string;
+  event: string;
+  price: number;
+  source?: string;
+}
+
+export interface TaxHistoryEntry {
+  year: number;
+  taxPaid: number;
+  assessment: number;
+}
+
+export interface PropertyImage {
+  url: string;
+  caption?: string;
+  type: "hero" | "gallery" | "thumbnail";
+}
+
+export interface AttributionInfo {
+  agentEmail?: string | null;
+  agentLicenseNumber?: string | null;
+  agentName?: string | null;
+  agentPhoneNumber?: string | null;
+  attributionTitle?: string | null;
+  brokerName?: string | null;
+  brokerPhoneNumber?: string | null;
+  buyerAgentMemberStateLicense?: string | null;
+  buyerAgentName?: string | null;
+  buyerBrokerageName?: string | null;
+  coAgentLicenseNumber?: string | null;
+  coAgentName?: string | null;
+  coAgentNumber?: string | null;
+  lastChecked?: string | null;
+  lastUpdated?: string | null;
+  listingAgreement?: string | null;
+  listingAgents?: Array<{ [key: string]: unknown }>;
+  listingAttributionContact?: string | null;
+  listingOffices?: Array<{ [key: string]: unknown }>;
+  mlsDisclaimer?: string | null;
+  mlsId?: string | null;
+  mlsName?: string | null;
+  providerLogo?: string | null;
+  trueStatus?: string | null;
+}
+
 // Define the shape of parsed property details
 export interface PropertyDetails {
   zpid?: string;
@@ -13,16 +59,33 @@ export interface PropertyDetails {
   bedrooms?: number;
   bathrooms?: number;
   livingArea?: number;
+  livingAreaUnits?: string;
   lotSize?: number;
+  lotSizeUnits?: string;
   homeType?: string;
   homeStatus?: string;
   yearBuilt?: number;
   price?: number;
   currency?: string;
   description?: string;
-  image?: string; // main photo
-  url?: string;   // Zillow HDP URL
+  url?: string;
   lastSoldPrice?: number;
+  listingType?: string;
+  listingSubType?: {
+    is_FSBA?: boolean;
+    is_FSBO?: boolean;
+    is_bankOwned?: boolean;
+    is_comingSoon?: boolean;
+    is_forAuction?: boolean;
+    is_foreclosure?: boolean;
+    is_newHome?: boolean;
+  };
+
+  // Extended fields
+  images: PropertyImage[];
+  priceHistory: PriceHistoryEntry[];
+  taxHistory: TaxHistoryEntry[];
+  attributionInfo: AttributionInfo;
 }
 
 export interface PropertyPersonRecord {
@@ -86,35 +149,166 @@ interface PropertyApiResponse {
   url?: string;
   hdpUrl?: string;
   lastSoldPrice?: number;
+  
+  // Extended fields for images, price history, tax history
+  miniCardPhotos?: Array<{ url?: string; caption?: string }>;
+  priceHistory?: Array<{
+    date?: string;
+    time?: string;
+    event?: string;
+    priceChangeReason?: string;
+    price?: number;
+    value?: number;
+    source?: string;
+  }>;
+  taxHistory?: Array<{
+    taxYear?: number;
+    taxPaid?: number;
+    assessedValue?: number;
+  }>;
+  
+  // Additional fields for attribution, listing, and units
+  attributionInfo?: {
+    agentEmail?: string | null;
+    agentLicenseNumber?: string | null;
+    agentName?: string | null;
+    agentPhoneNumber?: string | null;
+    attributionTitle?: string | null;
+    brokerName?: string | null;
+    brokerPhoneNumber?: string | null;
+    buyerAgentMemberStateLicense?: string | null;
+    buyerAgentName?: string | null;
+    buyerBrokerageName?: string | null;
+    coAgentLicenseNumber?: string | null;
+    coAgentName?: string | null;
+    coAgentNumber?: string | null;
+    lastChecked?: string | null;
+    lastUpdated?: string | null;
+    listingAgreement?: string | null;
+    listingAgents?: Array<{ [key: string]: unknown }>;
+    listingAttributionContact?: string | null;
+    listingOffices?: Array<{ [key: string]: unknown }>;
+    mlsDisclaimer?: string | null;
+    mlsId?: string | null;
+    mlsName?: string | null;
+    providerLogo?: string | null;
+    trueStatus?: string | null;
+  };
+  listingTypeDimension?: string;
+  listing_sub_type?: {
+    is_FSBA?: boolean;
+    is_FSBO?: boolean;
+    is_bankOwned?: boolean;
+    is_comingSoon?: boolean;
+    is_forAuction?: boolean;
+    is_foreclosure?: boolean;
+    is_newHome?: boolean;
+  };
+  livingAreaValue?: number;
+  livingAreaUnitsShort?: string;
+  lotAreaUnits?: string;
 }
 
 // Parser function
 export function parseMainProperty(apiResponse: unknown): PropertyDetails {
   const response = apiResponse as PropertyApiResponse;
+  
+  // Check if there's a property object, otherwise use root level
+  const propertyData = (response as { property?: PropertyApiResponse }).property || response;
+  
+  const images: PropertyImage[] = [];
+
+  // Hero images
+  if (propertyData.hiResImageLink) {
+    images.push({ url: propertyData.hiResImageLink, type: "hero" });
+  } else if (propertyData.desktopWebHdpImageLink) {
+    images.push({ url: propertyData.desktopWebHdpImageLink, type: "hero" });
+  }
+
+  // Thumbnails (e.g. from similar listings or miniCardPhotos)
+  (propertyData.miniCardPhotos || []).forEach((p: { url?: string; [key: string]: unknown }) => {
+    if (p.url) {
+      images.push({ url: p.url, type: "thumbnail" });
+    }
+  });
+
+  // Price history (if available) - check property.priceHistory first, then root
+  const priceHistoryData = propertyData.priceHistory || response.priceHistory || [];
+  const priceHistory: PriceHistoryEntry[] = priceHistoryData.map((entry: { [key: string]: unknown }) => ({
+    date: (entry.date as string) || (entry.time as string) || "",
+    event: (entry.event as string) || (entry.priceChangeReason as string) || "",
+    price: (entry.price as number) || (entry.value as number) || 0,
+    source: (entry.source as string) || "Zillow",
+  }));
+
+  // Tax history (if available) - check property.taxHistory first, then root
+  const taxHistoryData = propertyData.taxHistory || response.taxHistory || [];
+  const taxHistory: TaxHistoryEntry[] = taxHistoryData.map((entry: { [key: string]: unknown }) => ({
+    year: (entry.taxYear as number) || 0,
+    taxPaid: (entry.taxPaid as number) || 0,
+    assessment: (entry.assessedValue as number) || 0,
+  }));
+
+  // Attribution info - check property.attributionInfo first, then root
+  const attributionData = propertyData.attributionInfo || response.attributionInfo;
+  const attributionInfo: AttributionInfo = {
+    agentEmail: attributionData?.agentEmail ?? null,
+    agentLicenseNumber: attributionData?.agentLicenseNumber ?? null,
+    agentName: attributionData?.agentName ?? null,
+    agentPhoneNumber: attributionData?.agentPhoneNumber ?? null,
+    attributionTitle: attributionData?.attributionTitle ?? null,
+    brokerName: attributionData?.brokerName ?? null,
+    brokerPhoneNumber: attributionData?.brokerPhoneNumber ?? null,
+    buyerAgentMemberStateLicense: attributionData?.buyerAgentMemberStateLicense ?? null,
+    buyerAgentName: attributionData?.buyerAgentName ?? null,
+    buyerBrokerageName: attributionData?.buyerBrokerageName ?? null,
+    coAgentLicenseNumber: attributionData?.coAgentLicenseNumber ?? null,
+    coAgentName: attributionData?.coAgentName ?? null,
+    coAgentNumber: attributionData?.coAgentNumber ?? null,
+    lastChecked: attributionData?.lastChecked ?? null,
+    lastUpdated: attributionData?.lastUpdated ?? null,
+    listingAgreement: attributionData?.listingAgreement ?? null,
+    listingAgents: attributionData?.listingAgents ?? [],
+    listingAttributionContact: attributionData?.listingAttributionContact ?? null,
+    listingOffices: attributionData?.listingOffices ?? [],
+    mlsDisclaimer: attributionData?.mlsDisclaimer ?? null,
+    mlsId: attributionData?.mlsId ?? null,
+    mlsName: attributionData?.mlsName ?? null,
+    providerLogo: attributionData?.providerLogo ?? null,
+    trueStatus: attributionData?.trueStatus ?? null,
+  };
+
   return {
-    zpid: response.zpid ?? undefined,
-    address: response.address?.streetAddress || response.abbreviatedAddress || "",
-    city: response.address?.city || response.city || "",
-    state: response.address?.state || "",
-    zipcode: response.address?.zipcode || "",
-    county: response.county || "",
-    latitude: response.latitude ?? undefined,
-    longitude: response.longitude ?? undefined,
-    bedrooms: response.bedrooms ?? undefined,
-    bathrooms: response.bathrooms ?? undefined,
-    livingArea: response.livingArea ?? undefined,
-    lotSize: response.lotSize ?? response.lotAreaValue ?? undefined,
-    homeType: response.homeType ?? response.propertyTypeDimension ?? "",
-    homeStatus: response.homeStatus ?? response.keystoneHomeStatus ?? "",
-    yearBuilt: response.yearBuilt ?? undefined,
-    price: response.price ?? response.listPriceLow ?? undefined,
-    currency: response.currency ?? "USD",
-    description: response.description ?? "",
-    image: response.hiResImageLink || response.desktopWebHdpImageLink || "",
-    url: response.hdpUrl
-      ? `https://www.zillow.com${response.hdpUrl}`
-      : undefined,
-    lastSoldPrice: response.lastSoldPrice ?? undefined,
+    zpid: propertyData.zpid ?? undefined,
+    address: propertyData.address?.streetAddress || propertyData.abbreviatedAddress || "",
+    city: propertyData.address?.city || propertyData.city || "",
+    state: propertyData.address?.state || "",
+    zipcode: propertyData.address?.zipcode || "",
+    county: propertyData.county || "",
+    latitude: propertyData.latitude ?? undefined,
+    longitude: propertyData.longitude ?? undefined,
+    bedrooms: propertyData.bedrooms ?? undefined,
+    bathrooms: propertyData.bathrooms ?? undefined,
+    livingArea: propertyData.livingAreaValue ?? propertyData.livingArea ?? undefined,
+    livingAreaUnits: propertyData.livingAreaUnitsShort || "sqft",
+    lotSize: propertyData.lotAreaValue ?? propertyData.lotSize ?? undefined,
+    lotSizeUnits: propertyData.lotAreaUnits || "sqft",
+    homeType: propertyData.homeType ?? propertyData.propertyTypeDimension ?? "",
+    homeStatus: propertyData.homeStatus ?? propertyData.keystoneHomeStatus ?? "",
+    yearBuilt: propertyData.yearBuilt ?? undefined,
+    price: propertyData.price ?? propertyData.listPriceLow ?? propertyData.lastSoldPrice ?? undefined,
+    currency: propertyData.currency ?? "USD",
+    description: propertyData.description ?? "",
+    url: propertyData.hdpUrl ? `https://www.zillow.com${propertyData.hdpUrl}` : undefined,
+    lastSoldPrice: propertyData.lastSoldPrice ?? undefined,
+    listingType: propertyData.listingTypeDimension ?? undefined,
+    listingSubType: propertyData.listing_sub_type || {},
+
+    // Extended fields
+    images,
+    priceHistory,
+    taxHistory,
+    attributionInfo,
   };
 }
 

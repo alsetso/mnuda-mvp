@@ -39,9 +39,6 @@ export default function UserFoundNode({
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [hasReverseGeocoded, setHasReverseGeocoded] = useState(false);
   const [showLocationHistory, setShowLocationHistory] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [lastUpdateTime, setLastUpdateTime] = useState<number | null>(null);
-  const [updateInterval, setUpdateInterval] = useState<number | null>(null);
   const [, setForceUpdate] = useState(0);
   const { withApiToast: _withApiToast } = useToast();
 
@@ -104,15 +101,6 @@ export default function UserFoundNode({
   // Handle location updates during tracking with debouncing
   useEffect(() => {
     if (userLocation && isTracking) {
-      const currentTime = Date.now();
-      
-      // Calculate update interval
-      if (lastUpdateTime) {
-        const interval = currentTime - lastUpdateTime;
-        setUpdateInterval(interval);
-      }
-      setLastUpdateTime(currentTime);
-      
       // Debounce session storage updates to prevent excessive writes
       const debounceTimeout = setTimeout(() => {
         onLocationFound(userLocation);
@@ -126,26 +114,8 @@ export default function UserFoundNode({
       
       return () => clearTimeout(debounceTimeout);
     }
-  }, [userLocation, isTracking, onLocationFound, hasReverseGeocoded, payload?.address, lastUpdateTime, handleLocationFound]);
+  }, [userLocation, isTracking, onLocationFound, hasReverseGeocoded, payload?.address, handleLocationFound]);
 
-  // Countdown timer for next expected update
-  useEffect(() => {
-    if (!isTracking || !updateInterval) return;
-
-    const expectedNextUpdate = updateInterval;
-    setCountdown(expectedNextUpdate / 1000); // Convert to seconds
-
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 0.1) {
-          return expectedNextUpdate / 1000; // Reset countdown
-        }
-        return prev - 0.1;
-      });
-    }, 100);
-
-    return () => clearInterval(timer);
-  }, [isTracking, updateInterval]);
 
   // Debug: Log when userLocation changes
   useEffect(() => {
@@ -282,7 +252,7 @@ export default function UserFoundNode({
               </div>
               
               {payload?.address && (
-                <div className="text-sm text-gray-700 mb-2">
+                <div className="text-sm text-gray-700 mb-1">
                   <div className="font-medium">Address:</div>
                   <div className="text-xs text-gray-500">
                     {payload.address.street && `${payload.address.street}, `}
@@ -312,9 +282,9 @@ export default function UserFoundNode({
           </div>
         ) : (
           /* Active/Ready State - Currently Tracking or Ready */
-          <div className="space-y-3">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2">
+          <div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center space-x-2">
                   <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -334,7 +304,7 @@ export default function UserFoundNode({
               </div>
               
               {/* Real-time coordinates */}
-              <div className="text-sm text-gray-700 mb-2">
+              <div className="text-sm text-gray-700 mb-1">
                 <div className="flex items-center space-x-2">
                   <div className="font-medium">Current Location:</div>
                   {isTracking && userLocation && (
@@ -353,21 +323,14 @@ export default function UserFoundNode({
                   }
                 </div>
                 {isTracking && userLocation && (
-                  <div className="text-xs text-gray-400 mt-1 space-y-1">
+                  <div className="text-xs text-gray-400 mt-1">
                     <div>Updated: {new Date().toLocaleTimeString()}</div>
-                    {updateInterval && (
-                      <div className="flex items-center space-x-2">
-                        <span>Next update in: <span className="font-mono text-blue-600">{countdown.toFixed(1)}s</span></span>
-                        <span className="text-gray-300">•</span>
-                        <span>Interval: <span className="font-mono text-purple-600">{(updateInterval / 1000).toFixed(1)}s</span></span>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
               
               {payload?.address && (
-                <div className="text-sm text-gray-700 mb-2">
+                <div className="text-sm text-gray-700 mb-1">
                   <div className="font-medium">Address:</div>
                   <div className="text-xs text-gray-500">
                     {payload.address.street && `${payload.address.street}, `}
