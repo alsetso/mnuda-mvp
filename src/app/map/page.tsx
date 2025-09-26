@@ -117,13 +117,6 @@ export default function MapPage() {
     [switchSession]
   );
 
-  // Compute start node address
-  const currentAddress = useMemo(() => {
-    if (!currentSession) return null;
-    const startNode = currentSession.nodes.find((n) => n.type === 'start' && (n as NodeData & { address?: Address }).address);
-    if (!startNode) return null;
-    return (startNode as NodeData & { address: Address }).address;
-  }, [currentSession]);
 
   // ---------------------------------------------------------------------------
   // UserFound node lifecycle
@@ -419,7 +412,6 @@ export default function MapPage() {
 
           <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10"><StatusBanner /></div>
           {selectedAddress && !currentSession && <AddressCard title="Selected" address={selectedAddress} />}
-          {currentAddress && currentSession && <AddressCard title="Session" address={currentAddress} />}
           <TrackingFab />
 
           {userLocation && (isTracking || userFoundState === 'active') && (
