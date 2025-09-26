@@ -92,7 +92,7 @@ export const apiService = {
     return response.json();
   },
 
-  async callPersonAPI(personId: string): Promise<unknown> {
+  async callPersonAPI(personId: string, retryCount = 0): Promise<unknown> {
     console.log('Person API - Input person ID:', personId);
     const url = `https://skip-tracing-working-api.p.rapidapi.com/search/detailsbyID?peo_id=${personId}`;
     
@@ -107,6 +107,15 @@ export const apiService = {
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        if (retryCount < 3) {
+          const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+          console.log(`Person API rate limit hit, retrying in ${delay}ms (attempt ${retryCount + 1}/3)`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.callPersonAPI(personId, retryCount + 1);
+        }
+        throw new Error(`Person API rate limit exceeded (429). Please wait before making another request.`);
+      }
       throw new Error(`Person API error: ${response.status}`);
     }
 

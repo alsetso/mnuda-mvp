@@ -66,6 +66,7 @@ export interface PersonEntity extends PersonDetailEntity {
   telephone?: string;
   person_link?: string;
   person_id?: string;
+  apiPersonId?: string;  // External API ID for tracing
 }
 
 export interface ImageEntity extends PersonDetailEntity {
@@ -202,7 +203,14 @@ export const personDetailParseService = {
         estimate: apiResponse.zestimate?.amount,
         source: apiResponse.Source || 'Unknown',
         parentNodeId: parentNodeId,
-        isTraceable: false  // Properties don't have action buttons
+        isTraceable: false,  // Properties don't have action buttons
+        mnEntityId: MnudaIdService.generateEntityId({
+          type: 'property',
+          address: apiResponse.address?.full,
+          city: apiResponse.address?.city,
+          state: apiResponse.address?.state,
+          zip: apiResponse.address?.postal_code
+        }, parentNodeId)
       });
     }
 
@@ -272,7 +280,12 @@ export const personDetailParseService = {
         provider: ph.provider,
         source: apiResponse.Source || 'Unknown',
         parentNodeId: parentNodeId,
-        isTraceable: false  // Phones don't have action buttons
+        isTraceable: false,  // Phones don't have action buttons
+        mnEntityId: MnudaIdService.generateEntityId({
+          type: 'phone',
+          number: ph.phone_number,
+          phone_type: ph.phone_type
+        }, parentNodeId)
       });
     });
 
@@ -285,7 +298,11 @@ export const personDetailParseService = {
         email: e,
         source: apiResponse.Source || 'Unknown',
         parentNodeId: parentNodeId,
-        isTraceable: false  // Emails don't have action buttons
+        isTraceable: false,  // Emails don't have action buttons
+        mnEntityId: MnudaIdService.generateEntityId({
+          type: 'email',
+          email: e
+        }, parentNodeId)
       });
     });
 
@@ -370,7 +387,13 @@ export const personDetailParseService = {
         order: idx,
         source: apiResponse.Source || 'Unknown',
         parentNodeId: parentNodeId,
-        isTraceable: false  // Images don't have action buttons
+        isTraceable: false,  // Images don't have action buttons
+        mnEntityId: MnudaIdService.generateEntityId({
+          type: 'image',
+          url: photo.url,
+          category: 'property_photo',
+          order: idx
+        }, parentNodeId)
       });
     });
 
@@ -384,7 +407,12 @@ export const personDetailParseService = {
         order: 999,
         source: "Google Street View",
         parentNodeId: parentNodeId,
-        isTraceable: false  // Images don't have action buttons
+        isTraceable: false,  // Images don't have action buttons
+        mnEntityId: MnudaIdService.generateEntityId({
+          type: 'image',
+          category: 'street_view',
+          address: apiResponse.address.full
+        }, parentNodeId)
       });
     }
 

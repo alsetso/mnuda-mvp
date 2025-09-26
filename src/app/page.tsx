@@ -1,211 +1,190 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import SessionHero from '@/features/session/components/SessionHero';
-import AppHeader from '@/features/session/components/AppHeader';
-import TabSection from '@/features/ui/components/TabSection';
-import { apiService } from '@/features/api/services/apiService';
-import { useToast } from '@/features/ui/hooks/useToast';
+import Link from 'next/link';
 import { useSessionManager } from '@/features/session/hooks/useSessionManager';
-import { NodeData } from '@/features/session/services/sessionStorage';
-import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
-import { GeocodingService } from '@/features/map/services/geocodingService';
+import AppHeader from '@/features/session/components/AppHeader';
 
 export default function Home() {
-  const [nodes, setNodes] = useState<NodeData[]>([]);
-  const { withApiToast } = useToast();
   const { 
     currentSession, 
     sessions,
-    addNode, 
     createNewSession, 
     switchSession, 
-    renameSession,
-    getCurrentNodes 
+    renameSession
   } = useSessionManager();
-
-  // Initialize nodes from current session
-  useEffect(() => {
-    const currentNodes = getCurrentNodes();
-    // If no nodes exist, create a start node
-    if (currentNodes.length === 0) {
-      const startNode: NodeData = {
-        id: 'start-node',
-        type: 'start',
-        apiName: 'Skip Trace API',
-        timestamp: Date.now(),
-        mnNodeId: MnudaIdService.generateTypedId('node'),
-      };
-      setNodes([startNode]);
-    } else {
-      setNodes(currentNodes);
-    }
-  }, [currentSession, getCurrentNodes]);
-
-  const handleAddressSearch = async (address: { street: string; city: string; state: string; zip: string }) => {
-    try {
-      // Geocode the address first
-      const geocodingResult = await GeocodingService.geocodeAddress(address);
-      const addressWithCoordinates = {
-        ...address,
-        coordinates: geocodingResult.success ? geocodingResult.coordinates : undefined,
-      };
-
-      const response = await withApiToast(
-        'Skip Trace Address Search',
-        () => apiService.callSkipTraceAPI(address),
-        {
-          loadingMessage: `Searching address: ${address.street}, ${address.city}, ${address.state} ${address.zip}`,
-          successMessage: 'Address search completed successfully',
-          errorMessage: 'Failed to search address'
-        }
-      );
-
-      const newNode: NodeData = {
-        id: `api-${Date.now()}`,
-        type: 'api-result',
-        address: addressWithCoordinates,
-        apiName: 'Skip Trace',
-        response,
-        timestamp: Date.now(),
-        mnNodeId: MnudaIdService.generateTypedId('node'),
-      };
-      setNodes(prev => [...prev, newNode]);
-      addNode(newNode);
-    } catch (error) {
-      console.error('Address search error:', error);
-    }
-  };
-
-
-  const handlePersonTrace = (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => {
-    console.log('Main page handlePersonTrace received:', {
-      personId,
-      apiName,
-      parentNodeId,
-      entityId,
-      entityData,
-      timestamp: new Date().toISOString()
-    });
-    
-    const newNode: NodeData = {
-      id: `person-${Date.now()}`,
-      type: 'people-result',
-      personId,
-      personData,
-      apiName,
-      timestamp: Date.now(),
-      mnNodeId: MnudaIdService.generateTypedId('node'),
-      // Establish parent-child relationship if parent is provided
-      parentNodeId: parentNodeId,
-      clickedEntityId: entityId, // Store the entity ID that triggered this node
-      clickedEntityData: entityData, // Store the entity data that triggered this node
-    };
-    
-    console.log('Created newNode with clickedEntityId:', newNode.clickedEntityId);
-    console.log('Created newNode with clickedEntityData:', newNode.clickedEntityData);
-    console.log('Full newNode object:', newNode);
-    
-    // Update parent node to include this child
-    if (parentNodeId) {
-      setNodes(prev => prev.map(node => 
-        node.mnNodeId === parentNodeId 
-          ? { 
-              ...node, 
-              childMnudaIds: [...(node.childMnudaIds || []), newNode.mnNodeId!],
-              entityCount: (node.entityCount || 0) + 1
-            }
-          : node
-      ));
-    }
-    
-    setNodes(prev => [...prev, newNode]);
-    addNode(newNode); // This will trigger refresh automatically
-  };
-
-  const handleAddressIntel = async (address: { street: string; city: string; state: string; zip: string }, entityId?: string) => {
-    try {
-      const response = await withApiToast(
-        'Skip Trace Address Lookup',
-        () => apiService.callSkipTraceAPI(address),
-        {
-          loadingMessage: `Looking up address data for ${address.street}`,
-          successMessage: 'Address data retrieved successfully',
-          errorMessage: 'Failed to retrieve address data'
-        }
-      );
-      
-      const newNode: NodeData = {
-        id: `intel-${Date.now()}`,
-        type: 'api-result',
-        address,
-        apiName: 'Skip Trace',
-        response,
-        timestamp: Date.now(),
-        mnNodeId: MnudaIdService.generateTypedId('node'),
-        clickedEntityId: entityId,
-      };
-      setNodes(prev => [...prev, newNode]);
-      addNode(newNode);
-    } catch (error) {
-      console.error('Skip Trace API call failed:', error);
-    }
-  };
-
-  // Session management handlers
-  const handleNewSession = () => {
-    createNewSession();
-    // Create a new start node for the new session
-    const startNode: NodeData = {
-      id: 'start-node',
-      type: 'start',
-      apiName: 'Skip Trace API',
-      timestamp: Date.now(),
-      mnNodeId: MnudaIdService.generateTypedId('node'),
-    };
-    setNodes([startNode]);
-  };
-
-
-  const handleStartNodeCompleteWrapper = () => {
-    // This will be called by NodeStack when it determines the start node should be completed
-    // We'll find the start node and mark it as completed
-    setNodes(prev => prev.map(node => 
-      node.type === 'start' 
-        ? { ...node, hasCompleted: true }
-        : node
-    ));
-  };
-
   return (
-    <div className="bg-gray-50">
-      {/* Shared Header */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* App Header */}
       <AppHeader
         currentSession={currentSession}
         sessions={sessions}
-        onNewSession={handleNewSession}
+        onNewSession={() => createNewSession()}
         onSessionSwitch={switchSession}
         onSessionRename={renameSession}
+        updateUrl={false}
       />
 
-      {/* Session Hero */}
-      <SessionHero 
-        currentSession={currentSession}
-        onSessionRename={renameSession}
-        refreshTrigger={currentSession?.lastAccessed}
-      />
 
-      {/* Tab Section */}
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-8">
-        <TabSection
-          nodes={nodes}
-          onPersonTrace={handlePersonTrace}
-          onAddressIntel={handleAddressIntel}
-          onAddressSearch={handleAddressSearch}
-          onStartNodeComplete={handleStartNodeCompleteWrapper}
-        />
+      {/* Hero Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+            Free Minnesota Address
+            <span className="text-[#1dd1f5]"> Skip Tracing</span>
+          </h1>
+          <p className="text-xl sm:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Find property owners, contact information, and property details instantly. 
+            No sign-up required. No hidden fees. No data storage.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link 
+              href={currentSession ? `/map?session=${currentSession.id}` : '/map'} 
+              className="bg-[#1dd1f5] text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#014463] transition-colors shadow-lg"
+            >
+              Start Searching Now
+            </Link>
+            <Link 
+              href="/map" 
+              className="bg-white text-[#1dd1f5] border-2 border-[#1dd1f5] px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#1dd1f5] hover:text-white transition-colors"
+            >
+              View Map
+            </Link>
+            <Link 
+              href="/learn-more" 
+              className="border-2 border-[#1dd1f5] text-[#1dd1f5] px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#1dd1f5] hover:text-white transition-colors"
+            >
+              Learn More
+            </Link>
+          </div>
+        </div>
       </div>
 
+      {/* Features Section */}
+      <div className="bg-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Why Choose MNUDA?
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              We believe real estate data should be accessible to everyone
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-[#1dd1f5] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">100% Free</h3>
+              <p className="text-gray-600">
+                No hidden fees, no credit card required, no subscription needed. 
+                Completely free for individual use.
+              </p>
+            </div>
+
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-[#1dd1f5] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Privacy First</h3>
+              <p className="text-gray-600">
+                Your searches stay local. We don&apos;t store your data or track your activity. 
+                Your privacy is protected.
+              </p>
+            </div>
+
+            <div className="text-center p-6">
+              <div className="w-16 h-16 bg-[#1dd1f5] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Instant Results</h3>
+              <p className="text-gray-600">
+                Get property owner information, contact details, and property insights 
+                in seconds, not hours.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* How It Works Section */}
+      <div className="bg-gray-50 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              How It Works
+            </h2>
+            <p className="text-xl text-gray-600">
+              Three simple steps to get the information you need
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-[#1dd1f5] text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                1
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Enter Address</h3>
+              <p className="text-gray-600">
+                Simply type in the property address you want to research
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-[#1dd1f5] text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                2
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Get Results</h3>
+              <p className="text-gray-600">
+                Our system searches multiple databases to find owner information
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-[#1dd1f5] text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                3
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Take Action</h3>
+              <p className="text-gray-600">
+                Use the contact information to reach out to property owners
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="bg-[#1dd1f5] py-20">
+        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Ready to Get Started?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Join thousands of real estate professionals who trust MNUDA for their skip tracing needs
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link 
+              href={currentSession ? `/map?session=${currentSession.id}` : '/map'} 
+              className="bg-white text-[#1dd1f5] px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg"
+            >
+              Start Your First Search
+            </Link>
+            <Link 
+              href="/map" 
+              className="bg-white/20 text-white border-2 border-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-[#1dd1f5] transition-colors"
+            >
+              View Map
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

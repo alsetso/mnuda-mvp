@@ -24,89 +24,144 @@ interface MapboxResponse {
   features: MapboxFeature[];
 }
 
-export const geocodingService = {
+interface GeocodingConfig {
+  baseUrl: string;
+  limit: number;
+  country: string;
+  types: string;
+}
+
+class GeocodingService {
+  private readonly config: GeocodingConfig = {
+    baseUrl: 'https://api.mapbox.com/geocoding/v5/mapbox.places',
+    limit: 5,
+    country: 'US',
+    types: 'address'
+  };
+
+  private readonly isDevelopment = process.env.NODE_ENV === 'development';
+
   async getStreetSuggestions(query: string): Promise<AddressSuggestion[]> {
+    if (!query?.trim()) {
+      return [];
+    }
+
+    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    
+    // Use mock data if no valid token
+    if (!token || token === 'your_mapbox_token_here') {
+      if (this.isDevelopment) {
+        console.warn('Using mock geocoding data - no valid Mapbox token found');
+      }
+      return this.getMockSuggestions(query);
+    }
+
     try {
-      const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-      if (!token || token === 'your_mapbox_token_here') {
-        // Return mock data if no token
-        return this.getMockSuggestions(query);
-      }
+      const suggestions = await this.fetchMapboxSuggestions(query.trim(), token);
+      return suggestions.length > 0 ? suggestions : this.getMockSuggestions(query);
+    } catch (error) {
+      console.error('Geocoding API failed:', error);
+      return this.getMockSuggestions(query);
+    }
+  }
 
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&types=address&limit=5&country=US`
-      );
+  private async fetchMapboxSuggestions(query: string, token: string): Promise<AddressSuggestion[]> {
+    const url = this.buildMapboxUrl(query, token);
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Mapbox API error: ${response.status} ${response.statusText}`);
+    }
 
-      if (!response.ok) {
-        throw new Error('Geocoding request failed');
-      }
+    const data: MapboxResponse = await response.json();
+    return this.transformMapboxFeatures(data.features || []);
+  }
 
-      const data: MapboxResponse = await response.json();
+  private buildMapboxUrl(query: string, token: string): string {
+    const params = new URLSearchParams({
+      access_token: token,
+      types: this.config.types,
+      limit: this.config.limit.toString(),
+      country: this.config.country
+    });
+
+    return `${this.config.baseUrl}/${encodeURIComponent(query)}.json?${params}`;
+  }
+
+  private transformMapboxFeatures(features: MapboxFeature[]): AddressSuggestion[] {
+    return features.map((feature, index) => {
+      const [lng, lat] = feature.center;
+      const addressComponents = this.parseAddressComponents(feature);
       
-      if (data.features && data.features.length > 0) {
-        return data.features.map((feature: MapboxFeature, index: number) => {
-          const [lng, lat] = feature.center;
-          const context = feature.context || [];
-          
-          // Extract address components from Mapbox response
-          const streetNumber = context.find((c) => c.id.startsWith('address'))?.text || '';
-          const streetName = context.find((c) => c.id.startsWith('street'))?.text || '';
-          const city = context.find((c) => c.id.startsWith('place'))?.text || '';
-          const state = context.find((c) => c.id.startsWith('region'))?.text || '';
-          const zip = context.find((c) => c.id.startsWith('postcode'))?.text || '';
-
-          // Build street address with proper house number
-          let street = '';
-          
-          // Try to extract from context first
-          if (streetNumber && streetName) {
-            street = `${streetNumber} ${streetName}`.trim();
-          } else if (streetName) {
-            street = streetName;
-          } else {
-            // Fallback: extract street from the main text or place_name
-            const mainText = feature.text || '';
-            const placeName = feature.place_name || '';
-            
-            // Try to extract the first part (street address) from place_name
-            if (placeName) {
-              const parts = placeName.split(',');
-              street = parts[0] || mainText || '';
-            } else {
-              street = mainText || '';
-            }
-          }
-
-          // Debug logging to see what we're extracting
-          console.log('Mapbox feature:', {
+      if (this.isDevelopment) {
+        console.log('Mapbox feature parsed:', {
+          original: {
             text: feature.text,
             place_name: feature.place_name,
-            context: context.map((c) => ({ id: c.id, text: c.text })),
-            extracted: { streetNumber, streetName, street, city, state, zip }
-          });
-
-          return {
-            id: feature.id || `suggestion-${index}`,
-            street: street,
-            city,
-            state,
-            zip,
-            fullAddress: feature.place_name || feature.text || 'Address',
-            coordinates: [lng, lat]
-          };
+            context: feature.context?.map(c => ({ id: c.id, text: c.text }))
+          },
+          parsed: addressComponents
         });
       }
 
-      return [];
-    } catch (error) {
-      console.error('Geocoding failed:', error);
-      return this.getMockSuggestions(query);
-    }
-  },
+      return {
+        id: feature.id || `mapbox-${index}`,
+        ...addressComponents,
+        fullAddress: feature.place_name || feature.text || 'Unknown Address',
+        coordinates: [lng, lat]
+      };
+    });
+  }
 
-  getMockSuggestions(query: string): AddressSuggestion[] {
-    // Mock data for testing without API key
-    const mockAddresses = [
+  private parseAddressComponents(feature: MapboxFeature): Pick<AddressSuggestion, 'street' | 'city' | 'state' | 'zip'> {
+    const context = feature.context || [];
+    const contextMap = this.createContextMap(context);
+    
+    // Extract components with fallbacks
+    const streetNumber = contextMap.address || '';
+    const streetName = contextMap.street || '';
+    const city = contextMap.place || '';
+    const state = contextMap.region || '';
+    const zip = contextMap.postcode || '';
+
+    // Build street address
+    const street = this.buildStreetAddress(streetNumber, streetName, feature);
+
+    return { street, city, state, zip };
+  }
+
+  private createContextMap(context: Array<{ id: string; text: string }>): Record<string, string> {
+    return context.reduce((map, item) => {
+      const type = item.id.split('.')[0]; // Get the type prefix (e.g., 'address', 'street', etc.)
+      map[type] = item.text;
+      return map;
+    }, {} as Record<string, string>);
+  }
+
+  private buildStreetAddress(streetNumber: string, streetName: string, feature: MapboxFeature): string {
+    // Try to build from components first
+    if (streetNumber && streetName) {
+      return `${streetNumber} ${streetName}`.trim();
+    }
+    
+    if (streetName) {
+      return streetName;
+    }
+
+    // Fallback to extracting from place_name or text
+    const placeName = feature.place_name || '';
+    const mainText = feature.text || '';
+    
+    if (placeName) {
+      // Extract the first part before the first comma (usually the street address)
+      return placeName.split(',')[0]?.trim() || mainText || '';
+    }
+    
+    return mainText || '';
+  }
+
+  private getMockSuggestions(query: string): AddressSuggestion[] {
+    const mockAddresses: AddressSuggestion[] = [
       {
         id: 'mock-1',
         street: '123 Main St',
@@ -114,7 +169,7 @@ export const geocodingService = {
         state: 'NY',
         zip: '10001',
         fullAddress: '123 Main St, New York, NY 10001',
-        coordinates: [-74.006, 40.7128] as [number, number]
+        coordinates: [-74.006, 40.7128]
       },
       {
         id: 'mock-2',
@@ -123,7 +178,7 @@ export const geocodingService = {
         state: 'CA',
         zip: '90210',
         fullAddress: '456 Oak Ave, Los Angeles, CA 90210',
-        coordinates: [-118.2437, 34.0522] as [number, number]
+        coordinates: [-118.2437, 34.0522]
       },
       {
         id: 'mock-3',
@@ -132,7 +187,7 @@ export const geocodingService = {
         state: 'IL',
         zip: '60601',
         fullAddress: '789 Pine Rd, Chicago, IL 60601',
-        coordinates: [-87.6298, 41.8781] as [number, number]
+        coordinates: [-87.6298, 41.8781]
       },
       {
         id: 'mock-4',
@@ -141,7 +196,7 @@ export const geocodingService = {
         state: 'TX',
         zip: '77845',
         fullAddress: '1161 Natchez Dr, College Station, TX 77845',
-        coordinates: [-96.3344, 30.6279] as [number, number]
+        coordinates: [-96.3344, 30.6279]
       },
       {
         id: 'mock-5',
@@ -150,17 +205,24 @@ export const geocodingService = {
         state: 'TX',
         zip: '75061',
         fullAddress: '3828 Double Oak Ln, Irving, TX 75061',
-        coordinates: [-96.9489, 32.8140] as [number, number]
+        coordinates: [-96.9489, 32.8140]
       }
     ];
 
-    const filtered = mockAddresses.filter(addr => 
-      addr.street.toLowerCase().includes(query.toLowerCase()) ||
-      addr.city.toLowerCase().includes(query.toLowerCase())
+    const normalizedQuery = query.toLowerCase().trim();
+    const filtered = mockAddresses.filter(addr =>
+      addr.street.toLowerCase().includes(normalizedQuery) ||
+      addr.city.toLowerCase().includes(normalizedQuery) ||
+      addr.fullAddress.toLowerCase().includes(normalizedQuery)
     );
 
-    console.log('Mock suggestions for query "' + query + '":', filtered);
-    console.log('Mock street fields:', filtered.map(f => ({ id: f.id, street: f.street, fullAddress: f.fullAddress })));
+    if (this.isDevelopment) {
+      console.log(`Mock suggestions for query "${query}":`, filtered.length);
+    }
+
     return filtered;
   }
-};
+}
+
+// Export singleton instance
+export const geocodingService = new GeocodingService();

@@ -1,6 +1,8 @@
 // Simple session storage system for evergreen data capture
 
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
+import { peopleParseService } from '@/features/api/services/peopleParse';
+import { personDetailParseService, ParsedPersonDetailData } from '@/features/api/services/personDetailParse';
 
 export interface SessionData {
   id: string;
@@ -9,11 +11,13 @@ export interface SessionData {
   lastAccessed: number;
   nodes: NodeData[];
   mnudaId?: string; // MNSESSION ID
+  activeUserFoundNodeId?: string; // Track which UserFoundNode is currently active
+  locationTrackingActive: boolean; // Prevent multiple GPS tracking sessions
 }
 
 export interface NodeData {
   id: string;
-  type: 'start' | 'api-result' | 'people-result';
+  type: 'userFound' | 'start' | 'api-result' | 'people-result';
   address?: { 
     street: string; 
     city: string; 
@@ -24,12 +28,36 @@ export interface NodeData {
       longitude: number;
     };
   };
-  apiName: string;
+  apiName?: string;
   response?: unknown;
   personId?: string;
   personData?: unknown;
   timestamp: number;
   hasCompleted?: boolean;
+  
+  // UserFoundNode specific fields
+  status?: 'pending' | 'ready';
+  payload?: {
+    coords: { lat: number; lng: number };
+    address?: { 
+      street: string; 
+      city: string; 
+      state: string; 
+      zip: string;
+      coordinates?: { latitude: number; longitude: number };
+    };
+    locationHistory?: Array<{
+      coords: { lat: number; lng: number };
+      address?: { 
+        street: string; 
+        city: string; 
+        state: string; 
+        zip: string;
+        coordinates?: { latitude: number; longitude: number };
+      };
+      timestamp: number;
+    }>;
+  };
   
   // Simplified 3-ID structure
   mnNodeId: string;                    // Internal node ID (replaces mnudaId)
@@ -65,6 +93,7 @@ export interface EntitySummary {
   properties: number;
   phones: number;
   emails: number;
+  images: number;
 }
 
 class SessionStorageService {
@@ -99,13 +128,26 @@ class SessionStorageService {
   // Create new session
   createSession(name?: string): SessionData {
     const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create UserFoundNode as the first node in every session
+    const userFoundNode: NodeData = {
+      id: 'user-found-node',
+      type: 'userFound',
+      status: 'pending',
+      timestamp: Date.now(),
+      hasCompleted: false,
+      mnNodeId: MnudaIdService.generateTypedId('node'),
+    };
+    
     const session: SessionData = {
       id: sessionId,
-      name: name || `Session ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+      name: name || `New Session ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
       createdAt: Date.now(),
       lastAccessed: Date.now(),
-      nodes: [], // Explicitly initialize as empty array
+      nodes: [userFoundNode], // Start with UserFoundNode
       mnudaId: MnudaIdService.generateTypedId('session'),
+      activeUserFoundNodeId: userFoundNode.id, // Set as active
+      locationTrackingActive: false, // Not tracking yet
     };
 
     const sessions = this.getSessions();
@@ -140,11 +182,12 @@ class SessionStorageService {
     }
 
     // Ensure node has MNuda ID
-    if (!node.mnNodeId) {
-      node.mnNodeId = MnudaIdService.generateTypedId('node');
-    }
+    const nodeWithId = {
+      ...node,
+      mnNodeId: node.mnNodeId || MnudaIdService.generateTypedId('node')
+    };
 
-    session.nodes.push(node);
+    session.nodes.push(nodeWithId);
     session.lastAccessed = Date.now();
     
     const sessions = this.getSessions();
@@ -202,9 +245,9 @@ class SessionStorageService {
     const filteredSessions = sessions.filter(s => s.id !== sessionId);
     this.saveSessions(filteredSessions);
 
-    // If deleting current session, create a new one
+    // If deleting current session, clear the current session
     if (this.getCurrentSessionId() === sessionId) {
-      this.createSession();
+      localStorage.removeItem(this.CURRENT_SESSION_KEY);
     }
   }
 
@@ -227,7 +270,190 @@ class SessionStorageService {
     }
   }
 
-  // Get entity summary from current session
+  // Update UserFoundNode with location data
+  updateUserFoundNode(nodeId: string, coords: { lat: number; lng: number }, address?: { street: string; city: string; state: string; zip: string; coordinates?: { latitude: number; longitude: number } }): void {
+    const session = this.getCurrentSession();
+    if (!session) return;
+
+    const nodeIndex = session.nodes.findIndex(node => node.id === nodeId);
+    if (nodeIndex !== -1 && session.nodes[nodeIndex].type === 'userFound') {
+      const node = session.nodes[nodeIndex];
+      
+      // Initialize location history if it doesn't exist
+      if (!node.payload) {
+        node.payload = { coords, address, locationHistory: [] };
+      }
+      
+      // Add current location to history (only if coordinates changed significantly)
+      const lastEntry = node.payload.locationHistory?.[node.payload.locationHistory.length - 1];
+      const shouldAddToHistory = !lastEntry || 
+        Math.abs(lastEntry.coords.lat - coords.lat) > 0.0001 || 
+        Math.abs(lastEntry.coords.lng - coords.lng) > 0.0001;
+      
+      if (shouldAddToHistory) {
+        const locationEntry = {
+          coords,
+          address: address || lastEntry?.address, // Keep previous address if not provided
+          timestamp: Date.now()
+        };
+        
+        // Add to history (keep last 100 entries to prevent memory issues)
+        if (!node.payload.locationHistory) {
+          node.payload.locationHistory = [];
+        }
+        node.payload.locationHistory.push(locationEntry);
+        if (node.payload.locationHistory.length > 100) {
+          node.payload.locationHistory = node.payload.locationHistory.slice(-100);
+        }
+      }
+      
+      // Always update current location coordinates
+      node.payload.coords = coords;
+      
+      // Only update address if provided (to avoid overwriting with undefined)
+      if (address) {
+        node.payload.address = address;
+      }
+      
+      node.status = 'ready';
+      
+      session.lastAccessed = Date.now();
+      
+      const sessions = this.getSessions();
+      const sessionIndex = sessions.findIndex(s => s.id === session.id);
+      if (sessionIndex !== -1) {
+        sessions[sessionIndex] = session;
+        this.saveSessions(sessions);
+        
+        // Trigger a custom event to notify React components of the update
+        window.dispatchEvent(new CustomEvent('sessionUpdated', { 
+          detail: { sessionId: session.id, nodeId } 
+        }));
+      }
+    }
+  }
+
+  // Mark UserFoundNode as complete when tracking stops
+  completeUserFoundNode(nodeId: string): void {
+    const session = this.getCurrentSession();
+    if (!session) return;
+
+    const nodeIndex = session.nodes.findIndex(node => node.id === nodeId);
+    if (nodeIndex !== -1 && session.nodes[nodeIndex].type === 'userFound') {
+      session.nodes[nodeIndex].hasCompleted = true;
+      session.lastAccessed = Date.now();
+      
+      const sessions = this.getSessions();
+      const sessionIndex = sessions.findIndex(s => s.id === session.id);
+      if (sessionIndex !== -1) {
+        sessions[sessionIndex] = session;
+        this.saveSessions(sessions);
+      }
+    }
+  }
+
+  // Create a new UserFoundNode for additional tracking sessions
+  // Only allows one active UserFoundNode per session
+  createNewUserFoundNode(): NodeData | null {
+    const session = this.getCurrentSession();
+    if (!session) return null;
+    
+    // Check if there's already an active UserFoundNode
+    const hasActiveNode = session.nodes.some(node => 
+      node.type === 'userFound' && 
+      !node.hasCompleted
+    );
+    
+    if (hasActiveNode) {
+      console.warn('Cannot create new UserFoundNode: session already has an active UserFoundNode');
+      return null; // Don't create new one
+    }
+    
+    // Create new UserFoundNode
+    const newUserFoundNode: NodeData = {
+      id: `user-found-node-${Date.now()}`,
+      type: 'userFound',
+      status: 'pending',
+      timestamp: Date.now(),
+      hasCompleted: false,
+      mnNodeId: MnudaIdService.generateTypedId('node'),
+    };
+    
+    // Update session to track this as active
+    session.activeUserFoundNodeId = newUserFoundNode.id;
+    session.locationTrackingActive = false;
+    session.lastAccessed = Date.now();
+    
+    const sessions = this.getSessions();
+    const sessionIndex = sessions.findIndex(s => s.id === session.id);
+    if (sessionIndex !== -1) {
+      sessions[sessionIndex] = session;
+      this.saveSessions(sessions);
+    }
+    
+    return newUserFoundNode;
+  }
+
+  // Start location tracking for the active UserFoundNode
+  startLocationTracking(): boolean {
+    const session = this.getCurrentSession();
+    if (!session || session.locationTrackingActive) return false;
+    
+    session.locationTrackingActive = true;
+    session.lastAccessed = Date.now();
+    
+    const sessions = this.getSessions();
+    const sessionIndex = sessions.findIndex(s => s.id === session.id);
+    if (sessionIndex !== -1) {
+      sessions[sessionIndex] = session;
+      this.saveSessions(sessions);
+    }
+    
+    return true;
+  }
+  
+  // Stop location tracking
+  stopLocationTracking(): void {
+    const session = this.getCurrentSession();
+    if (!session) return;
+    
+    session.locationTrackingActive = false;
+    session.lastAccessed = Date.now();
+    
+    const sessions = this.getSessions();
+    const sessionIndex = sessions.findIndex(s => s.id === session.id);
+    if (sessionIndex !== -1) {
+      sessions[sessionIndex] = session;
+      this.saveSessions(sessions);
+    }
+  }
+  
+  // Get the currently active UserFoundNode
+  getActiveUserFoundNode(): NodeData | null {
+    const session = this.getCurrentSession();
+    if (!session || !session.activeUserFoundNodeId) return null;
+    
+    return session.nodes.find(node => node.id === session.activeUserFoundNodeId) || null;
+  }
+
+  // Delete node from current session
+  deleteNode(nodeId: string): void {
+    const session = this.getCurrentSession();
+    if (!session) return;
+
+    // Remove the node
+    session.nodes = session.nodes.filter(node => node.id !== nodeId);
+    session.lastAccessed = Date.now();
+    
+    const sessions = this.getSessions();
+    const sessionIndex = sessions.findIndex(s => s.id === session.id);
+    if (sessionIndex !== -1) {
+      sessions[sessionIndex] = session;
+      this.saveSessions(sessions);
+    }
+  }
+
+  // Get entity summary from current session using parsed entity data
   getEntitySummary(): EntitySummary {
     const nodes = this.getNodes();
     let total = 0;
@@ -236,41 +462,164 @@ class SessionStorageService {
     let properties = 0;
     let phones = 0;
     let emails = 0;
+    let images = 0;
 
     nodes.forEach(node => {
       if (node.type === 'api-result' && node.response) {
-        // Count entities from API responses
-        if (node.apiName === 'Skip Trace' && (node.response as { people?: unknown[] }).people) {
-          const people = (node.response as { people: unknown[] }).people;
-          persons += people.length || 0;
-          total += people.length || 0;
+        // For SkipTrace API results, use the parsed people data
+        if (node.apiName === 'Skip Trace') {
+          // Use the people parse service to get parsed entities
+          try {
+            const parsedData = peopleParseService.parsePeopleResponse(node.response as Record<string, unknown>, node.mnNodeId);
+            
+            // Count from parsed people data
+            persons += parsedData.people.length;
+            total += parsedData.people.length;
+          } catch (error) {
+            console.warn('Could not parse people data for entity counting:', error);
+            // Fallback to raw response counting
+            const people = (node.response as { people?: unknown[] }).people;
+            if (people) {
+              persons += people.length || 0;
+              total += people.length || 0;
+            }
+          }
         }
         if (node.apiName === 'Zillow Search') {
           properties += 1;
           total += 1;
         }
       } else if (node.type === 'people-result' && node.personData) {
-        // Count entities from person detail responses
-        const data = node.personData as Record<string, unknown[]>;
-        if (data['Current Address Details List']) addresses += data['Current Address Details List'].length;
-        if (data['Previous Address Details']) addresses += data['Previous Address Details'].length;
-        if (data['All Phone Details']) phones += data['All Phone Details'].length;
-        if (data['Email Addresses']) emails += data['Email Addresses'].length;
-        if (data['Person Details']) persons += data['Person Details'].length;
-        if (data['All Relatives']) persons += data['All Relatives'].length;
-        if (data['All Associates']) persons += data['All Associates'].length;
-        
-        total += (data['Current Address Details List']?.length || 0) +
-                (data['Previous Address Details']?.length || 0) +
-                (data['All Phone Details']?.length || 0) +
-                (data['Email Addresses']?.length || 0) +
-                (data['Person Details']?.length || 0) +
-                (data['All Relatives']?.length || 0) +
-                (data['All Associates']?.length || 0);
+        // For person detail results, use the parsed entity data
+        try {
+          let parsedData;
+          
+          // Check if personData is already parsed (has entities array)
+          if (node.personData && typeof node.personData === 'object' && 'entities' in node.personData) {
+            parsedData = node.personData as ParsedPersonDetailData;
+            
+            // Check if any entities are missing mnEntityId and regenerate them
+            const needsRegeneration = parsedData.entities.some(entity => !entity.mnEntityId);
+            if (needsRegeneration) {
+              // Re-parse the raw data to get updated entities with mnEntityId
+              parsedData = personDetailParseService.parsePersonDetailResponse(parsedData.rawResponse, node.mnNodeId);
+            }
+          } else {
+            // Parse the raw person data
+            parsedData = personDetailParseService.parsePersonDetailResponse(node.personData as Record<string, unknown>, node.mnNodeId);
+          }
+          
+          // Count from parsed entities
+          parsedData.entities.forEach(entity => {
+            total += 1;
+            switch (entity.type) {
+              case 'address':
+                addresses += 1;
+                break;
+              case 'person':
+                persons += 1;
+                break;
+              case 'property':
+                properties += 1;
+                break;
+              case 'phone':
+                phones += 1;
+                break;
+              case 'email':
+                emails += 1;
+                break;
+              case 'image':
+                images += 1;
+                break;
+            }
+          });
+        } catch (error) {
+          console.warn('Could not parse person detail data for entity counting:', error);
+          // Fallback to raw response counting
+          const data = node.personData as Record<string, unknown[]>;
+          if (data['Current Address Details List']) addresses += data['Current Address Details List'].length;
+          if (data['Previous Address Details']) addresses += data['Previous Address Details'].length;
+          if (data['All Phone Details']) phones += data['All Phone Details'].length;
+          if (data['Email Addresses']) emails += data['Email Addresses'].length;
+          if (data['Person Details']) persons += data['Person Details'].length;
+          if (data['All Relatives']) persons += data['All Relatives'].length;
+          if (data['All Associates']) persons += data['All Associates'].length;
+          
+          total += (data['Current Address Details List']?.length || 0) +
+                  (data['Previous Address Details']?.length || 0) +
+                  (data['All Phone Details']?.length || 0) +
+                  (data['Email Addresses']?.length || 0) +
+                  (data['Person Details']?.length || 0) +
+                  (data['All Relatives']?.length || 0) +
+                  (data['All Associates']?.length || 0);
+        }
       }
     });
 
-    return { total, addresses, persons, properties, phones, emails };
+    return { total, addresses, persons, properties, phones, emails, images };
+  }
+
+  // Get all entities with their mnEntityId from current session
+  getAllEntities(): Array<{ mnEntityId: string; type: string; parentNodeId: string; data: Record<string, unknown> }> {
+    const nodes = this.getNodes();
+    const allEntities: Array<{ mnEntityId: string; type: string; parentNodeId: string; data: Record<string, unknown> }> = [];
+
+    nodes.forEach(node => {
+      if (node.type === 'api-result' && node.response) {
+        // For SkipTrace API results, get parsed people entities
+        if (node.apiName === 'Skip Trace') {
+          try {
+            const parsedData = peopleParseService.parsePeopleResponse(node.response as Record<string, unknown>, node.mnNodeId);
+            
+            // Add all people entities
+            parsedData.people.forEach(person => {
+              allEntities.push({
+                mnEntityId: person.mnEntityId || `fallback-${Date.now()}-${Math.random()}`,
+                type: 'person',
+                parentNodeId: node.mnNodeId,
+                data: person as unknown as Record<string, unknown>
+              });
+            });
+          } catch (error) {
+            console.warn('Could not parse people data for entity tracking:', error);
+          }
+        }
+      } else if (node.type === 'people-result' && node.personData) {
+        // For person detail results, get parsed entities
+        try {
+          let parsedData;
+          
+          // Check if personData is already parsed (has entities array)
+          if (node.personData && typeof node.personData === 'object' && 'entities' in node.personData) {
+            parsedData = node.personData as ParsedPersonDetailData;
+            
+            // Check if any entities are missing mnEntityId and regenerate them
+            const needsRegeneration = parsedData.entities.some(entity => !entity.mnEntityId);
+            if (needsRegeneration) {
+              // Re-parse the raw data to get updated entities with mnEntityId
+              parsedData = personDetailParseService.parsePersonDetailResponse(parsedData.rawResponse, node.mnNodeId);
+            }
+          } else {
+            // Parse the raw person data
+            parsedData = personDetailParseService.parsePersonDetailResponse(node.personData as Record<string, unknown>, node.mnNodeId);
+          }
+          
+          // Add all parsed entities
+          parsedData.entities.forEach(entity => {
+            allEntities.push({
+              mnEntityId: entity.mnEntityId || `fallback-${Date.now()}-${Math.random()}`,
+              type: entity.type,
+              parentNodeId: node.mnNodeId,
+              data: entity
+            });
+          });
+        } catch (error) {
+          console.warn('Could not parse person detail data for entity tracking:', error);
+        }
+      }
+    });
+
+    return allEntities;
   }
 
   // Get actionable entities (addresses and persons that can be traced)

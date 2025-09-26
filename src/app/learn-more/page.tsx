@@ -5,16 +5,38 @@ import Link from 'next/link';
 
 export default function LearnMorePage() {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     phone: '',
     email: '',
-    notes: ''
+    notes: '',
+    businessName: '',
+    businessUrl: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [useTestMode, setUseTestMode] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 2;
 
+  const validateStep1 = () => {
+    return formData.firstName.trim() !== '' && 
+           formData.lastName.trim() !== '' && 
+           formData.phone.trim() !== '';
+  };
+
+  const handleNext = () => {
+    if (currentStep < totalSteps && validateStep1()) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,10 +51,13 @@ export default function LearnMorePage() {
 
       // Prepare payload with all form inputs
       const payload = {
-        name: formData.name,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         phone: formData.phone,
         email: formData.email,
         notes: formData.notes,
+        businessName: formData.businessName,
+        businessUrl: formData.businessUrl,
         timestamp: new Date().toISOString(),
         source: 'MNUDA Learn More Page',
         mode: useTestMode ? 'test' : 'production'
@@ -60,7 +85,8 @@ export default function LearnMorePage() {
         // Reset form after 3 seconds
         setTimeout(() => {
           setIsSubmitted(false);
-          setFormData({ name: '', phone: '', email: '', notes: '' });
+          setFormData({ firstName: '', lastName: '', phone: '', email: '', notes: '', businessName: '', businessUrl: '' });
+          setCurrentStep(1);
         }, 3000);
       } else {
         const errorText = await response.text();
@@ -118,7 +144,7 @@ export default function LearnMorePage() {
       <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 pb-12">
         {/* Contact Form */}
         <section id="contact-form" className="bg-gray-50 rounded-lg p-6 mb-16">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Submit Your Project
                 </h3>
@@ -133,6 +159,20 @@ export default function LearnMorePage() {
                   <label htmlFor="testMode" className="text-sm text-gray-600">
                     Use Test Webhook
                   </label>
+                </div>
+              </div>
+
+              {/* Progress Indicator */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Step {currentStep} of {totalSteps}</span>
+                  <span className="text-sm text-gray-500">{Math.round((currentStep / totalSteps) * 100)}% Complete</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-[#1dd1f5] h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+                  ></div>
                 </div>
               </div>
               
@@ -150,65 +190,122 @@ export default function LearnMorePage() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-                        placeholder="Your full name"
-                      />
+                  {/* Step 1: Basic Information */}
+                  {currentStep === 1 && (
+                    <div className="space-y-4">
+                      <h4 className="text-md font-medium text-gray-900 mb-4">Basic Information</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                            First Name *
+                          </label>
+                          <input
+                            type="text"
+                            id="firstName"
+                            required
+                            value={formData.firstName}
+                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
+                            placeholder="Your first name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Last Name *
+                          </label>
+                          <input
+                            type="text"
+                            id="lastName"
+                            required
+                            value={formData.lastName}
+                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
+                            placeholder="Your last name"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                          Phone Number *
+                        </label>
+                        <input
+                          type="tel"
+                          id="phone"
+                          required
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
+                          placeholder="(555) 123-4567"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        required
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-                        placeholder="(555) 123-4567"
-                      />
+                  )}
+
+                  {/* Step 2: Project Details */}
+                  {currentStep === 2 && (
+                    <div className="space-y-4">
+                      <h4 className="text-md font-medium text-gray-900 mb-4">Project Details</h4>
+                      
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          required
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
+                          placeholder="your@email.com"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Business Name
+                          </label>
+                          <input
+                            type="text"
+                            id="businessName"
+                            value={formData.businessName}
+                            onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
+                            placeholder="Your business name"
+                          />
+                        </div>
+                        <div>
+                          <label htmlFor="businessUrl" className="block text-sm font-medium text-gray-700 mb-1">
+                            Business Website
+                          </label>
+                          <input
+                            type="url"
+                            id="businessUrl"
+                            value={formData.businessUrl}
+                            onChange={(e) => setFormData({ ...formData, businessUrl: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
+                            placeholder="https://yourwebsite.com"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                          Project Details & Requirements
+                        </label>
+                        <textarea
+                          id="notes"
+                          rows={4}
+                          value={formData.notes}
+                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
+                          placeholder="Tell us about your project, volume needs, specific requirements, timeline, etc."
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-                      placeholder="your@email.com"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                      Project Details & Requirements
-                    </label>
-                    <textarea
-                      id="notes"
-                      rows={4}
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-                      placeholder="Tell us about your project, volume needs, specific requirements, timeline, etc."
-                    />
-                  </div>
+                  )}
                   
                   {submitError && (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -216,14 +313,38 @@ export default function LearnMorePage() {
                     </div>
                   )}
                   
-                  <div className="pt-4">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full bg-[#1dd1f5] text-white py-2 px-4 rounded-md hover:bg-[#014463] focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isSubmitting ? 'Submitting...' : 'Submit Project'}
-                    </button>
+                  {/* Navigation Buttons */}
+                  <div className="pt-4 flex justify-between">
+                    {currentStep > 1 && (
+                      <button
+                        type="button"
+                        onClick={handleBack}
+                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:ring-offset-2 transition-colors"
+                      >
+                        Back
+                      </button>
+                    )}
+                    
+                    <div className="ml-auto">
+                      {currentStep < totalSteps ? (
+                        <button
+                          type="button"
+                          onClick={handleNext}
+                          disabled={!validateStep1()}
+                          className="px-6 py-2 bg-[#1dd1f5] text-white rounded-md hover:bg-[#014463] focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="px-6 py-2 bg-[#1dd1f5] text-white rounded-md hover:bg-[#014463] focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {isSubmitting ? 'Submitting...' : 'Submit Project'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </form>
               )}
@@ -276,45 +397,45 @@ export default function LearnMorePage() {
         <section className="mb-16">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Free for You. Paid for by Businesses.</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="p-6 border border-gray-200 rounded-lg">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+              <div className="w-8 h-8 bg-[#1dd1f5] bg-opacity-10 rounded-lg flex items-center justify-center mb-3">
+                <svg className="w-5 h-5 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Custom Skip Tracing Tools</h3>
-              <p className="text-gray-600">For high-volume teams</p>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Custom Skip Tracing</h3>
+              <p className="text-xs text-gray-600">High-volume team tools</p>
             </div>
             
-            <div className="p-6 border border-gray-200 rounded-lg">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+              <div className="w-8 h-8 bg-[#1dd1f5] bg-opacity-10 rounded-lg flex items-center justify-center mb-3">
+                <svg className="w-5 h-5 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">API Integrations</h3>
-              <p className="text-gray-600">Connect to your CRM or platform</p>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">API Integrations</h3>
+              <p className="text-xs text-gray-600">CRM & platform connections</p>
             </div>
             
-            <div className="p-6 border border-gray-200 rounded-lg">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+              <div className="w-8 h-8 bg-[#1dd1f5] bg-opacity-10 rounded-lg flex items-center justify-center mb-3">
+                <svg className="w-5 h-5 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">White-Label Solutions</h3>
-              <p className="text-gray-600">Your brand, our backend</p>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">White-Label Solutions</h3>
+              <p className="text-xs text-gray-600">Your brand, our backend</p>
             </div>
             
-            <div className="p-6 border border-gray-200 rounded-lg">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+              <div className="w-8 h-8 bg-[#1dd1f5] bg-opacity-10 rounded-lg flex items-center justify-center mb-3">
+                <svg className="w-5 h-5 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Data Analysis & Reporting</h3>
-              <p className="text-gray-600">Turn records into insights</p>
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Data Analysis</h3>
+              <p className="text-xs text-gray-600">Records to insights</p>
             </div>
           </div>
           
@@ -327,27 +448,6 @@ export default function LearnMorePage() {
             We don&apos;t save your skip traces. Everything you run through MNUDA is processed in your browser or stored locally on your own device. That&apos;s why we can keep it free and private.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="text-center p-6 border-2 border-green-200 rounded-lg bg-green-50">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Local Only</h3>
-              <p className="text-gray-600">Your data stays on your device</p>
-            </div>
-            
-            <div className="text-center p-6 border-2 border-red-200 rounded-lg bg-red-50">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Cloud Saved</h3>
-              <p className="text-gray-600">What other tools do</p>
-            </div>
-          </div>
         </section>
 
         {/* 4. Call to Action */}

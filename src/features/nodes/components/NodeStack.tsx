@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import AddressResultNode from './AddressResultNode';
+import SkipTraceResultNode from './SkipTraceResultNode';
 import PropResultNode from './PropResultNode';
 import PersonDetailNode from './PersonDetailNode';
 import StartNode from './StartNode';
+import UserFoundNode from './UserFoundNode';
 import RelationshipIndicator from './RelationshipIndicator';
 import TitleEdit from './TitleEdit';
 import { sessionStorageService, NodeData } from '@/features/session/services/sessionStorage';
@@ -15,9 +16,33 @@ interface NodeStackProps {
   onAddressIntel?: (address: { street: string; city: string; state: string; zip: string }, entityId?: string) => void;
   onAddressSearch?: (address: { street: string; city: string; state: string; zip: string }) => void;
   onStartNodeComplete?: (startNodeId: string) => void;
+  onDeleteNode?: (nodeId: string) => void;
+  onStartNodeAddressChanged?: (address: { street: string; city: string; state: string; zip: string }) => Promise<void>;
+  onUserFoundLocationFound?: (nodeId: string, coords: { lat: number; lng: number }, address?: { street: string; city: string; state: string; zip: string; coordinates?: { latitude: number; longitude: number } }) => void;
+  onUserFoundStartTracking?: () => void;
+  onUserFoundStopTracking?: () => void;
+  onCreateNewLocationSession?: () => void;
+  onContinueToAddressSearch?: () => void;
+  isTracking?: boolean;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
-export default function NodeStack({ nodes, onPersonTrace, onAddressIntel, onAddressSearch, onStartNodeComplete }: NodeStackProps) {
+export default function NodeStack({ 
+  nodes, 
+  onPersonTrace, 
+  onAddressIntel, 
+  onAddressSearch, 
+  onStartNodeComplete, 
+  onDeleteNode, 
+  onStartNodeAddressChanged,
+  onUserFoundLocationFound,
+  onUserFoundStartTracking,
+  onUserFoundStopTracking,
+  onCreateNewLocationSession,
+  onContinueToAddressSearch,
+  isTracking,
+  userLocation
+}: NodeStackProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   // Handle title updates
@@ -76,11 +101,33 @@ export default function NodeStack({ nodes, onPersonTrace, onAddressIntel, onAddr
 
   // Convert NodeData array to display nodes
   const displayNodes = nodes.map((nodeData) => {
+    // Debug: ensure nodeData has valid ID
+    if (!nodeData.id) {
+      console.warn('NodeData missing ID:', nodeData);
+    }
     let defaultTitle = '';
     let subtitle = '';
     let component = null;
 
-    if (nodeData.type === 'start') {
+    if (nodeData.type === 'userFound') {
+      defaultTitle = 'User Location';
+      subtitle = 'Location Services';
+      
+      component = (
+        <UserFoundNode 
+          onLocationFound={(coords, address) => onUserFoundLocationFound?.(nodeData.id, coords, address)}
+          onStartTracking={onUserFoundStartTracking || (() => {})}
+          onStopTracking={onUserFoundStopTracking}
+          onCreateNewLocationSession={onCreateNewLocationSession}
+          onContinueToAddressSearch={onContinueToAddressSearch}
+          isTracking={isTracking || false}
+          userLocation={userLocation}
+          status={nodeData.status || 'pending'}
+          hasCompleted={nodeData.hasCompleted || false}
+          payload={nodeData.payload}
+        />
+      );
+    } else if (nodeData.type === 'start') {
       defaultTitle = 'Address Search';
       subtitle = 'Skip Trace API';
       
@@ -89,44 +136,39 @@ export default function NodeStack({ nodes, onPersonTrace, onAddressIntel, onAddr
           onAddressSearch={onAddressSearch || (() => {})}
           isSearching={false}
           hasCompleted={nodeData.hasCompleted || false}
+          initialAddress={nodeData.address}
+          onAddressChanged={onStartNodeAddressChanged}
         />
       );
     } else if (nodeData.type === 'api-result') {
-      defaultTitle = nodeData.apiName;
+      defaultTitle = nodeData.apiName || 'API Result';
       subtitle = nodeData.address ? `${nodeData.address.street}, ${nodeData.address.city}, ${nodeData.address.state} ${nodeData.address.zip}` : 'API Result';
       
       component = nodeData.apiName === 'Zillow Search' ? (
         <PropResultNode 
-          address={nodeData.address!}
+          address={nodeData.address || { street: '', city: '', state: '', zip: '' }}
           propResponse={nodeData.response}
-          apiName={nodeData.apiName}
+          apiName={nodeData.apiName || 'API Result'}
         />
       ) : (
-        <AddressResultNode
-          address={nodeData.address!}
+        <SkipTraceResultNode
+          address={nodeData.address || { street: '', city: '', state: '', zip: '' }}
           apiResponse={nodeData.response}
-          apiName={nodeData.apiName}
-          onPersonTrace={(personId, personData, apiName) => onPersonTrace?.(personId, personData, apiName, nodeData.mnNodeId)}
+          apiName={nodeData.apiName || 'API Result'}
+          onPersonTrace={(personId, personData, apiName, parentNodeId, entityId, entityData) => onPersonTrace?.(personId, personData, apiName, parentNodeId, entityId, entityData)}
+          node={nodeData}
+          allNodes={nodes}
         />
       );
     } else if (nodeData.type === 'people-result') {
       defaultTitle = 'Person Details';
-      subtitle = `Person ID: ${nodeData.personId}`;
-      
-      console.log('NodeStack creating PersonDetailNode with nodeData:', {
-        personId: nodeData.personId,
-        apiName: nodeData.apiName,
-        mnNodeId: nodeData.mnNodeId,
-        clickedEntityId: nodeData.clickedEntityId,
-        clickedEntityData: nodeData.clickedEntityData,
-        fullNodeData: nodeData
-      });
+      subtitle = 'Individual Profile';
       
       component = (
         <PersonDetailNode
           personId={nodeData.personId!}
           personData={nodeData.personData}
-          apiName={nodeData.apiName}
+          apiName={nodeData.apiName || 'API Result'}
           mnudaId={nodeData.mnNodeId}
           clickedEntityId={nodeData.clickedEntityId}
           clickedEntityData={nodeData.clickedEntityData}
@@ -153,14 +195,24 @@ export default function NodeStack({ nodes, onPersonTrace, onAddressIntel, onAddr
     return null;
   }
 
+  // Filter out any nodes without valid IDs
+  const validDisplayNodes = displayNodes.filter(node => node.id);
+
+  if (validDisplayNodes.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="space-y-0">
-      {displayNodes.map((node, index) => {
+    <div className="space-y-0 w-full max-w-full overflow-hidden">
+      {validDisplayNodes.map((node, index) => {
         const isExpanded = expandedNodes.has(node.id);
-        const isLast = index === displayNodes.length - 1;
+        const isLast = index === validDisplayNodes.length - 1;
+        
+        // Ensure we have a unique key by combining ID with index to handle duplicates
+        const nodeKey = `${node.id}-${index}`;
         
         return (
-          <div key={node.id} className="relative">
+          <div key={nodeKey} className="relative">
             {/* Connection Line */}
             {!isLast && (
               <div className="absolute left-6 top-12 w-0.5 h-6 bg-gray-300 border-l-2 border-dashed border-gray-400 z-0"></div>
@@ -168,10 +220,11 @@ export default function NodeStack({ nodes, onPersonTrace, onAddressIntel, onAddr
             
             {/* Node Header */}
             <div className="relative z-10">
-              <button
-                onClick={() => toggleNode(node.id)}
-                className="w-full flex items-center justify-between p-3 bg-white border-b border-gray-100 hover:bg-gray-25 transition-colors"
-              >
+              <div className="flex items-center bg-white border-b border-gray-100">
+                <button
+                  onClick={() => toggleNode(node.id)}
+                  className="flex-1 flex items-center justify-between p-3 hover:bg-gray-25 transition-colors"
+                >
                 <div className="flex items-center space-x-3">
                   <div className="flex-shrink-0">
                     <div className={`w-3 h-3 rounded-full ${
@@ -214,16 +267,37 @@ export default function NodeStack({ nodes, onPersonTrace, onAddressIntel, onAddr
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
-              </button>
+                </button>
+                {onDeleteNode && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Are you sure you want to delete this node?')) {
+                        onDeleteNode(node.id);
+                      }
+                    }}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    title="Delete node"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
             
             {/* Node Content */}
             {isExpanded && (
-              <div className="ml-6 border-l border-gray-200 pl-3">
-                <div className="bg-white">
-                  {node.component}
-                  {/* Relationship Indicator */}
-                  <RelationshipIndicator node={nodes.find(n => n.id === node.id)!} allNodes={nodes} />
+              <div className="ml-6 border-l border-gray-200 pl-3 w-full max-w-full overflow-hidden">
+                <div className="bg-white w-full max-w-full overflow-hidden">
+                  <div className="w-full max-w-full overflow-hidden">
+                    {node.component}
+                  </div>
+                  {/* Relationship Indicator - Hide for UserFoundNode and SkipTraceResultNode (included internally) */}
+                  {node.type !== 'userFound' && node.type !== 'api-result' && (
+                    <RelationshipIndicator node={nodes.find(n => n.id === node.id)!} allNodes={nodes} />
+                  )}
                 </div>
               </div>
             )}

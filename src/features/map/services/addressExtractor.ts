@@ -31,81 +31,112 @@ export interface AddressSummary {
   addresses: ExtractedAddress[];
 }
 
+// ---------- helpers ----------
+const s = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+const zipSafe = (v: unknown) => s(v);
+const stateSafe = (v: unknown) => s(v).toUpperCase();
+const citySafe = (v: unknown) => s(v);
+const streetSafe = (v: unknown) => s(v);
+
+const makeKey = (a: { street: string; city: string; state: string; zip: string }) =>
+  `${a.street.toLowerCase()}|${a.city.toLowerCase()}|${a.state.toUpperCase()}|${a.zip}`;
+
+const fmtFull = (street: string, city: string, state: string, zip: string) =>
+  [street, city, state, zip].filter(Boolean).join(', ').replace(/\s+,/g, ',');
+
+function pushIfValid(arr: ExtractedAddress[], item: Omit<ExtractedAddress, 'fullAddress'>) {
+  const street = streetSafe(item.street);
+  const city = citySafe(item.city);
+  const state = stateSafe(item.state);
+  const zip = zipSafe(item.zip);
+  if (!street || !city || !state) return; // minimal fields
+  arr.push({ ...item, street, city, state, zip, fullAddress: fmtFull(street, city, state, zip) });
+}
+
+// normalize personData arrays that may come in mixed shapes
+function asArray<T = Record<string, unknown>>(v: unknown): T[] {
+  if (Array.isArray(v)) return v as T[];
+  return [];
+}
+
 export class AddressExtractor {
   // Extract all addresses from session nodes
   static extractAllAddresses(nodes: NodeData[]): ExtractedAddress[] {
     const addresses: ExtractedAddress[] = [];
 
-    nodes.forEach(node => {
-      // 1. Extract search addresses (from node.address)
-      if (node.address) {
-        addresses.push({
+    for (const node of nodes) {
+      // 1) Search/start nodes with node.address
+      const nodeWithAddress = node as NodeData & { address?: { street?: string; city?: string; state?: string; zip?: string; coordinates?: { latitude: number; longitude: number } }; apiName?: string };
+      if (nodeWithAddress.address) {
+        const addr = nodeWithAddress.address;
+
+        pushIfValid(addresses, {
           id: `search-${node.id}`,
           type: 'search',
-          street: node.address.street,
-          city: node.address.city,
-          state: node.address.state,
-          zip: node.address.zip,
-          fullAddress: `${node.address.street}, ${node.address.city}, ${node.address.state} ${node.address.zip}`,
-          coordinates: node.address.coordinates,
-          source: node.apiName,
+          street: streetSafe(addr.street),
+          city: citySafe(addr.city),
+          state: stateSafe(addr.state),
+          zip: zipSafe(addr.zip),
+          coordinates: addr.coordinates,
+          source: nodeWithAddress.apiName || 'start',
           nodeId: node.id,
         });
       }
 
-      // 2. Extract addresses from people results - DIRECT APPROACH
-      if (node.type === 'people-result' && node.personData) {
-        const personData = node.personData as Record<string, unknown>;
-        
-        // Extract current addresses directly
-        if (personData["Current Address Details List"]) {
-          (personData["Current Address Details List"] as Record<string, unknown>[]).forEach((addr: Record<string, unknown>, index: number) => {
-            if (addr.street_address && addr.address_locality && addr.address_region) {
-              const fullAddress = `${addr.street_address}, ${addr.address_locality}, ${addr.address_region} ${addr.postal_code || ''}`.trim();
-              addresses.push({
-                id: `current-${node.id}-${index}`,
-                type: 'current',
-                street: String(addr.street_address || ''),
-                city: String(addr.address_locality || ''),
-                state: String(addr.address_region || ''),
-                zip: String(addr.postal_code || ''),
-                fullAddress,
-                coordinates: undefined,
-                source: String(personData.Source || 'Unknown'),
-                nodeId: node.id,
-                personId: node.personId,
-                dateRange: String(addr.date_range || ''),
-                county: String(addr.county || ''),
-              });
-            }
+      // 2) People nodes: current/previous address lists (two schema possibilities)
+      const nodeWithPersonData = node as NodeData & { personData?: Record<string, unknown>; personId?: string };
+      if (node.type === 'people-result' && nodeWithPersonData.personData) {
+        const pd = nodeWithPersonData.personData;
+
+        // "Current Address Details List" (snake-like keys)
+        const currentList = asArray<Record<string, unknown>>(pd['Current Address Details List']);
+        currentList.forEach((addr, index) => {
+          const street = streetSafe(addr['street_address']);
+          const city = citySafe(addr['address_locality']);
+          const state = stateSafe(addr['address_region']);
+          const zip = zipSafe(addr['postal_code']);
+          if (!street || !city || !state) return;
+          pushIfValid(addresses, {
+            id: `current-${node.id}-${index}`,
+            type: 'current',
+            street,
+            city,
+            state,
+            zip,
+            coordinates: undefined,
+            source: s(pd['Source']) || 'people-api',
+            nodeId: node.id,
+            personId: nodeWithPersonData.personId,
+            dateRange: s(addr['date_range']),
+            county: s(addr['county']),
           });
-        }
-        
-        // Extract previous addresses directly
-        if (personData["Previous Address Details"]) {
-          (personData["Previous Address Details"] as Record<string, unknown>[]).forEach((addr: Record<string, unknown>, index: number) => {
-            if (addr.streetAddress && addr.addressLocality && addr.addressRegion) {
-              const fullAddress = `${addr.streetAddress}, ${addr.addressLocality}, ${addr.addressRegion} ${addr.postalCode || ''}`.trim();
-              addresses.push({
-                id: `previous-${node.id}-${index}`,
-                type: 'previous',
-                street: String(addr.streetAddress || ''),
-                city: String(addr.addressLocality || ''),
-                state: String(addr.addressRegion || ''),
-                zip: String(addr.postalCode || ''),
-                fullAddress,
-                coordinates: undefined,
-                source: String(personData.Source || 'Unknown'),
-                nodeId: node.id,
-                personId: node.personId,
-                timespan: String(addr.timespan || ''),
-                county: String(addr.county || ''),
-              });
-            }
+        });
+
+        // "Previous Address Details" (camel-like keys)
+        const prevList = asArray<Record<string, unknown>>(pd['Previous Address Details']);
+        prevList.forEach((addr, index) => {
+          const street = streetSafe(addr['streetAddress']);
+          const city = citySafe(addr['addressLocality']);
+          const state = stateSafe(addr['addressRegion']);
+          const zip = zipSafe(addr['postalCode']);
+          if (!street || !city || !state) return;
+          pushIfValid(addresses, {
+            id: `previous-${node.id}-${index}`,
+            type: 'previous',
+            street,
+            city,
+            state,
+            zip,
+            coordinates: undefined,
+            source: s(pd['Source']) || 'people-api',
+            nodeId: node.id,
+            personId: nodeWithPersonData.personId,
+            timespan: s(addr['timespan']),
+            county: s(addr['county']),
           });
-        }
+        });
       }
-    });
+    }
 
     return addresses;
   }
@@ -113,81 +144,77 @@ export class AddressExtractor {
   // Get address summary with counts
   static getAddressSummary(nodes: NodeData[]): AddressSummary {
     const addresses = this.extractAllAddresses(nodes);
-    
     return {
       total: addresses.length,
-      search: addresses.filter(addr => addr.type === 'search').length,
-      current: addresses.filter(addr => addr.type === 'current').length,
-      previous: addresses.filter(addr => addr.type === 'previous').length,
-      withCoordinates: addresses.filter(addr => addr.coordinates).length,
+      search: addresses.filter((a) => a.type === 'search').length,
+      current: addresses.filter((a) => a.type === 'current').length,
+      previous: addresses.filter((a) => a.type === 'previous').length,
+      withCoordinates: addresses.filter((a) => a.coordinates).length,
       addresses,
     };
   }
 
-  // Geocode addresses that don't have coordinates
+  // Geocode addresses that don't have coordinates (deduped + key-mapped)
   static async geocodeMissingAddresses(addresses: ExtractedAddress[]): Promise<ExtractedAddress[]> {
-    const addressesToGeocode = addresses.filter(addr => !addr.coordinates);
-    
-    if (addressesToGeocode.length === 0) {
-      return addresses;
+    const missing = addresses.filter((a) => !a.coordinates);
+
+    if (missing.length === 0) return addresses;
+
+    // dedupe by canonical key
+    const uniqueByKey = new Map<string, { street: string; city: string; state: string; zip: string }>();
+    for (const a of missing) {
+      const key = makeKey(a);
+      if (!uniqueByKey.has(key)) {
+        uniqueByKey.set(key, {
+          street: a.street,
+          city: a.city,
+          state: a.state,
+          zip: a.zip,
+        });
+      }
     }
 
-    // Batch geocode missing addresses
-    const geocodingResults = await GeocodingService.geocodeAddresses(
-      addressesToGeocode.map(addr => ({
-        street: addr.street,
-        city: addr.city,
-        state: addr.state,
-        zip: addr.zip,
-      }))
-    );
+    // batch geocode
+    const payload = Array.from(uniqueByKey.values());
+    const results = await GeocodingService.geocodeAddresses(payload);
 
-    // Update addresses with coordinates
-    return addresses.map(addr => {
-      if (!addr.coordinates) {
-        const index = addressesToGeocode.findIndex(a => a.id === addr.id);
-        const geocodingResult = geocodingResults[index];
-        
-        if (geocodingResult && geocodingResult.success && geocodingResult.coordinates) {
-          return {
-            ...addr,
-            coordinates: geocodingResult.coordinates,
-          };
-        }
-      }
-      return addr;
+    // map results back by key
+    const keys = Array.from(uniqueByKey.keys());
+    const coordByKey = new Map<string, { latitude: number; longitude: number } | undefined>();
+    for (let i = 0; i < keys.length; i++) {
+      const r = results[i];
+      coordByKey.set(keys[i], r?.success ? r.coordinates : undefined);
+    }
+
+    // apply to originals
+    return addresses.map((a) => {
+      if (a.coordinates) return a;
+      const key = makeKey(a);
+      const coords = coordByKey.get(key);
+      return coords ? { ...a, coordinates: coords } : a;
     });
   }
 
-  // Get unique addresses (remove duplicates)
+  // Get unique addresses (remove duplicates; prefer entries with coordinates)
   static getUniqueAddresses(addresses: ExtractedAddress[]): ExtractedAddress[] {
-    const uniqueMap = new Map<string, ExtractedAddress>();
-    
-    addresses.forEach(addr => {
-      const key = `${addr.street.toLowerCase()}|${addr.city.toLowerCase()}|${addr.state.toLowerCase()}|${addr.zip}`;
-      
-      if (!uniqueMap.has(key)) {
-        uniqueMap.set(key, addr);
-      } else {
-        // If we have a duplicate, prefer the one with coordinates
-        const existing = uniqueMap.get(key)!;
-        if (!existing.coordinates && addr.coordinates) {
-          uniqueMap.set(key, addr);
-        }
-      }
-    });
-    
-    return Array.from(uniqueMap.values());
+    const best = new Map<string, ExtractedAddress>();
+    for (const a of addresses) {
+      const key = makeKey(a);
+      const curr = best.get(key);
+      if (!curr) best.set(key, a);
+      else if (!curr.coordinates && a.coordinates) best.set(key, a);
+    }
+    return Array.from(best.values());
   }
 
   // Filter addresses by type
   static filterAddressesByType(addresses: ExtractedAddress[], types: ('search' | 'current' | 'previous')[]): ExtractedAddress[] {
-    return addresses.filter(addr => types.includes(addr.type));
+    return addresses.filter((a) => types.includes(a.type));
   }
 
   // Get addresses with coordinates only
   static getAddressesWithCoordinates(addresses: ExtractedAddress[]): ExtractedAddress[] {
-    return addresses.filter(addr => addr.coordinates);
+    return addresses.filter((a) => a.coordinates);
   }
 
   // Get address statistics
@@ -195,20 +222,21 @@ export class AddressExtractor {
     const stats = {
       total: addresses.length,
       byType: {
-        search: addresses.filter(addr => addr.type === 'search').length,
-        current: addresses.filter(addr => addr.type === 'current').length,
-        previous: addresses.filter(addr => addr.type === 'previous').length,
+        search: addresses.filter((a) => a.type === 'search').length,
+        current: addresses.filter((a) => a.type === 'current').length,
+        previous: addresses.filter((a) => a.type === 'previous').length,
       },
-      withCoordinates: addresses.filter(addr => addr.coordinates).length,
+      withCoordinates: addresses.filter((a) => a.coordinates).length,
       byState: {} as Record<string, number>,
       byCity: {} as Record<string, number>,
     };
 
-    // Count by state and city
-    addresses.forEach(addr => {
-      stats.byState[addr.state] = (stats.byState[addr.state] || 0) + 1;
-      stats.byCity[addr.city] = (stats.byCity[addr.city] || 0) + 1;
-    });
+    for (const a of addresses) {
+      const state = a.state.toUpperCase();
+      const city = a.city.toLowerCase();
+      stats.byState[state] = (stats.byState[state] || 0) + 1;
+      stats.byCity[city] = (stats.byCity[city] || 0) + 1;
+    }
 
     return stats;
   }

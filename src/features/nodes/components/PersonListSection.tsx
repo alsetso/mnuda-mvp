@@ -3,12 +3,12 @@
 import { PersonRecord } from '@/features/api/services/peopleParse';
 import EntityCard from './EntityCard';
 
-interface PersonListNodeProps {
+interface PersonListSectionProps {
   records: PersonRecord[];
   onPersonTrace?: (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => void;
 }
 
-export default function PersonListNode({ records, onPersonTrace }: PersonListNodeProps) {
+export default function PersonListSection({ records, onPersonTrace }: PersonListSectionProps) {
   if (!records || records.length === 0) {
     return (
       <div className="px-6 py-4 border-b border-gray-200">
@@ -35,7 +35,14 @@ export default function PersonListNode({ records, onPersonTrace }: PersonListNod
 
         <div className="space-y-1.5">
         {records.map((person, index) => (
-          <EntityCard key={`person-${index}`} entity={person} onPersonTrace={onPersonTrace} />
+          <div key={`person-${index}`} className="flex items-center space-x-2">
+            <div className="flex-1">
+              <EntityCard entity={person} onPersonTrace={onPersonTrace} />
+            </div>
+            <div className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-1 rounded">
+              {person.mnEntityId}
+            </div>
+          </div>
         ))}
       </div>
     </div>

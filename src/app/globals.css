@@ -59,3 +59,8 @@ body {
   position: absolute;
   transform: translate(-50%, -50%);
 }
+
+/* Hide Mapbox attribution (including "Improve this map" text) */
+.mapboxgl-ctrl-attrib {
+  display: none !important;
+}

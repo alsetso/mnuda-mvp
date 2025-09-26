@@ -1,29 +1,12 @@
-// React hook for geocoding addresses
+// Thin state wrapper for geocoding service
 import { useState, useCallback } from 'react';
-import { GeocodingService, AddressWithCoordinates, GeocodingResult } from '../services/geocodingService';
+import { GeocodingService } from '../services/geocodingService';
+import { Address, AddressWithCoordinates, GeocodingResult } from '../types';
 
 export interface UseGeocodingReturn {
-  geocodeAddress: (address: {
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-  }) => Promise<GeocodingResult>;
-  
-  geocodeAddresses: (addresses: Array<{
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-  }>) => Promise<GeocodingResult[]>;
-  
-  addCoordinatesToAddress: (address: {
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-  }) => Promise<AddressWithCoordinates>;
-  
+  geocodeAddress: (address: Address) => Promise<GeocodingResult>;
+  geocodeAddresses: (addresses: Address[]) => Promise<GeocodingResult[]>;
+  addCoordinatesToAddress: (address: Address) => Promise<AddressWithCoordinates>;
   isLoading: boolean;
   error: string | null;
   clearError: () => void;
@@ -37,12 +20,7 @@ export function useGeocoding(): UseGeocodingReturn {
     setError(null);
   }, []);
 
-  const geocodeAddress = useCallback(async (address: {
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-  }): Promise<GeocodingResult> => {
+  const geocodeAddress = useCallback(async (address: Address): Promise<GeocodingResult> => {
     setIsLoading(true);
     setError(null);
     
@@ -62,12 +40,7 @@ export function useGeocoding(): UseGeocodingReturn {
     }
   }, []);
 
-  const geocodeAddresses = useCallback(async (addresses: Array<{
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-  }>): Promise<GeocodingResult[]> => {
+  const geocodeAddresses = useCallback(async (addresses: Address[]): Promise<GeocodingResult[]> => {
     setIsLoading(true);
     setError(null);
     
@@ -87,12 +60,7 @@ export function useGeocoding(): UseGeocodingReturn {
     }
   }, []);
 
-  const addCoordinatesToAddress = useCallback(async (address: {
-    street: string;
-    city: string;
-    state: string;
-    zip: string;
-  }): Promise<AddressWithCoordinates> => {
+  const addCoordinatesToAddress = useCallback(async (address: Address): Promise<AddressWithCoordinates> => {
     setIsLoading(true);
     setError(null);
     

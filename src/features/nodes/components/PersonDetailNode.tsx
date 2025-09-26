@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { personDetailParseService, ParsedPersonDetailData, PersonDetailEntity, AddressEntity } from '@/features/api/services/personDetailParse';
-import { useToast } from '@/features/ui/hooks/useToast';
-import { useGeocoding } from '@/features/map/hooks/useGeocoding';
+import { useState } from 'react';
+import { personDetailParseService, ParsedPersonDetailData } from '@/features/api/services/personDetailParse';
+import EntityCard from './EntityCard';
 
 interface PersonDetailNodeProps {
   personId: string;
@@ -19,17 +18,47 @@ interface PersonDetailNodeProps {
 export default function PersonDetailNode({ personId, personData, apiName, mnudaId, clickedEntityId, clickedEntityData, onAddressIntel, onPersonTrace }: PersonDetailNodeProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
   
-  // Debug logging
-  console.log('PersonDetailNode received clickedEntityId:', clickedEntityId);
-  console.log('PersonDetailNode received clickedEntityData:', clickedEntityData);
-  console.log('PersonDetailNode props:', { personId, apiName, mnudaId, clickedEntityId, clickedEntityData });
-  
-  // Parse the person detail data
-  const parsedData: ParsedPersonDetailData = personDetailParseService.parsePersonDetailResponse(personData as import('@/features/api/services/personDetailParse').SkipTracePersonDetailResponse, mnudaId || 'person-detail-node');
+  // Parse the person detail data if it's not already parsed
+  let parsedData: ParsedPersonDetailData;
+  try {
+    // Check if personData is already parsed (has entities array)
+    if (personData && typeof personData === 'object' && 'entities' in personData) {
+      parsedData = personData as ParsedPersonDetailData;
+      
+      // Check if any entities are missing mnEntityId and regenerate them
+      const needsRegeneration = parsedData.entities.some(entity => !entity.mnEntityId);
+      if (needsRegeneration) {
+        console.log('Regenerating mnEntityId for existing entities');
+        // Re-parse the raw data to get updated entities with mnEntityId
+        parsedData = personDetailParseService.parsePersonDetailResponse(parsedData.rawResponse, mnudaId || 'unknown');
+      }
+    } else {
+      // Parse the raw person data
+      parsedData = personDetailParseService.parsePersonDetailResponse(personData as Record<string, unknown>, mnudaId || 'unknown');
+    }
+  } catch (error) {
+    console.error('Error parsing person detail data:', error);
+    // Fallback to empty structure
+    parsedData = {
+      entities: [],
+      totalEntities: 0,
+      entityCounts: {
+        properties: 0,
+        addresses: 0,
+        phones: 0,
+        emails: 0,
+        persons: 0,
+        images: 0
+      },
+      rawResponse: personData as Record<string, unknown>,
+      source: 'Unknown'
+    };
+  }
   
   // Find the person entity that has the API person ID to get its entity ID
-  const personEntity = parsedData.entities.find(entity => 
+  const personEntity = parsedData.entities?.find(entity => 
     entity.type === 'person' && entity.apiPersonId === personId
   );
   
@@ -39,7 +68,11 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
     clickedEntityId,
     clickedEntityData,
     personEntity,
-    allPersonEntities: parsedData.entities.filter(e => e.type === 'person')
+    allPersonEntities: parsedData.entities?.filter(e => e.type === 'person') || [],
+    parsedDataStructure: {
+      hasEntities: !!parsedData.entities,
+      entitiesLength: parsedData.entities?.length || 0
+    }
   });
   
   // Extract person info from clickedEntityData for inline display
@@ -48,16 +81,18 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
   const personAge = personInfo?.age ? Number(personInfo.age) : undefined;
   const livesIn = personInfo?.lives_in ? String(personInfo.lives_in) : undefined;
   const usedToLiveIn = personInfo?.used_to_live_in ? String(personInfo.used_to_live_in) : undefined;
+  const born = personInfo?.born ? String(personInfo.born) : undefined;
+  const telephone = personInfo?.telephone ? String(personInfo.telephone) : undefined;
   
 
   // Group entities by type
   const groupedEntities = {
-    properties: parsedData.entities.filter(e => e.type === 'property'),
-    addresses: parsedData.entities.filter(e => e.type === 'address'),
-    phones: parsedData.entities.filter(e => e.type === 'phone'),
-    emails: parsedData.entities.filter(e => e.type === 'email'),
-    persons: parsedData.entities.filter(e => e.type === 'person'),
-    images: parsedData.entities.filter(e => e.type === 'image'),
+    properties: parsedData.entities?.filter(e => e.type === 'property') || [],
+    addresses: parsedData.entities?.filter(e => e.type === 'address') || [],
+    phones: parsedData.entities?.filter(e => e.type === 'phone') || [],
+    emails: parsedData.entities?.filter(e => e.type === 'email') || [],
+    persons: parsedData.entities?.filter(e => e.type === 'person') || [],
+    images: parsedData.entities?.filter(e => e.type === 'image') || [],
   };
 
   const toggleGroup = (groupName: string) => {
@@ -114,6 +149,20 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
             <div className="flex items-center space-x-1">
               <span className="text-gray-500">📍</span>
               <span className="text-gray-700">Used to live in {usedToLiveIn}</span>
+            </div>
+          )}
+          
+          {born && (
+            <div className="flex items-center space-x-1">
+              <span className="text-gray-500">🎂</span>
+              <span className="text-gray-700">Born {born}</span>
+            </div>
+          )}
+          
+          {telephone && (
+            <div className="flex items-center space-x-1">
+              <span className="text-gray-500">📞</span>
+              <span className="text-gray-700">{telephone}</span>
             </div>
           )}
         </div>
@@ -256,7 +305,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
               onToggle={() => toggleGroup('properties')}
             >
               {groupedEntities.properties.map((entity, index) => (
-                <FlatEntityCard key={`property-${index}`} entity={entity} />
+                <EntityCard key={`property-${index}`} entity={entity} showTechnicalDetails={showTechnicalDetails} />
               ))}
             </EntityGroup>
           )}
@@ -271,7 +320,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
               onToggle={() => toggleGroup('addresses')}
             >
               {groupedEntities.addresses.map((entity, index) => (
-                <FlatEntityCard key={`address-${index}`} entity={entity} onAddressIntel={onAddressIntel} />
+                <EntityCard key={`address-${index}`} entity={entity} onAddressIntel={onAddressIntel} showTechnicalDetails={showTechnicalDetails} />
               ))}
             </EntityGroup>
           )}
@@ -286,7 +335,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
               onToggle={() => toggleGroup('phones')}
             >
               {groupedEntities.phones.map((entity, index) => (
-                <FlatEntityCard key={`phone-${index}`} entity={entity} />
+                <EntityCard key={`phone-${index}`} entity={entity} showTechnicalDetails={showTechnicalDetails} />
               ))}
             </EntityGroup>
           )}
@@ -301,7 +350,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
               onToggle={() => toggleGroup('emails')}
             >
               {groupedEntities.emails.map((entity, index) => (
-                <FlatEntityCard key={`email-${index}`} entity={entity} />
+                <EntityCard key={`email-${index}`} entity={entity} showTechnicalDetails={showTechnicalDetails} />
               ))}
             </EntityGroup>
           )}
@@ -316,7 +365,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
               onToggle={() => toggleGroup('persons')}
             >
               {groupedEntities.persons.map((entity, index) => (
-                <FlatEntityCard key={`person-${index}`} entity={entity} onPersonTrace={onPersonTrace} />
+                <EntityCard key={`person-${index}`} entity={entity} onPersonTrace={onPersonTrace} showTechnicalDetails={showTechnicalDetails} />
               ))}
             </EntityGroup>
           )}
@@ -331,7 +380,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
               onToggle={() => toggleGroup('images')}
             >
               {groupedEntities.images.map((entity, index) => (
-                <FlatEntityCard key={`image-${index}`} entity={entity} />
+                <EntityCard key={`image-${index}`} entity={entity} showTechnicalDetails={showTechnicalDetails} />
               ))}
             </EntityGroup>
           )}
@@ -359,12 +408,13 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
         )}
       </div>
 
-       {/* Relationship Section */}
-       <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-t border-gray-100">
-         <div className="flex items-center justify-between mb-3">
-           <h4 className="text-sm font-medium text-gray-900">🔗 Relationship Context</h4>
-           <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">MNuda ID System</span>
-         </div>
+       {/* Technical Details Section - Hidden by default */}
+       {showTechnicalDetails && (
+         <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-t border-gray-100">
+           <div className="flex items-center justify-between mb-3">
+             <h4 className="text-sm font-medium text-gray-900">🔗 Technical Details</h4>
+             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Debug Info</span>
+           </div>
         <div className="bg-blue-50 border border-blue-200 rounded p-3 sm:p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
             <div>
@@ -405,6 +455,20 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
             </p>
           </div>
         </div>
+      </div>
+      )}
+
+      {/* Toggle button for technical details */}
+      <div className="px-3 sm:px-4 lg:px-6 py-2 border-t border-gray-100">
+        <button
+          onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
+          className="text-xs text-gray-500 hover:text-gray-700 flex items-center space-x-1"
+        >
+          <span>{showTechnicalDetails ? 'Hide' : 'Show'} Technical Details</span>
+          <svg className={`w-3 h-3 transition-transform ${showTechnicalDetails ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
       </div>
     </div>
   );
@@ -465,286 +529,5 @@ function EntityGroup({
         </div>
       )}
     </div>
-  );
-}
-
-// Flat Entity Card component for clean list display
-function FlatEntityCard({ 
-  entity, 
-  onAddressIntel, 
-  onPersonTrace
-}: { 
-  entity: PersonDetailEntity;
-  onAddressIntel?: (address: { street: string; city: string; state: string; zip: string }, entityId?: string) => void;
-  onPersonTrace?: (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => void;
-}) {
-  const { withApiToast } = useToast();
-  const { geocodeAddress, isLoading: isGeocoding } = useGeocoding();
-  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Auto-geocode address entities
-  useEffect(() => {
-    if (entity.type === 'address' && !entity.coordinates) {
-      const addressEntity = entity as AddressEntity;
-      if (addressEntity.street && addressEntity.city && addressEntity.state) {
-        geocodeAddress({
-          street: addressEntity.street,
-          city: addressEntity.city,
-          state: addressEntity.state,
-          zip: addressEntity.postal || '',
-        }).then(result => {
-          if (result.success && result.coordinates) {
-            setCoordinates(result.coordinates);
-          }
-        });
-      }
-    } else if (entity.type === 'address' && entity.coordinates) {
-      setCoordinates(entity.coordinates as { latitude: number; longitude: number });
-    }
-  }, [entity, geocodeAddress]);
-  const getTypeLabelColor = (type: string) => {
-    switch (type) {
-      case 'property': return 'bg-slate-100 text-slate-600';
-      case 'address': return 'bg-slate-100 text-slate-600';
-      case 'phone': return 'bg-slate-100 text-slate-600';
-      case 'email': return 'bg-slate-100 text-slate-600';
-      case 'person': return 'bg-slate-100 text-slate-600';
-      case 'image': return 'bg-slate-100 text-slate-600';
-      default: return 'bg-slate-100 text-slate-600';
-    }
-  };
-
-  const formatEntityData = (entity: PersonDetailEntity) => {
-    const { ...data } = entity;
-    return Object.entries(data)
-      .filter(([, value]) => value !== undefined && value !== null && value !== '')
-      .map(([key, value]) => ({ key, value }));
-  };
-
-  const getPrimaryValue = (entity: PersonDetailEntity): string => {
-    switch (entity.type) {
-      case 'property': return String(entity.address || 'Property');
-      case 'address': return `${entity.street || ''} ${entity.city || ''} ${entity.state || ''}`.trim() || 'Address';
-      case 'phone': return String(entity.number || 'Phone');
-      case 'email': return String(entity.email || 'Email');
-      case 'person': return String(entity.name || 'Person');
-      case 'image': return String(entity.caption || 'Image');
-      default: return 'Entity';
-    }
-  };
-
-  const handleAddressIntel = () => {
-    if (entity.type === 'address' && onAddressIntel) {
-      const address = {
-        street: String(entity.street || ''),
-        city: String(entity.city || ''),
-        state: String(entity.state || ''),
-        zip: String(entity.postal || '')
-      };
-      onAddressIntel(address, entity.mnEntityId);
-    }
-  };
-
-  const handlePersonTrace = async () => {
-    if (entity.type === 'person' && entity.apiPersonId && onPersonTrace) {
-      console.log('FlatEntityCard handlePersonTrace called with:', {
-        entityId: entity.mnEntityId,
-        parentNodeId: entity.parentNodeId,
-        apiPersonId: entity.apiPersonId,
-        entityName: entity.name,
-        entity: entity
-      });
-      
-      try {
-        // Import apiService dynamically to avoid circular imports
-        const { apiService } = await import('@/features/api/services/apiService');
-        const personData = await withApiToast(
-          'Person Details Lookup',
-          () => apiService.callPersonAPI(String(entity.apiPersonId!)),
-          {
-            loadingMessage: `Tracing person: ${String(entity.name)}`,
-            successMessage: 'Person details retrieved successfully',
-            errorMessage: 'Failed to retrieve person details'
-          }
-        );
-        console.log('FlatEntityCard calling onPersonTrace with:', {
-          personId: String(entity.apiPersonId),
-          personData,
-          apiName: 'Person Details',
-          parentNodeId: entity.parentNodeId,
-          entityId: entity.mnEntityId,
-          entityData: entity,
-          source: 'FlatEntityCard'
-        });
-        onPersonTrace(String(entity.apiPersonId), personData, 'Person Details', entity.parentNodeId, entity.mnEntityId, entity);
-      } catch (error) {
-        console.error('Person API call failed:', error);
-        // Fallback to mock data if API fails
-        const mockPersonData = {
-          apiPersonId: String(entity.apiPersonId),
-          name: String(entity.name),
-        };
-        console.log('FlatEntityCard calling onPersonTrace with mock data:', {
-          personId: String(entity.apiPersonId),
-          personData: mockPersonData,
-          apiName: 'Person Details',
-          parentNodeId: entity.parentNodeId,
-          entityId: entity.mnEntityId,
-          entityData: entity,
-          source: 'FlatEntityCard'
-        });
-        onPersonTrace(String(entity.apiPersonId), mockPersonData, 'Person Details', entity.parentNodeId, entity.mnEntityId, entity);
-      }
-    }
-  };
-
-  return (
-    <>
-      <div 
-        className="group relative px-2 sm:px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors cursor-pointer"
-        onClick={() => setIsModalOpen(true)}
-      >
-        {/* Horizontal single-row layout */}
-        <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-          {/* Type badge */}
-          <span className={`text-xs px-1.5 sm:px-2 py-0.5 rounded font-medium flex-shrink-0 ${getTypeLabelColor(entity.type)}`}>
-            <span className="hidden sm:inline">{entity.type}</span>
-            <span className="sm:hidden">{entity.type.charAt(0).toUpperCase()}</span>
-            {entity.category && <span className="hidden sm:inline"> ({entity.category})</span>}
-          </span>
-          
-          {/* Primary value */}
-          <div className="text-xs sm:text-sm font-medium text-gray-800 truncate flex-1">
-            {getPrimaryValue(entity)}
-          </div>
-          
-          {/* Entity ID for traceable entities - hidden on mobile */}
-          {entity.mnEntityId && (
-            <div className="text-xs text-purple-600 font-mono flex-shrink-0 hidden sm:block">
-              {entity.mnEntityId}
-            </div>
-          )}
-        </div>
-        
-        {/* No action buttons in horizontal row - moved to modal */}
-      </div>
-
-      </div>
-
-      {/* Modal with all details */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 sm:p-6">
-              {/* Modal Header */}
-              <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
-                <div className="flex items-center space-x-3">
-                  <span className={`text-sm px-3 py-1 rounded font-medium ${getTypeLabelColor(entity.type)}`}>
-                    {entity.type}
-                    {entity.category && ` (${entity.category})`}
-                  </span>
-                  <span className="text-sm text-gray-500">{entity.source}</span>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Primary value */}
-              <div className="text-lg font-semibold text-gray-800 mb-4">
-                {getPrimaryValue(entity)}
-              </div>
-
-              {/* Entity ID */}
-              {entity.mnEntityId && (
-                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <div className="text-sm font-medium text-purple-800 mb-1">Entity ID</div>
-                  <div className="text-sm font-mono text-purple-700">{entity.mnEntityId}</div>
-                </div>
-              )}
-
-              {/* All entity data */}
-              <div className="space-y-3 mb-4">
-                <h4 className="text-sm font-semibold text-gray-800">Details</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  {formatEntityData(entity).map(({ key, value }) => (
-                    <div key={key} className="flex flex-col">
-                      <span className="font-medium text-gray-600 text-xs uppercase tracking-wide">
-                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                      </span>
-                      <span className="text-gray-800 mt-1 break-words">
-                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Coordinates for addresses */}
-              {entity.type === 'address' && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="text-sm font-medium text-blue-800 mb-1">Coordinates</div>
-                  {isGeocoding ? (
-                    <span className="text-sm text-blue-600">Loading...</span>
-                  ) : coordinates ? (
-                    <span className="text-sm text-blue-700">
-                      {coordinates.latitude.toFixed(6)}, {coordinates.longitude.toFixed(6)}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-blue-600">Not available</span>
-                  )}
-                </div>
-              )}
-
-              {/* Entity context for traceable entities */}
-              {entity.isTraceable && (
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <div className="text-sm font-medium text-gray-800 mb-2">🔗 Entity Context</div>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-gray-600">Parent Node:</span>
-                      <span className="ml-2 font-mono text-gray-800">{entity.parentNodeId}</span>
-                    </div>
-                    {entity.type === 'person' && entity.apiPersonId ? (
-                      <div>
-                        <span className="text-gray-600">API Person ID:</span>
-                        <span className="ml-2 font-mono text-gray-800">{String(entity.apiPersonId)}</span>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                {entity.type === 'address' && onAddressIntel && (
-                  <button
-                    onClick={handleAddressIntel}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-300 transition-colors"
-                  >
-                    Address Intel
-                  </button>
-                )}
-                {entity.type === 'person' && entity.apiPersonId && onPersonTrace ? (
-                  <button
-                    onClick={handlePersonTrace}
-                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-1 focus:ring-green-300 transition-colors"
-                  >
-                    Trace Person
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
   );
 }

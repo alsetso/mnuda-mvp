@@ -6,7 +6,14 @@ import { sessionStorageService, SessionData, NodeData } from '../services/sessio
 export function useSessionManager() {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [currentSession, setCurrentSession] = useState<SessionData | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Initialize sessions on mount
+  useEffect(() => {
+    const allSessions = sessionStorageService.getSessions();
+    const current = sessionStorageService.getCurrentSession();
+    setSessions(allSessions);
+    setCurrentSession(current);
+  }, []); // Only run on mount
 
   // Force refresh sessions list
   const refreshSessions = useCallback(() => {
@@ -16,60 +23,51 @@ export function useSessionManager() {
     setCurrentSession(current);
   }, []);
 
-  // Trigger refresh (increment counter to force re-render)
-  const triggerRefresh = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
-  }, []);
-
-  // Initialize sessions on mount
-  useEffect(() => {
-    refreshSessions();
-  }, [refreshSessions]);
-
-  // Refresh sessions when trigger changes
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      refreshSessions();
-    }
-  }, [refreshTrigger, refreshSessions]);
-
   // Add node and trigger refresh
   const addNode = useCallback((node: NodeData) => {
     try {
       sessionStorageService.addNode(node);
-      triggerRefresh();
+      refreshSessions();
     } catch (error) {
       console.error('Error adding node to session:', error);
     }
-  }, [triggerRefresh]);
+  }, [refreshSessions]);
 
   // Create new session and trigger refresh
   const createNewSession = useCallback((name?: string) => {
     const newSession = sessionStorageService.createSession(name);
-    triggerRefresh();
+    refreshSessions();
     return newSession;
-  }, [triggerRefresh]);
+  }, [refreshSessions]);
 
   // Switch session and trigger refresh
   const switchSession = useCallback((sessionId: string) => {
     const nodes = sessionStorageService.loadSession(sessionId);
-    const session = sessionStorageService.getCurrentSession();
-    setCurrentSession(session);
-    triggerRefresh();
+    refreshSessions();
     return nodes;
-  }, [triggerRefresh]);
+  }, [refreshSessions]);
 
   // Rename session and trigger refresh
   const renameSession = useCallback((sessionId: string, newName: string) => {
     sessionStorageService.renameSession(sessionId, newName);
-    triggerRefresh();
-  }, [triggerRefresh]);
+    refreshSessions();
+  }, [refreshSessions]);
 
   // Delete session and trigger refresh
   const deleteSession = useCallback((sessionId: string) => {
     sessionStorageService.deleteSession(sessionId);
-    triggerRefresh();
-  }, [triggerRefresh]);
+    refreshSessions();
+  }, [refreshSessions]);
+
+  // Delete node and trigger refresh
+  const deleteNode = useCallback((nodeId: string) => {
+    try {
+      sessionStorageService.deleteNode(nodeId);
+      refreshSessions();
+    } catch (error) {
+      console.error('Error deleting node from session:', error);
+    }
+  }, [refreshSessions]);
 
   // Get current session nodes
   const getCurrentNodes = useCallback(() => {
@@ -83,6 +81,7 @@ export function useSessionManager() {
     
     // Actions
     addNode,
+    deleteNode,
     createNewSession,
     switchSession,
     renameSession,
@@ -90,7 +89,6 @@ export function useSessionManager() {
     
     // Utilities
     refreshSessions,
-    triggerRefresh,
     getCurrentNodes,
   };
 }
