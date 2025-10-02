@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/features/ui/hooks/useToast';
 
 interface UserFoundNodeProps {
@@ -39,43 +39,69 @@ export default function UserFoundNode({
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [hasReverseGeocoded, setHasReverseGeocoded] = useState(false);
   const [showLocationHistory, setShowLocationHistory] = useState(false);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationFound, setLocationFound] = useState(false);
   const [, setForceUpdate] = useState(0);
   const { withApiToast: _withApiToast } = useToast();
 
-  const handleLocationFound = async (coords: { lat: number; lng: number }) => {
+  // Simple retry utility
+  const withRetry = async (fn: () => Promise<unknown>, retries = 2) => {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (i === retries) throw error;
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    }
+  };
+
+  const handleLocationFound = useCallback(async (coords: { lat: number; lng: number }) => {
+    if (isRequesting) return; // Prevent duplicate requests
+    setIsRequesting(true);
     setIsGeocoding(true);
     
     try {
-      // Reverse geocode to get address
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}&types=address`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.features && data.features.length > 0) {
-          const feature = data.features[0];
-          const addressComponents = feature.context || [];
-          
-          // Extract address components
-          const street = feature.text || '';
-          const city = addressComponents.find((c: Record<string, unknown>) => (c.id as string).startsWith('place'))?.text || '';
-          const state = addressComponents.find((c: Record<string, unknown>) => (c.id as string).startsWith('region'))?.text || '';
-          const zip = addressComponents.find((c: Record<string, unknown>) => (c.id as string).startsWith('postcode'))?.text || '';
+      // Check if online before making request
+      if (!isOnline) {
+        console.warn('Offline - skipping reverse geocoding');
+        onLocationFound(coords);
+        return;
+      }
 
-          const address = {
-            street,
-            city,
-            state,
-            zip,
-            coordinates: { latitude: coords.lat, longitude: coords.lng }
-          };
-
-          onLocationFound(coords, address);
-        } else {
-          onLocationFound(coords);
+      // Reverse geocode to get address with retry logic
+      const response = await withRetry(async () => {
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}&types=address`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Geocoding failed: ${res.status} ${res.statusText}`);
         }
+        return res;
+      });
+      
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        const feature = data.features[0];
+        const addressComponents = feature.context || [];
+        
+        // Extract address components
+        const street = feature.text || '';
+        const city = addressComponents.find((c: Record<string, unknown>) => (c.id as string).startsWith('place'))?.text || '';
+        const state = addressComponents.find((c: Record<string, unknown>) => (c.id as string).startsWith('region'))?.text || '';
+        const zip = addressComponents.find((c: Record<string, unknown>) => (c.id as string).startsWith('postcode'))?.text || '';
+
+        const address = {
+          street,
+          city,
+          state,
+          zip,
+          coordinates: { latitude: coords.lat, longitude: coords.lng }
+        };
+
+        onLocationFound(coords, address);
       } else {
         onLocationFound(coords);
       }
@@ -84,8 +110,23 @@ export default function UserFoundNode({
       onLocationFound(coords);
     } finally {
       setIsGeocoding(false);
+      setIsRequesting(false);
     }
-  };
+  }, [isRequesting, isOnline, onLocationFound]);
+
+  // Network status detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Listen for session updates to trigger re-renders
   useEffect(() => {
@@ -117,6 +158,15 @@ export default function UserFoundNode({
   }, [userLocation, isTracking, onLocationFound, hasReverseGeocoded, payload?.address, handleLocationFound]);
 
 
+  // Update current location immediately when userLocation changes
+  useEffect(() => {
+    if (userLocation) {
+      setCurrentLocation(userLocation);
+      setLocationFound(true);
+      console.log('UserFoundNode: userLocation updated:', userLocation);
+    }
+  }, [userLocation]);
+
   // Debug: Log when userLocation changes
   useEffect(() => {
     if (userLocation && isTracking) {
@@ -128,6 +178,7 @@ export default function UserFoundNode({
   useEffect(() => {
     if (!isTracking) {
       setHasReverseGeocoded(false);
+      setLocationFound(false);
     }
   }, [isTracking]);
 
@@ -158,12 +209,12 @@ export default function UserFoundNode({
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
             <div className={`w-2 h-2 rounded-full ${
-              status === 'ready' ? 'bg-green-400' : 
+              (status === 'ready' || locationFound) ? 'bg-green-400' : 
               isTracking ? 'bg-yellow-400' : 
               'bg-blue-400'
             }`}></div>
             <span className="text-xs text-gray-400">
-              {status === 'ready' ? 'Location Found' : 
+              {(status === 'ready' || locationFound) ? 'Location Found' : 
                isTracking ? 'Searching...' : 
                'Ready'}
             </span>
@@ -173,7 +224,7 @@ export default function UserFoundNode({
 
       {/* Content */}
       <div className="px-3 sm:px-4 lg:px-6 py-2">
-        {status === 'pending' && !hasCompleted ? (
+        {status === 'pending' && !hasCompleted && !locationFound ? (
           /* Pending State - Find Location */
           <div className="space-y-3 sm:space-y-4">
             <div className="text-center">
@@ -193,24 +244,31 @@ export default function UserFoundNode({
             <div className="flex flex-col sm:flex-row items-center justify-center pt-4 border-t border-gray-200 space-y-3 sm:space-y-0">
               <button
                 onClick={handleFindMe}
-                disabled={isTracking}
+                disabled={isTracking || isRequesting || !isOnline}
+                aria-label={isTracking ? "Finding your location" : "Find my current location"}
+                aria-describedby="location-help-text"
                 className="w-full sm:w-auto px-6 py-3 sm:py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px]"
               >
-                {isTracking ? (
+                {(isTracking || isRequesting) ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Finding Location...</span>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" aria-hidden="true"></div>
+                    <span>{isGeocoding ? 'Getting Address...' : 'Finding Location...'}</span>
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span>Find Me</span>
+                    <span>{!isOnline ? 'Offline' : 'Find Me'}</span>
                   </>
                 )}
               </button>
+              {!isOnline && (
+                <p id="location-help-text" className="text-xs text-red-600 mt-2 text-center">
+                  You&apos;re currently offline. Please check your internet connection.
+                </p>
+              )}
             </div>
           </div>
         ) : hasCompleted ? (
@@ -227,15 +285,21 @@ export default function UserFoundNode({
                 <div className="flex space-x-2">
                   <button
                     onClick={onCreateNewLocationSession}
-                    className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded transition-colors"
+                    disabled={isRequesting}
+                    aria-label="Start a new location tracking session"
+                    className="text-xs bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-2 py-1 rounded transition-colors flex items-center space-x-1"
                   >
-                    New Location Session
+                    {isRequesting && <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>}
+                    <span>New Location Session</span>
                   </button>
                   <button
                     onClick={onContinueToAddressSearch}
-                    className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded transition-colors"
+                    disabled={isRequesting}
+                    aria-label="Continue to address search with current location"
+                    className="text-xs bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-2 py-1 rounded transition-colors flex items-center space-x-1"
                   >
-                    Continue with Address Search
+                    {isRequesting && <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>}
+                    <span>Continue with Address Search</span>
                   </button>
                 </div>
               </div>
@@ -307,7 +371,7 @@ export default function UserFoundNode({
               <div className="text-sm text-gray-700 mb-1">
                 <div className="flex items-center space-x-2">
                   <div className="font-medium">Current Location:</div>
-                  {isTracking && userLocation && (
+                  {isTracking && (userLocation || currentLocation) && (
                     <div className="flex items-center space-x-1">
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                       <span className="text-xs text-green-600 font-medium">LIVE</span>
@@ -315,14 +379,14 @@ export default function UserFoundNode({
                   )}
                 </div>
                 <div className="text-xs text-gray-500 font-mono">
-                  {(isTracking && userLocation) ? 
-                    `${userLocation.lat.toFixed(6)}, ${userLocation.lng.toFixed(6)}` :
+                  {(isTracking && (userLocation || currentLocation)) ? 
+                    `${(userLocation || currentLocation)!.lat.toFixed(6)}, ${(userLocation || currentLocation)!.lng.toFixed(6)}` :
                     (payload?.coords?.lat !== undefined && payload?.coords?.lng !== undefined) ? 
                     `${payload.coords.lat.toFixed(6)}, ${payload.coords.lng.toFixed(6)}` :
                     'No coordinates available'
                   }
                 </div>
-                {isTracking && userLocation && (
+                {isTracking && (userLocation || currentLocation) && (
                   <div className="text-xs text-gray-400 mt-1">
                     <div>Updated: {new Date().toLocaleTimeString()}</div>
                   </div>

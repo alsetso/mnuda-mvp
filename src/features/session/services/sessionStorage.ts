@@ -141,7 +141,15 @@ class SessionStorageService {
     
     const session: SessionData = {
       id: sessionId,
-      name: name || `New Session ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      name: name || (() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `Session ${year}-${month}-${day} ${hours}:${minutes}`;
+      })(),
       createdAt: Date.now(),
       lastAccessed: Date.now(),
       nodes: [userFoundNode], // Start with UserFoundNode

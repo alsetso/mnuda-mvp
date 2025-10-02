@@ -29,6 +29,7 @@ export default function AddressAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const DEBOUNCE_DELAY = 150; // Reduced from 300ms for snappier feel
 
   // Debounced search function
   const searchSuggestions = useCallback(async (query: string) => {
@@ -69,7 +70,7 @@ export default function AddressAutocomplete({
     // Set new timeout for debounced search
     debounceTimeoutRef.current = setTimeout(() => {
       searchSuggestions(newValue);
-    }, 300); // 300ms debounce
+    }, DEBOUNCE_DELAY);
   };
 
   // Handle suggestion selection
@@ -169,6 +170,12 @@ export default function AddressAutocomplete({
         onBlur={handleBlur}
         placeholder={placeholder}
         disabled={disabled}
+        aria-label="Address search"
+        aria-describedby={error ? "address-error" : "address-help"}
+        aria-expanded={showSuggestions}
+        aria-autocomplete="list"
+        role="combobox"
+        aria-controls="address-suggestions"
         className={`w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation ${className}`}
         autoComplete="off"
       />
@@ -182,22 +189,35 @@ export default function AddressAutocomplete({
 
       {/* Error message */}
       {error && (
-        <div className="absolute top-full left-0 right-0 mt-1 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600">
+        <div id="address-error" className="absolute top-full left-0 right-0 mt-1 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-600" role="alert">
           {error}
+        </div>
+      )}
+      
+      {/* Help text */}
+      {!error && (
+        <div id="address-help" className="sr-only">
+          Type an address to search for suggestions. Use arrow keys to navigate and Enter to select.
         </div>
       )}
 
       {/* Suggestions dropdown */}
       {showSuggestions && suggestions.length > 0 && (
         <div
+          id="address-suggestions"
           ref={suggestionsRef}
           className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto"
+          role="listbox"
+          aria-label="Address suggestions"
         >
           {suggestions.map((suggestion, index) => (
             <button
               key={suggestion.id}
               type="button"
               onClick={() => handleSuggestionSelect(suggestion)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSuggestionSelect(suggestion)}
+              role="option"
+              aria-selected={index === selectedIndex}
               className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 focus:bg-gray-50 focus:outline-none ${
                 index === selectedIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
               } ${index === 0 ? 'rounded-t-lg' : ''} ${

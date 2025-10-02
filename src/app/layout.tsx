@@ -3,6 +3,7 @@ import './globals.css'
 import { ToastProvider } from '@/features/ui/contexts/ToastContext'
 import { ToastContainer } from '@/features/ui/components/Toast'
 import Footer from '@/features/ui/components/Footer'
+import { AuthProvider } from '@/features/auth'
 
 export const metadata: Metadata = {
   title: 'MNUDA - Property Address Lookup',
@@ -22,13 +23,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col">
-        <ToastProvider>
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-          <ToastContainer />
-        </ToastProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+            <ToastContainer />
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   )

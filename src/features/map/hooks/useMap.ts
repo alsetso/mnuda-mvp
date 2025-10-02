@@ -124,9 +124,104 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
 
         // Attach popup if provided
         if (options.popupContent) {
-          const popup = new mapbox.Popup({ offset: 25 }).setHTML(options.popupContent);
+          const popup = new mapbox.Popup({ 
+            offset: 25,
+            closeButton: false,
+            closeOnClick: false
+          }).setHTML(options.popupContent);
           marker = marker.setPopup(popup);
+          
+          // Add event delegation for person item clicks, child result clicks, and accordion toggles
+          popup.on('open', () => {
+            const popupElement = popup.getElement();
+            if (popupElement) {
+              popupElement.addEventListener('click', (e) => {
+                const target = e.target as HTMLElement;
+                
+                // Handle popup close button clicks
+                const closeBtn = target.closest('.popup-close-btn');
+                if (closeBtn) {
+                  e.stopPropagation();
+                  marker.remove();
+                  return;
+                }
+                
+                // Handle accordion toggle clicks
+                const accordionToggle = target.closest('.accordion-toggle');
+                if (accordionToggle) {
+                  e.stopPropagation();
+                  const targetId = accordionToggle.getAttribute('data-target');
+                  if (targetId) {
+                    const content = popupElement.querySelector(`[data-target="${targetId}"].accordion-content`);
+                    const icon = popupElement.querySelector(`[data-target="${targetId}"].accordion-icon`);
+                    
+                    if (content && icon) {
+                      const isHidden = content.classList.contains('hidden');
+                      if (isHidden) {
+                        content.classList.remove('hidden');
+                        (icon as HTMLElement).style.transform = 'rotate(180deg)';
+                      } else {
+                        content.classList.add('hidden');
+                        (icon as HTMLElement).style.transform = 'rotate(0deg)';
+                      }
+                    }
+                  }
+                  return;
+                }
+                
+                // Handle person item clicks
+                const personItem = target.closest('.person-item');
+                if (personItem) {
+                  e.stopPropagation();
+                  const personData = personItem.getAttribute('data-person-data');
+                  if (personData) {
+                    try {
+                      const person = JSON.parse(personData);
+                      // Dispatch custom event for person click
+                      const event = new CustomEvent('personClick', { 
+                        detail: { person, markerId: id },
+                        bubbles: true 
+                      });
+                      document.dispatchEvent(event);
+                    } catch (error) {
+                      console.error('Error parsing person data:', error);
+                    }
+                  }
+                  return;
+                }
+                
+                // Handle child result clicks
+                const childResultItem = target.closest('.child-result-item');
+                if (childResultItem) {
+                  e.stopPropagation();
+                  const childNodeData = childResultItem.getAttribute('data-child-node-data');
+                  if (childNodeData) {
+                    try {
+                      const childNode = JSON.parse(childNodeData);
+                      // Dispatch custom event for child result click
+                      const event = new CustomEvent('childResultClick', { 
+                        detail: { childNode, markerId: id },
+                        bubbles: true 
+                      });
+                      document.dispatchEvent(event);
+                    } catch (error) {
+                      console.error('Error parsing child node data:', error);
+                    }
+                  }
+                }
+              });
+            }
+          });
         }
+
+        // Add click event handler to prevent map click when clicking on marker
+        marker.getElement().addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Toggle popup on marker click
+          if (options.popupContent) {
+            marker.togglePopup();
+          }
+        });
 
         marker.addTo(map.current);
         markers.current.set(id, marker);
@@ -262,6 +357,19 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
 
   // ---------------------------------------------------------------------------
   // Return API
+  // Update marker popup content
+  const updateMarkerPopup = useCallback((id: string, popupContent: string) => {
+    if (!map.current) return;
+    
+    const marker = markers.current.get(id);
+    if (marker) {
+      const popup = marker.getPopup();
+      if (popup && popup.isOpen()) {
+        popup.setHTML(popupContent);
+      }
+    }
+  }, []);
+
   // ---------------------------------------------------------------------------
   return {
     // State
@@ -285,6 +393,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     addMarker,
     removeMarker,
     clearMarkers,
+    updateMarkerPopup,
 
     // Map instance
     map: map.current,

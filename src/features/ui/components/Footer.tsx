@@ -16,23 +16,20 @@ export default function Footer() {
           {/* Disclaimer */}
           <div className="text-center sm:text-right max-w-2xl">
             <p className="text-sm text-gray-600 leading-relaxed">
-              <strong>MNUDA</strong> is a free real estate skip tracing tool for a limited time. 
-              All data is stored locally in your browser - we don&apos;t collect or store any personal information on our servers.
-            </p>
-            <div className="mt-2 flex space-x-4 justify-center sm:justify-end">
+              <strong>MNUDA</strong> is a free local service that stores data only in your browser; paid plans are required for cloud-based features. 
               <a 
                 href="/map" 
-                className="text-sm text-[#1dd1f5] hover:text-[#014463] font-medium transition-colors"
+                className="text-[#1dd1f5] hover:text-[#014463] font-medium transition-colors ml-1"
               >
                 View Map →
               </a>
               <a 
-                href="/learn-more" 
-                className="text-sm text-[#1dd1f5] hover:text-[#014463] font-medium transition-colors"
+                href="/signup" 
+                className="text-[#1dd1f5] hover:text-[#014463] font-medium transition-colors ml-2"
               >
-                Learn More →
+                Pricing →
               </a>
-            </div>
+            </p>
           </div>
         </div>
       </div>

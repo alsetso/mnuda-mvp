@@ -33,6 +33,7 @@ export const MAP_CONFIG = {
     ADDRESS_SEARCH: '#3B82F6',
     ADDRESS_CURRENT: '#10B981',
     ADDRESS_PREVIOUS: '#F59E0B',
+    SKIP_TRACE: '#8B5CF6', // Purple for skip trace pins
   },
   
   // Animation settings

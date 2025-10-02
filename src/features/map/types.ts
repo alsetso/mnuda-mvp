@@ -104,6 +104,7 @@ export interface MapActions {
   addMarker: (id: string, coordinates: { lat: number; lng: number }, options?: { element?: HTMLElement; color?: string; popupContent?: string }) => void;
   removeMarker: (id: string) => void;
   clearMarkers: () => void;
+  updateMarkerPopup: (id: string, popupContent: string) => void;
 }
 
 export interface UseMapReturn extends MapState, MapActions {

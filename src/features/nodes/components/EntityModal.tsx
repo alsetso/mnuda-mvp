@@ -37,13 +37,13 @@ export default function EntityModal({
   // Get type label color
   const getTypeLabelColor = (type: string) => {
     switch (type) {
-      case 'property': return 'bg-slate-100 text-slate-600';
-      case 'address': return 'bg-slate-100 text-slate-600';
-      case 'phone': return 'bg-slate-100 text-slate-600';
-      case 'email': return 'bg-slate-100 text-slate-600';
-      case 'person': return 'bg-blue-100 text-blue-800';
-      case 'image': return 'bg-slate-100 text-slate-600';
-      default: return 'bg-slate-100 text-slate-600';
+      case 'property': return 'bg-gray-100 text-gray-700';
+      case 'address': return 'bg-gray-100 text-gray-700';
+      case 'phone': return 'bg-gray-100 text-gray-700';
+      case 'email': return 'bg-gray-100 text-gray-700';
+      case 'person': return 'bg-gray-100 text-gray-700';
+      case 'image': return 'bg-gray-100 text-gray-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -186,53 +186,56 @@ export default function EntityModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-4 sm:p-6">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
-            <div className="flex items-center space-x-3">
-              <span className={`text-sm px-3 py-1 rounded font-medium ${getTypeLabelColor(entityType)}`}>
-                {entityType}
-                {!isPersonRecord && (entity as PersonDetailEntity).category && ` (${(entity as PersonDetailEntity).category})`}
-              </span>
-              <span className="text-sm text-gray-500">{getSource()}</span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+      <div className="bg-white max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className={`px-2 py-1 text-xs font-medium uppercase tracking-wider ${getTypeLabelColor(entityType)}`}>
+              {entityType}
+              {!isPersonRecord && (entity as PersonDetailEntity).category && ` (${(entity as PersonDetailEntity).category})`}
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="text-xs text-gray-500 font-mono">{getSource()}</div>
           </div>
+          <button
+            onClick={onClose}
+            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-          {/* Primary value */}
-          <div className="text-lg font-semibold text-gray-800 mb-4">
-            {getPrimaryValue(entity)}
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          {/* Primary Title */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold text-gray-900 leading-tight">
+              {getPrimaryValue(entity)}
+            </h1>
           </div>
 
           {/* Entity ID */}
           {getEntityId() && (
-            <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-              <div className="text-sm font-medium text-purple-800 mb-1">Entity ID</div>
-              <div className="text-sm font-mono text-purple-700">{getEntityId()}</div>
+            <div className="mb-6 p-4 bg-gray-50 border border-gray-200">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Entity ID</div>
+              <div className="text-sm font-mono text-gray-900">{getEntityId()}</div>
             </div>
           )}
 
-          {/* All entity data */}
-          <div className="space-y-3 mb-4">
-            <h4 className="text-sm font-semibold text-gray-800">Details</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          {/* Details Section */}
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {formatEntityData(entity).map(({ key, value }) => (
-                <div key={key} className="flex flex-col">
-                  <span className="font-medium text-gray-600 text-xs uppercase tracking-wide">
+                <div key={key} className="py-2">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </span>
-                  <span className="text-gray-800 mt-1 break-words">
+                  </div>
+                  <div className="text-sm text-gray-900 break-words">
                     {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                  </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -240,73 +243,78 @@ export default function EntityModal({
 
           {/* Coordinates for addresses */}
           {entityType === 'address' && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="text-sm font-medium text-blue-800 mb-1">Coordinates</div>
+            <div className="mb-6 p-4 bg-gray-50 border border-gray-200">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Coordinates</div>
               {isGeocoding ? (
-                <span className="text-sm text-blue-600">Loading...</span>
+                <div className="text-sm text-gray-600">Loading coordinates...</div>
               ) : coordinates ? (
-                <span className="text-sm text-blue-700">
+                <div className="text-sm font-mono text-gray-900">
                   {coordinates.latitude.toFixed(6)}, {coordinates.longitude.toFixed(6)}
-                </span>
+                </div>
               ) : (
-                <span className="text-sm text-blue-600">Not available</span>
+                <div className="text-sm text-gray-500">Not available</div>
               )}
             </div>
           )}
 
-          {/* Entity context for traceable entities */}
+          {/* Entity Context */}
           {getEntityId() && (
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-              <div className="text-sm font-medium text-gray-800 mb-2">🔗 Entity Context</div>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="text-gray-600">Parent Node:</span>
-                  <span className="ml-2 font-mono text-gray-800">{getParentNodeId()}</span>
+            <div className="p-4 bg-gray-50 border border-gray-200">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                Entity Context
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 uppercase tracking-wider w-20">Parent:</span>
+                  <span className="text-sm font-mono text-gray-900">{getParentNodeId()}</span>
                 </div>
                 {entityType === 'person' && getApiPersonId() && (
-                  <div>
-                    <span className="text-gray-600">API Person ID:</span>
-                    <span className="ml-2 font-mono text-gray-800">{getApiPersonId()}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 uppercase tracking-wider w-20">API ID:</span>
+                    <span className="text-sm font-mono text-gray-900">{getApiPersonId()}</span>
                   </div>
                 )}
               </div>
             </div>
           )}
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-            {/* External link for person records */}
-            {isPersonRecord && (entity as PersonRecord).person_link && (
-              <a
-                href={(entity as PersonRecord).person_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 focus:outline-none focus:ring-1 focus:ring-blue-300 transition-colors"
-              >
-                View External
-              </a>
-            )}
-            
-            {/* Address Intel button */}
-            {entityType === 'address' && onAddressIntel && (
-              <button
-                onClick={handleAddressIntel}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-1 focus:ring-blue-300 transition-colors"
-              >
-                Address Intel
-              </button>
-            )}
-            
-            {/* Trace Person button */}
-            {entityType === 'person' && getApiPersonId() && onPersonTrace && (
-              <button
-                onClick={handlePersonTrace}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-1 focus:ring-green-300 transition-colors"
-              >
-                Trace Person
-              </button>
-            )}
-          </div>
+        {/* Action Buttons */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
+          {/* External link for person records */}
+          {isPersonRecord && (entity as PersonRecord).person_link && (
+            <a
+              href={(entity as PersonRecord).person_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+            >
+              View External
+            </a>
+          )}
+          
+          {/* Address Intel button */}
+          {entityType === 'address' && onAddressIntel && (
+            <button
+              onClick={handleAddressIntel}
+              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+            >
+              Address Intel
+            </button>
+          )}
+          
+          {/* Trace Person button */}
+          {entityType === 'person' && getApiPersonId() && onPersonTrace && (
+            <button
+              onClick={handlePersonTrace}
+              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+            >
+              Trace Person
+            </button>
+          )}
         </div>
       </div>
     </div>

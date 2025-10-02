@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import NodeStack from '@/features/nodes/components/NodeStack';
 import MapNodeStackFooter from './MapNodeStackFooter';
+import TitleEdit from '@/features/nodes/components/TitleEdit';
 import { NodeData, SessionData, sessionStorageService } from '@/features/session/services/sessionStorage';
 import { Address } from '../types';
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
@@ -22,13 +23,13 @@ interface MapNodeStackPanelProps {
   onStartNodeComplete: (startNodeId: string) => void;
   onDeleteNode: (nodeId: string) => void;
   onAddNode?: (node: NodeData) => void;
-  onRenameSession?: (sessionId: string, newName: string) => void;
   onStartNodeAddressChanged?: (address: { street: string; city: string; state: string; zip: string }) => Promise<void>;
   onUserFoundLocationFound?: (nodeId: string, coords: { lat: number; lng: number }, address?: { street: string; city: string; state: string; zip: string; coordinates?: { latitude: number; longitude: number } }) => void;
   onUserFoundStartTracking?: () => void;
   onUserFoundStopTracking?: () => void;
   onCreateNewLocationSession?: () => void;
   onContinueToAddressSearch?: () => void;
+  onSessionRename?: (sessionId: string, newName: string) => void;
   isTracking?: boolean;
   userLocation?: { lat: number; lng: number } | null;
   lastUpdated?: number | null;
@@ -42,21 +43,19 @@ export default function MapNodeStackPanel({
   onStartNodeComplete, 
   onDeleteNode,
   onAddNode,
-  onRenameSession,
   onStartNodeAddressChanged,
   onUserFoundLocationFound,
   onUserFoundStartTracking,
   onUserFoundStopTracking,
   onCreateNewLocationSession,
   onContinueToAddressSearch,
+  onSessionRename,
   isTracking,
   userLocation,
   lastUpdated: _lastUpdated,
   refreshCount: _refreshCount
 }: MapNodeStackPanelProps) {
   const [isSearching] = useState(false);
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editingName, setEditingName] = useState('');
   const { withApiToast } = useToast();
 
   // Handle person trace from person node - pass through to parent
@@ -220,33 +219,13 @@ export default function MapNodeStackPanel({
     onStartNodeComplete(startNodeId);
   }, [onStartNodeComplete]);
 
-  // Handle session name editing
-  const handleStartEditingName = useCallback(() => {
-    if (currentSession) {
-      setEditingName(currentSession.name);
-      setIsEditingName(true);
+  // Handle session rename
+  const handleSessionRename = useCallback((newName: string) => {
+    if (onSessionRename && currentSession) {
+      onSessionRename(currentSession.id, newName);
     }
-  }, [currentSession]);
+  }, [onSessionRename, currentSession]);
 
-  const handleSaveName = useCallback(() => {
-    if (currentSession && onRenameSession && editingName.trim()) {
-      onRenameSession(currentSession.id, editingName.trim());
-      setIsEditingName(false);
-    }
-  }, [currentSession, onRenameSession, editingName]);
-
-  const handleCancelEditing = useCallback(() => {
-    setIsEditingName(false);
-    setEditingName('');
-  }, []);
-
-  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSaveName();
-    } else if (e.key === 'Escape') {
-      handleCancelEditing();
-    }
-  }, [handleSaveName, handleCancelEditing]);
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-50">
@@ -273,58 +252,12 @@ export default function MapNodeStackPanel({
           <div className="bg-white border-b border-gray-200 px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                {isEditingName ? (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      onKeyDown={handleKeyPress}
-                      onBlur={handleSaveName}
-                      className="text-lg font-semibold text-gray-900 bg-transparent border-none outline-none focus:ring-0 p-0 w-full"
-                      autoFocus
-                    />
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={handleSaveName}
-                        className="p-1 text-green-600 hover:text-green-700"
-                        title="Save"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={handleCancelEditing}
-                        className="p-1 text-gray-400 hover:text-gray-600"
-                        title="Cancel"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2 group">
-                    <h2 
-                      className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
-                      onClick={handleStartEditingName}
-                      title="Click to edit session name"
-                    >
-                      {currentSession.name}
-                    </h2>
-                    <button
-                      onClick={handleStartEditingName}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-opacity"
-                      title="Edit session name"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                  </div>
-                )}
+                <TitleEdit
+                  title={currentSession.name}
+                  onSave={handleSessionRename}
+                  className="text-lg font-semibold text-gray-900 mb-1"
+                  placeholder="Enter session name..."
+                />
                 <p className="text-sm text-gray-500 mt-1">
                   {currentSession.nodes.length} node{currentSession.nodes.length !== 1 ? 's' : ''} • 
                   Created {new Date(currentSession.createdAt).toLocaleDateString()}

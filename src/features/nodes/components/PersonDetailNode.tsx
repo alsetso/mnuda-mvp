@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { personDetailParseService, ParsedPersonDetailData } from '@/features/api/services/personDetailParse';
 import EntityCard from './EntityCard';
+import PersonModal from './PersonModal';
+import { NodeData } from '@/features/session/services/sessionStorage';
 
 interface PersonDetailNodeProps {
   personId: string;
@@ -19,6 +21,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
+  const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   
   // Parse the person detail data if it's not already parsed
   let parsedData: ParsedPersonDetailData;
@@ -117,6 +120,12 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
             <p className="text-xs text-gray-400">{apiName}</p>
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
+            <button
+              onClick={() => setIsPersonModalOpen(true)}
+              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            >
+              View Details
+            </button>
             <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
             <span className="text-xs text-gray-400">Success</span>
           </div>
@@ -470,6 +479,26 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
           </svg>
         </button>
       </div>
+
+      {/* Person Modal */}
+      {isPersonModalOpen && (
+        <PersonModal
+          isOpen={isPersonModalOpen}
+          onClose={() => setIsPersonModalOpen(false)}
+          personNode={{
+            id: `person-${personId}`,
+            type: 'people-result',
+            personId: personId,
+            personData: parsedData,
+            apiName: apiName,
+            timestamp: Date.now(),
+            mnNodeId: mnudaId || `person-${personId}`,
+            parentNodeId: undefined,
+            clickedEntityId: clickedEntityId,
+            clickedEntityData: clickedEntityData,
+          } as NodeData}
+        />
+      )}
     </div>
   );
 }

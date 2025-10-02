@@ -1,14 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import AppHeader from '@/features/session/components/AppHeader';
-import MapNodeStackPanel from '@/features/map/components/MapNodeStackPanel';
+import PersonModal from '@/features/nodes/components/PersonModal';
+import SkipTracePinsList from '@/features/map/components/SkipTracePinsList';
 import { useMap } from '@/features/map/hooks/useMap';
 import { useAddressSync } from '@/features/map/hooks/useAddressSync';
 import { useUserLocationTracker } from '@/features/map/hooks/useUserLocationTracker';
+import { useSkipTracePins } from '@/features/map/hooks/useSkipTracePins';
 import { Address, MapboxFeature } from '@/features/map/types';
 import { AddressParser as AddressParserService } from '@/features/map/services/addressParser';
-import { useSessionManager } from '@/features/session/hooks/useSessionManager';
+import { useSessionManager, SessionOverlay } from '@/features/session';
 import { useToast } from '@/features/ui/hooks/useToast';
 import { NodeData, sessionStorageService } from '@/features/session/services/sessionStorage';
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
@@ -30,9 +33,12 @@ type UserFoundLifecycle = 'idle' | 'locating' | 'active' | 'completed';
 
 export default function MapPage() {
   const mapContainer = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
 
   // --- UI state ---
-  const [mobileView, setMobileView] = useState<'map' | 'results'>('map');
+  const [isSkipTraceSidebarOpen, setIsSkipTraceSidebarOpen] = useState(true); // Skip trace sidebar state - start open
+  const [selectedPersonNode, setSelectedPersonNode] = useState<NodeData | null>(null);
+  const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const { withApiToast } = useToast();
 
   // --- Session manager ---
@@ -41,9 +47,9 @@ export default function MapPage() {
     sessions,
     createNewSession,
     switchSession,
-    renameSession,
     addNode,
     deleteNode,
+    renameSession,
   } = useSessionManager();
 
   // --- User location tracker ---
@@ -65,6 +71,10 @@ export default function MapPage() {
     removeAddressPin,
     flyTo,
     updateUserLocation,
+    addMarker,
+    removeMarker,
+    updateMarkerPopup,
+    map,
   } = useMap({
     mapContainer,
     onMapReady: (mapInstance) => console.log('Map ready:', mapInstance),
@@ -92,6 +102,8 @@ export default function MapPage() {
     onMapFlyTo: (coordinates, zoom) => flyTo(coordinates, zoom),
   });
 
+  // --- Skip trace pins (moved after handlePersonTrace is defined) ---
+
   // --- UserFound node lifecycle ---
   const [userFoundState, setUserFoundState] = useState<UserFoundLifecycle>('idle');
 
@@ -116,6 +128,21 @@ export default function MapPage() {
     },
     [switchSession]
   );
+
+  // Handle URL parameter changes for session switching
+  useEffect(() => {
+    const sessionId = searchParams.get('session');
+    if (sessionId && currentSession?.id !== sessionId) {
+      // Check if the session exists in our sessions list
+      const sessionExists = sessions.some(session => session.id === sessionId);
+      if (sessionExists) {
+        switchSession(sessionId);
+      }
+    }
+  }, [searchParams, currentSession?.id, sessions, switchSession]);
+
+  // Show session overlay when no session is selected
+  const shouldShowSessionOverlay = !currentSession;
 
 
   // ---------------------------------------------------------------------------
@@ -195,6 +222,19 @@ export default function MapPage() {
     isTracking,
     flyTo,
   ]);
+
+  // Handle map resize when sidebar visibility changes
+  useEffect(() => {
+    if (map && mapLoaded) {
+      // Small delay to ensure DOM has updated
+      const timeoutId = setTimeout(() => {
+        map.resize();
+      }, 50);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [map, mapLoaded]);
+
+  // Handle person clicks from skip trace pin popups (moved after handlePersonTrace is defined)
   
   // ---------------------------------------------------------------------------
   // Map click with session → reverse geocode → Address Intel node
@@ -316,6 +356,54 @@ export default function MapPage() {
     [currentSession, addNode, withApiToast]
   );
 
+  // --- Skip trace pins ---
+  const {
+    skipTraceAddresses,
+    isLoading: isSkipTracePinsLoading,
+  } = useSkipTracePins({
+    nodes: currentSession?.nodes || [],
+    addMarker,
+    removeMarker,
+    mapLoaded,
+    onPersonTrace: handlePersonTrace,
+    updateMarkerPopup,
+  });
+
+  // Handle person clicks from skip trace pin popups
+  useEffect(() => {
+    const handlePersonClick = (event: CustomEvent) => {
+      const { person } = event.detail;
+      if (person && person.apiPersonId) {
+        // Call the person trace handler with the API person ID
+        handlePersonTrace(
+          person.apiPersonId, // Use the external API ID, not the internal entity ID
+          person,
+          'Skip Trace',
+          undefined,
+          person.mnEntityId,
+          person
+        );
+      } else {
+        console.warn('Person clicked but no apiPersonId available:', person);
+      }
+    };
+
+    const handleChildResultClick = (event: CustomEvent) => {
+      const { childNode } = event.detail;
+      if (childNode) {
+        setSelectedPersonNode(childNode);
+        setIsPersonModalOpen(true);
+      }
+    };
+
+    document.addEventListener('personClick', handlePersonClick as EventListener);
+    document.addEventListener('childResultClick', handleChildResultClick as EventListener);
+    return () => {
+      document.removeEventListener('personClick', handlePersonClick as EventListener);
+      document.removeEventListener('childResultClick', handleChildResultClick as EventListener);
+    };
+  }, [handlePersonTrace]);
+
   const handleAddressIntel = useCallback(
     async (address: { street: string; city: string; state: string; zip: string }) => {
       if (!currentSession) return;
@@ -351,8 +439,23 @@ export default function MapPage() {
   // ---------------------------------------------------------------------------
   // UI helpers
   // ---------------------------------------------------------------------------
-  const handleMobileViewToggle = () =>
-    setMobileView((prev) => (prev === 'map' ? 'results' : 'map'));
+  const handleSkipTraceSidebarToggle = () =>
+    setIsSkipTraceSidebarOpen((prev) => !prev);
+
+  const handleSkipTraceAddressClick = useCallback((address: { coordinates?: { latitude: number; longitude: number } }) => {
+    if (address.coordinates) {
+      // Close sidebar on mobile after click for better UX
+      if (window.innerWidth < 768) {
+        setIsSkipTraceSidebarOpen(false);
+      }
+      
+      // Fly to location
+      flyTo({
+        lat: address.coordinates.latitude,
+        lng: address.coordinates.longitude
+      });
+    }
+  }, [flyTo]);
 
   const StatusBanner = () => {
     if (!mapLoaded) return <Banner className="bg-gray-100"><Spinner /><span>Loading map…</span></Banner>;
@@ -371,7 +474,7 @@ export default function MapPage() {
         }`}
       >
         <IconTarget />
-        <span>{active ? 'Stop Tracking' : 'Find Me'}</span>
+        <span>{active ? 'Stop' : 'Find Me'}</span>
       </button>
     );
   };
@@ -395,82 +498,114 @@ export default function MapPage() {
           sessions={sessions}
           onNewSession={createNewSession}
           onSessionSwitch={handleSessionSwitch}
-          onSessionRename={renameSession}
-          updateUrl
-          showSessionSelector
-          showMobileToggle
-          mobileView={mobileView}
-          onMobileViewToggle={handleMobileViewToggle}
+          updateUrl={true}
+          showSessionSelector={true}
+          showMobileToggle={false}
+          showSidebarToggle={false}
+          showSkipTraceToggle={true}
+          isSkipTraceSidebarOpen={isSkipTraceSidebarOpen}
+          onSkipTraceSidebarToggle={handleSkipTraceSidebarToggle}
+          skipTracePinsCount={skipTraceAddresses.length}
         />
       </div>
 
       {/* Body */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Map */}
-        <div className={`flex-1 min-w-0 relative ${mobileView === 'results' ? 'hidden md:block' : ''}`}>
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile backdrop overlay */}
+        {isSkipTraceSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            onClick={() => setIsSkipTraceSidebarOpen(false)}
+          />
+        )}
+
+        {/* Skip Trace Sidebar */}
+        {isSkipTraceSidebarOpen && (
+          <div className={`
+            fixed md:relative top-14 md:top-auto inset-x-0 md:inset-x-auto bottom-0 md:bottom-auto z-50 md:z-auto
+            w-full md:w-80 md:flex-shrink-0
+            bg-white md:bg-white
+            border-r border-gray-200
+            transform md:transform-none
+            transition-transform duration-300 ease-in-out
+            ${isSkipTraceSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            md:translate-x-0
+            flex flex-col
+          `}>
+            <SkipTracePinsList
+              skipTraceAddresses={skipTraceAddresses}
+              isLoading={isSkipTracePinsLoading}
+              nodes={currentSession?.nodes || []}
+              onAddressClick={handleSkipTraceAddressClick}
+              currentSession={currentSession}
+              sessions={sessions}
+              onNewSession={createNewSession}
+              onSessionSwitch={handleSessionSwitch}
+              onClose={() => setIsSkipTraceSidebarOpen(false)}
+            />
+          </div>
+        )}
+
+        {/* Map - Full width, no right sidebar */}
+        <div className="flex-1 min-w-0 relative">
           <div ref={mapContainer} className="w-full h-full" />
 
           <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10"><StatusBanner /></div>
           {selectedAddress && !currentSession && <AddressCard title="Selected" address={selectedAddress} />}
+          
+          {/* Results hint for users */}
+          {currentSession && currentSession.nodes.length > 0 && (
+            <div className="absolute bottom-4 right-4 z-20 bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 max-w-xs">
+              <div className="flex items-center space-x-2">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
+                    {currentSession.nodes.length} result{currentSession.nodes.length !== 1 ? 's' : ''} found
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    View details in <span className="font-medium text-[#1dd1f5]">Trace</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <TrackingFab />
 
-          {userLocation && (isTracking || userFoundState === 'active') && (
+          {/* Live location coordinates overlay - hidden for cleaner UI */}
+          {false && userLocation && (isTracking || userFoundState === 'active') && (
             <div className="absolute bottom-4 left-4 z-20 bg-white border border-gray-200 rounded-md shadow px-3 py-2 text-xs text-gray-700">
               <div className="font-medium mb-0.5">Live Location</div>
-              <div>lat: {userLocation.latitude.toFixed(6)} • lng: {userLocation.longitude.toFixed(6)}</div>
+              <div>lat: {userLocation?.latitude.toFixed(6)} • lng: {userLocation?.longitude.toFixed(6)}</div>
               <div className="opacity-70">pts: {locationHistory.length}</div>
             </div>
           )}
         </div>
-
-        {/* Right Panel (desktop) */}
-        <div className="flex-1 min-w-0 border-l border-gray-200 bg-gray-50 flex-col hidden md:flex">
-          {currentSession && (
-            <MapNodeStackPanel
-              currentSession={currentSession}
-            onPersonTrace={handlePersonTrace}
-            onAddressIntel={handleAddressIntel}
-            onStartNodeComplete={(id) => console.log('Start node complete', id)}
-            onDeleteNode={deleteNode}
-            onAddNode={addNode}
-            onRenameSession={renameSession}
-            onStartNodeAddressChanged={onStartNodeAddressChanged}
-            onUserFoundLocationFound={handleUserFoundLocationFound}
-            onUserFoundStartTracking={handleUserFoundStartTracking}
-            onUserFoundStopTracking={handleUserFoundStopTracking}
-            onCreateNewLocationSession={handleCreateNewLocationSession}
-            isTracking={isTracking}
-            userLocation={userLocation ? { lat: userLocation.latitude, lng: userLocation.longitude } : null}
-            lastUpdated={lastUpdated}
-            refreshCount={refreshCount}
-            />
-          )}
-        </div>
-
-        {/* Mobile results */}
-        <div className={`md:hidden flex-1 min-w-0 border-l border-gray-200 bg-gray-50 ${mobileView === 'results' ? 'flex' : 'hidden'}`}>
-          {currentSession && (
-            <MapNodeStackPanel
-              currentSession={currentSession}
-            onPersonTrace={handlePersonTrace}
-            onAddressIntel={handleAddressIntel}
-            onStartNodeComplete={(id) => console.log('Start node complete', id)}
-            onDeleteNode={deleteNode}
-            onAddNode={addNode}
-            onRenameSession={renameSession}
-            onStartNodeAddressChanged={onStartNodeAddressChanged}
-            onUserFoundLocationFound={handleUserFoundLocationFound}
-            onUserFoundStartTracking={handleUserFoundStartTracking}
-            onUserFoundStopTracking={handleUserFoundStopTracking}
-            onCreateNewLocationSession={handleCreateNewLocationSession}
-            isTracking={isTracking}
-            userLocation={userLocation ? { lat: userLocation.latitude, lng: userLocation.longitude } : null}
-            lastUpdated={lastUpdated}
-            refreshCount={refreshCount}
-            />
-          )}
-        </div>
       </div>
+
+      {/* Person Modal */}
+      {selectedPersonNode && (
+        <PersonModal
+          isOpen={isPersonModalOpen}
+          onClose={() => {
+            setIsPersonModalOpen(false);
+            setSelectedPersonNode(null);
+          }}
+          personNode={selectedPersonNode}
+        />
+      )}
+
+      {/* Session Overlay */}
+      <SessionOverlay
+        isOpen={shouldShowSessionOverlay}
+        sessions={sessions}
+        onSessionSelect={handleSessionSwitch}
+        onCreateNewSession={createNewSession}
+      />
     </div>
   );
 }
