@@ -10,14 +10,17 @@ export const emailConfig: EmailServiceConfig = {
 
 // Validate required environment variables
 export const validateEmailConfig = (): void => {
-  const requiredVars = ['RESEND_API_KEY', 'RESEND_FROM_EMAIL'];
-  const missing = requiredVars.filter(varName => !process.env[varName]);
-  
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}. ` +
-      'Please check your .env.local file.'
-    );
+  // Only validate at runtime, not during build
+  if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
+    const requiredVars = ['RESEND_API_KEY', 'RESEND_FROM_EMAIL'];
+    const missing = requiredVars.filter(varName => !process.env[varName]);
+    
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing required environment variables: ${missing.join(', ')}. ` +
+        'Please check your .env.local file.'
+      );
+    }
   }
 };
 

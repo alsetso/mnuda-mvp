@@ -16,7 +16,6 @@ import { SkipTraceAddress } from '@/features/map/services/skipTraceAddressExtrac
 
 
 export default function TracePage() {
-  const [isLoading, setIsLoading] = useState(false);
   const [isSkipTraceSidebarOpen, setIsSkipTraceSidebarOpen] = useState(true); // Skip trace sidebar state - start open
   const { error, success, withApiToast } = useToast();
   
@@ -189,7 +188,6 @@ export default function TracePage() {
               {/* Trace Form */}
               <TraceForm 
                 onSubmit={handleTraceSubmit} 
-                isLoading={isLoading}
               />
 
               {/* Trace Results */}

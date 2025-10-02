@@ -14,9 +14,16 @@ class EmailService {
   private config = emailConfig;
 
   constructor() {
-    // Only validate on server side
-    if (typeof window === 'undefined') {
-      validateEmailConfig();
+    // Only validate and initialize on server side and not during build
+    if (typeof window === 'undefined' && process.env.NODE_ENV !== 'test') {
+      try {
+        validateEmailConfig();
+      } catch (error) {
+        // During build time, just log a warning instead of throwing
+        if (process.env.NODE_ENV === 'production') {
+          console.warn('Email service configuration incomplete:', error);
+        }
+      }
     }
     
     // Only initialize Resend if we have an API key

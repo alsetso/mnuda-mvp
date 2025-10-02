@@ -12,7 +12,6 @@ import { useSessionManager } from '@/features/session';
 
 interface TraceFormProps {
   onSubmit: (node: NodeData) => Promise<void>;
-  isLoading: boolean;
 }
 
 // interface TraceData {
@@ -20,7 +19,7 @@ interface TraceFormProps {
 //   value: string;
 // }
 
-export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
+export default function TraceForm({ onSubmit }: TraceFormProps) {
   const [selectedType, setSelectedType] = useState<'name' | 'email' | 'phone' | 'address'>('name');
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState('');
@@ -252,7 +251,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
                   value={nameData.firstName}
                   onChange={(e) => setNameData(prev => ({ ...prev, firstName: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 />
               </div>
               <div>
@@ -262,7 +261,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
                   value={nameData.middleName}
                   onChange={(e) => setNameData(prev => ({ ...prev, middleName: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 />
               </div>
               <div>
@@ -272,7 +271,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
                   value={nameData.lastName}
                   onChange={(e) => setNameData(prev => ({ ...prev, lastName: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -294,7 +293,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
                   inputValue && emailValid ? 'border-green-300' : 
                   'border-gray-300'
                 }`}
-                disabled={isLoading}
+                disabled={isSubmitting}
               />
               {inputValue && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -320,7 +319,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Enter phone number"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-              disabled={isLoading}
+              disabled={isSubmitting}
             />
           )}
 
@@ -340,7 +339,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
                     });
                   }}
                   placeholder="Enter street address"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
