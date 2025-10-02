@@ -25,6 +25,7 @@ export default function TracePage() {
     sessions,
     createNewSession,
     switchSession,
+    renameSession,
     addNode,
     deleteNode,
   } = useSessionManager();
@@ -122,6 +123,7 @@ export default function TracePage() {
           sessions={sessions}
           onNewSession={createNewSession}
           onSessionSwitch={handleSessionSwitch}
+          onSessionRename={renameSession}
           updateUrl={false}
           showSessionSelector={true}
           showMobileToggle={false}

@@ -16,11 +16,11 @@ class EmailService {
   constructor() {
     // Only validate and initialize on server side and not during build
     if (typeof window === 'undefined' && process.env.NODE_ENV !== 'test') {
-      try {
-        validateEmailConfig();
-      } catch (error) {
-        // During build time, just log a warning instead of throwing
-        if (process.env.NODE_ENV === 'production') {
+      // Skip validation during build time
+      if (process.env.NEXT_PHASE !== 'phase-production-build') {
+        try {
+          validateEmailConfig();
+        } catch (error) {
           console.warn('Email service configuration incomplete:', error);
         }
       }

@@ -47,6 +47,7 @@ function MapPageContent() {
     sessions,
     createNewSession,
     switchSession,
+    renameSession,
     addNode,
   } = useSessionManager();
 
@@ -493,6 +494,7 @@ function MapPageContent() {
           sessions={sessions}
           onNewSession={createNewSession}
           onSessionSwitch={handleSessionSwitch}
+          onSessionRename={renameSession}
           updateUrl={true}
           showSessionSelector={true}
           showMobileToggle={false}
@@ -548,26 +550,6 @@ function MapPageContent() {
           <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10"><StatusBanner /></div>
           {selectedAddress && !currentSession && <AddressCard title="Selected" address={selectedAddress} />}
           
-          {/* Results hint for users */}
-          {currentSession && currentSession.nodes.length > 0 && (
-            <div className="absolute bottom-4 right-4 z-20 bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 max-w-xs">
-              <div className="flex items-center space-x-2">
-                <div className="flex-shrink-0">
-                  <svg className="w-5 h-5 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    {currentSession.nodes.length} result{currentSession.nodes.length !== 1 ? 's' : ''} found
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    View details in <span className="font-medium text-[#1dd1f5]">Trace</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
           
           <TrackingFab />
 
