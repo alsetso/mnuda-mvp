@@ -34,9 +34,10 @@ export default function InputNode({
 
   // Cleanup debounce timeout on unmount
   useEffect(() => {
+    const timeoutId = debounceTimeoutRef.current;
     return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, []);

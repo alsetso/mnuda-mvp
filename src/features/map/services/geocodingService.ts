@@ -209,6 +209,9 @@ export class GeocodingService {
 
     // Return result without cache metadata
     const { cachedAt, expiresAt, ...result } = cached;
+    // Suppress unused variable warnings for cache metadata
+    void cachedAt;
+    void expiresAt;
     return result;
   }
 

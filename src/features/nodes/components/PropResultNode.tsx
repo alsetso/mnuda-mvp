@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { propParseService, FormattedPropertyData, parseMainProperty, PropertyDetails, PropertyImage, PriceHistoryEntry, TaxHistoryEntry } from '@/features/api/services/propParse';
 
 interface PropResultNodeProps {
@@ -292,9 +293,11 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {propertyDetails.images.map((image: PropertyImage, index: number) => (
                 <div key={index} className="relative group">
-                  <img
+                  <Image
                     src={image.url}
                     alt={image.caption || `Property image ${index + 1}`}
+                    width={400}
+                    height={192}
                     className="w-full h-48 object-cover rounded-lg border border-gray-200"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
