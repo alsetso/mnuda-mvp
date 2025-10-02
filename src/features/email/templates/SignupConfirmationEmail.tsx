@@ -2,7 +2,7 @@ import React from 'react';
 import { EmailLayout } from '../components/EmailLayout';
 import { EmailText } from '../components/EmailText';
 import { EmailButton } from '../components/EmailButton';
-import { Img } from '@react-email/components';
+// import { Img } from '@react-email/components';
 
 interface SignupConfirmationEmailProps {
   confirmationUrl: string;
@@ -14,7 +14,7 @@ interface SignupConfirmationEmailProps {
 
 export const SignupConfirmationEmail: React.FC<SignupConfirmationEmailProps> = ({
   confirmationUrl,
-  name,
+  // name,
   appName,
   appUrl,
   year,

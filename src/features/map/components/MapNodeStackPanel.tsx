@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import NodeStack from '@/features/nodes/components/NodeStack';
 import MapNodeStackFooter from './MapNodeStackFooter';
 import TitleEdit from '@/features/nodes/components/TitleEdit';
 import { NodeData, SessionData, sessionStorageService } from '@/features/session/services/sessionStorage';
 import { Address } from '../types';
-import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
+// import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 import { AddressService } from '@/features/api/services/addressService';
 import { NameSearchService } from '@/features/api/services/nameSearchService';
 import { EmailSearchService } from '@/features/api/services/emailSearchService';
 import { PhoneSearchService } from '@/features/api/services/phoneSearchService';
 import { ZillowSearchService } from '@/features/api/services/zillowSearchService';
-import { apiService } from '@/features/api/services/apiService';
+// import { apiService } from '@/features/api/services/apiService';
 import { GeocodingService } from '@/features/map/services/geocodingService';
 import { useToast } from '@/features/ui/hooks/useToast';
 
@@ -52,10 +52,10 @@ export default function MapNodeStackPanel({
   onSessionRename,
   isTracking,
   userLocation,
-  lastUpdated: _lastUpdated,
-  refreshCount: _refreshCount
+  // lastUpdated: _lastUpdated,
+  // refreshCount: _refreshCount
 }: MapNodeStackPanelProps) {
-  const [isSearching] = useState(false);
+  // const [isSearching] = useState(false);
   const { withApiToast } = useToast();
 
   // Handle person trace from person node - pass through to parent
@@ -78,25 +78,25 @@ export default function MapNodeStackPanel({
         coordinates: geocodingResult.success ? geocodingResult.coordinates : undefined,
       };
 
-      const response = await withApiToast(
-        'Address Intel',
-        () => apiService.callSkipTraceAPI(addressData),
-        {
-          loadingMessage: `Analyzing address: ${addressData.street}, ${addressData.city}, ${addressData.state} ${addressData.zip}`,
-          successMessage: 'Address intel completed successfully',
-          errorMessage: 'Failed to analyze address'
-        }
-      );
+      // const response = await withApiToast(
+      //   'Address Intel',
+      //   () => apiService.callSkipTraceAPI(addressData),
+      //   {
+      //     loadingMessage: `Analyzing address: ${addressData.street}, ${addressData.city}, ${addressData.state} ${addressData.zip}`,
+      //     successMessage: 'Address intel completed successfully',
+      //     errorMessage: 'Failed to analyze address'
+      //   }
+      // );
 
-      const newNode: NodeData = {
-        id: `address-${Date.now()}`,
-        type: 'api-result',
-        apiName: 'Skip Trace',
-        address: addressWithCoordinates,
-        response: response,
-        timestamp: Date.now(),
-        mnNodeId: MnudaIdService.generateTypedId('node')
-      };
+      // const newNode: NodeData = {
+      //   id: `address-${Date.now()}`,
+      //   type: 'api-result',
+      //   apiName: 'Skip Trace',
+      //   address: addressWithCoordinates,
+      //   response: response,
+      //   timestamp: Date.now(),
+      //   mnNodeId: MnudaIdService.generateTypedId('node')
+      // };
 
       // Call the parent handler
       onAddressIntel(addressWithCoordinates);

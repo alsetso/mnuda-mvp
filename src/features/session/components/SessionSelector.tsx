@@ -12,11 +12,7 @@ interface SessionSelectorProps {
 }
 
 function SessionSelector({ 
-  onNewSession, 
-  currentSession,
-  sessions,
-  onSessionSwitch,
-  updateUrl: _updateUrl = false
+  currentSession
 }: SessionSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();

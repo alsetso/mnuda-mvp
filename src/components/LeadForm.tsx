@@ -66,7 +66,7 @@ export default function LeadForm({ type, title, subtitle }: LeadFormProps) {
         setMessage('Something went wrong. Please try again or contact us directly.');
         setIsSuccess(false);
       }
-    } catch (error) {
+    } catch {
       setMessage('Network error. Please check your connection and try again.');
       setIsSuccess(false);
     } finally {

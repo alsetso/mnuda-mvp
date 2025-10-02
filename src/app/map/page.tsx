@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppHeader from '@/features/session/components/AppHeader';
 import PersonModal from '@/features/nodes/components/PersonModal';
@@ -16,7 +16,7 @@ import { useToast } from '@/features/ui/hooks/useToast';
 import { NodeData, sessionStorageService } from '@/features/session/services/sessionStorage';
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 import { apiService } from '@/features/api/services/apiService';
-import { GeocodingService } from '@/features/map/services/geocodingService';
+// import { GeocodingService } from '@/features/map/services/geocodingService';
 import { AddressService } from '@/features/api/services/addressService';
 import { personDetailParseService } from '@/features/api/services/personDetailParse';
 
@@ -31,7 +31,7 @@ import { personDetailParseService } from '@/features/api/services/personDetailPa
 type Coords = { lat: number; lng: number };
 type UserFoundLifecycle = 'idle' | 'locating' | 'active' | 'completed';
 
-export default function MapPage() {
+function MapPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
 
@@ -48,8 +48,6 @@ export default function MapPage() {
     createNewSession,
     switchSession,
     addNode,
-    deleteNode,
-    renameSession,
   } = useSessionManager();
 
   // --- User location tracker ---
@@ -60,8 +58,6 @@ export default function MapPage() {
     error: locationError,
     startTracking,
     stopTracking,
-    lastUpdated,
-    refreshCount,
   } = useUserLocationTracker({ pollIntervalMs: 0, historyLimit: 200 });
 
   // --- Map ---
@@ -92,7 +88,6 @@ export default function MapPage() {
     temporaryAddress: selectedAddress,
     isSyncing: isSearching,
     onMapPinDropped,
-    onStartNodeAddressChanged,
   } = useAddressSync({
     onTemporaryAddressChange: (address) => console.log('Temp address changed:', address),
     onAddressPinUpdate: (coordinates) => {
@@ -176,14 +171,14 @@ export default function MapPage() {
     setUserFoundState('completed');
   }, [stopTracking, completeActiveUserFoundNode]);
 
-  const handleCreateNewLocationSession = useCallback(() => {
-    if (!currentSession) return;
-    const node = sessionStorageService.createNewUserFoundNode();
-    if (node) {
-      addNode(node);
-      setUserFoundState('idle');
-    }
-  }, [currentSession, addNode]);
+  // const handleCreateNewLocationSession = useCallback(() => {
+  //   if (!currentSession) return;
+  //   const node = sessionStorageService.createNewUserFoundNode();
+  //   if (node) {
+  //     addNode(node);
+  //     setUserFoundState('idle');
+  //   }
+  // }, [currentSession, addNode]);
 
   // Track lifecycle when new location arrives
   useEffect(() => {
@@ -404,37 +399,37 @@ export default function MapPage() {
     };
   }, [handlePersonTrace]);
 
-  const handleAddressIntel = useCallback(
-    async (address: { street: string; city: string; state: string; zip: string }) => {
-      if (!currentSession) return;
-      try {
-        const geo = await GeocodingService.geocodeAddress(address);
-        const full = { ...address, coordinates: geo.success ? geo.coordinates : undefined };
-        const resp = await withApiToast(
-          'Address Intel',
-          () => apiService.callSkipTraceAPI(address),
-          {
-            loadingMessage: `Analyzing ${address.street}, ${address.city}`,
-            successMessage: 'Intel complete',
-            errorMessage: 'Intel failed',
-          }
-        );
-        const node: NodeData = {
-          id: `addr-${Date.now()}`,
-          type: 'api-result',
-          address: full as Address,
-          apiName: 'Address Intel',
-          response: resp,
-          timestamp: Date.now(),
-          mnNodeId: MnudaIdService.generateTypedId('node'),
-        };
-        addNode(node);
-      } catch (err) {
-        console.error('Intel error:', err);
-      }
-    },
-    [currentSession, addNode, withApiToast]
-  );
+  // const handleAddressIntel = useCallback(
+  //   async (address: { street: string; city: string; state: string; zip: string }) => {
+  //     if (!currentSession) return;
+  //     try {
+  //       const geo = await GeocodingService.geocodeAddress(address);
+  //       const full = { ...address, coordinates: geo.success ? geo.coordinates : undefined };
+  //       const resp = await withApiToast(
+  //         'Address Intel',
+  //         () => apiService.callSkipTraceAPI(address),
+  //         {
+  //           loadingMessage: `Analyzing ${address.street}, ${address.city}`,
+  //           successMessage: 'Intel complete',
+  //           errorMessage: 'Intel failed',
+  //         }
+  //       );
+  //       const node: NodeData = {
+  //         id: `addr-${Date.now()}`,
+  //         type: 'api-result',
+  //         address: full as Address,
+  //         apiName: 'Address Intel',
+  //         response: resp,
+  //         timestamp: Date.now(),
+  //         mnNodeId: MnudaIdService.generateTypedId('node'),
+  //       };
+  //       addNode(node);
+  //     } catch (err) {
+  //       console.error('Intel error:', err);
+  //     }
+  //   },
+  //   [currentSession, addNode, withApiToast]
+  // );
 
   // ---------------------------------------------------------------------------
   // UI helpers
@@ -628,5 +623,13 @@ function IconTarget() {
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 6v0m0 12v0m6-6v0M6 12v0m6-9a9 9 0 100 18 9 9 0 000-18z" />
     </svg>
+  );
+}
+
+export default function MapPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading map...</div>}>
+      <MapPageContent />
+    </Suspense>
   );
 }

@@ -180,7 +180,7 @@ class EmailVerificationService {
         isConfirmed: true,
         authMethod: 'password'
       };
-    } catch (error) {
+    } catch {
       // If we can't check confirmation status, assume account exists
       return {
         exists: true,

@@ -15,8 +15,7 @@ export class NameSearchService {
    * Centralized name search that creates a result node
    */
   static async searchName(
-    name: { firstName: string; middleInitial?: string; lastName: string },
-    sessionId: string
+    name: { firstName: string; middleInitial?: string; lastName: string }
   ): Promise<NameSearchResult> {
     try {
       // Call the Skip Trace API
@@ -56,7 +55,7 @@ export class NameSearchService {
     try {
       const result = await withApiToast(
         'Name Search',
-        () => this.searchName(name, _sessionId),
+        () => this.searchName(name),
         {
           loadingMessage: `Searching name: ${name.middleInitial ? `${name.firstName} ${name.middleInitial} ${name.lastName}` : `${name.firstName} ${name.lastName}`}`,
           successMessage: 'Name search completed successfully',

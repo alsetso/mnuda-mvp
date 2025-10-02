@@ -84,11 +84,6 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
     return 'from-cyan-400 to-blue-500';
   };
 
-  const _getProgressBarColorSolid = (percentage: number) => {
-    if (percentage >= 80) return 'bg-red-500';
-    if (percentage >= 60) return 'bg-amber-500';
-    return 'bg-gradient-to-r from-cyan-400 to-blue-500';
-  };
 
   if (!isOpen) return null;
 

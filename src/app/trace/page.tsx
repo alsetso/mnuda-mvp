@@ -6,7 +6,7 @@ import TraceForm from '@/components/TraceForm';
 import NodeStack from '@/features/nodes/components/NodeStack';
 import SkipTracePinsList from '@/features/map/components/SkipTracePinsList';
 import { useSessionManager } from '@/features/session';
-import { NodeData, sessionStorageService } from '@/features/session/services/sessionStorage';
+import { NodeData } from '@/features/session/services/sessionStorage';
 import { useToast } from '@/features/ui/hooks/useToast';
 import { apiService } from '@/features/api/services/apiService';
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
@@ -99,10 +99,10 @@ export default function TracePage() {
     }
   };
 
-  const handleNodeClick = (node: NodeData) => {
-    // Handle node click - could open a modal or navigate to details
-    console.log('Node clicked:', node);
-  };
+  // const handleNodeClick = (node: NodeData) => {
+  //   // Handle node click - could open a modal or navigate to details
+  //   console.log('Node clicked:', node);
+  // };
 
   // UI helpers
   const handleSkipTraceSidebarToggle = useCallback(() => {

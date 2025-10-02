@@ -15,8 +15,7 @@ export class EmailSearchService {
    * Centralized email search that creates a result node
    */
   static async searchEmail(
-    email: string,
-    sessionId: string
+    email: string
   ): Promise<EmailSearchResult> {
     try {
       // Call the Skip Trace API
@@ -56,7 +55,7 @@ export class EmailSearchService {
     try {
       const result = await withApiToast(
         'Email Search',
-        () => this.searchEmail(email, _sessionId),
+        () => this.searchEmail(email),
         {
           loadingMessage: `Searching email: ${email}`,
           successMessage: 'Email search completed successfully',

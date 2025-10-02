@@ -16,8 +16,7 @@ export class ZillowSearchService {
    * Centralized Zillow search that creates a result node
    */
   static async searchZillow(
-    address: { street: string; city: string; state: string; zip: string },
-    sessionId: string
+    address: { street: string; city: string; state: string; zip: string }
   ): Promise<ZillowSearchResult> {
     try {
       // Geocode the address first to get coordinates
@@ -65,7 +64,7 @@ export class ZillowSearchService {
     try {
       const result = await withApiToast(
         'Zillow Search',
-        () => this.searchZillow(address, _sessionId),
+        () => this.searchZillow(address),
         {
           loadingMessage: `Searching property: ${address.street}, ${address.city}, ${address.state} ${address.zip}`,
           successMessage: 'Property search completed successfully',

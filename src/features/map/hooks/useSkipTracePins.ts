@@ -32,7 +32,7 @@ export function useSkipTracePins({
   addMarker,
   removeMarker,
   mapLoaded,
-  onPersonTrace,
+  // onPersonTrace,
   updateMarkerPopup,
 }: UseSkipTracePinsProps): UseSkipTracePinsReturn {
   const [skipTraceAddresses, setSkipTraceAddresses] = useState<SkipTraceAddress[]>([]);
@@ -50,7 +50,7 @@ export function useSkipTracePins({
 
     // Create person list HTML with click handlers
     const personListHtml = peopleData.people.length > 0 
-      ? peopleData.people.map((person, index: number) => {
+      ? peopleData.people.map((person) => {
           // Check if this person has child results
           const personChildNodes = childNodes.filter(node => 
             node.clickedEntityId === person.mnEntityId
@@ -78,7 +78,7 @@ export function useSkipTracePins({
           // Use the structured entity data from person detail nodes
           const personData = childNode.personData as { entityCounts?: Record<string, number>; entities?: unknown[] };
           const entityCounts = personData?.entityCounts || {};
-          const entities = personData?.entities || [];
+          // const entities = personData?.entities || [];
           
           // Extract person info from clickedEntityData (the original person data)
           const clickedEntityData = childNode.clickedEntityData as PersonRecord;
@@ -91,7 +91,7 @@ export function useSkipTracePins({
           
           // Create entity breakdown
           const entityBreakdown = Object.entries(entityCounts)
-            .filter(([_, count]) => (count as number) > 0)
+            .filter(([, count]) => (count as number) > 0)
             .map(([type, count]) => `<span class="text-xs bg-gray-200 text-gray-700 px-1 rounded mr-1">${count} ${type}</span>`)
             .join('');
           
@@ -349,7 +349,7 @@ export function useSkipTracePins({
     } finally {
       setIsLoading(false);
     }
-  }, [nodes, mapLoaded, addMarker, removeMarker, geocodeAddress, addSkipTracePin]);
+  }, [nodes, mapLoaded, removeMarker, geocodeAddress, addSkipTracePin]);
 
   /**
    * Clear all skip trace pins

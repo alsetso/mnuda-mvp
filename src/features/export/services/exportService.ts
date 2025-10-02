@@ -56,7 +56,7 @@ export class ExportService {
           result = await xlsxExporter.export(exportData, options);
           break;
         case 'pdf':
-          result = await pdfExporter.export(exportData, options);
+          result = await pdfExporter.export(exportData);
           break;
         default:
           throw new Error(`Unsupported export format: ${options.format}`);

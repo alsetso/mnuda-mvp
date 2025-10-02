@@ -46,7 +46,6 @@ export default function AppHeader({
   showSkipTraceToggle = false,
   isSkipTraceSidebarOpen = false,
   onSkipTraceSidebarToggle,
-  skipTracePinsCount = 0,
 }: AppHeaderProps) {
   const { user } = useAuth();
   const pathname = usePathname();
@@ -56,7 +55,7 @@ export default function AppHeader({
   const isMapPage = pathname === '/map';
   const isTracePage = pathname === '/trace';
   const needsSessionManagement = isMapPage || isTracePage;
-  const showNavigation = true; // Show navigation on ALL pages for consistency
+  // Show navigation on ALL pages for consistency
   
   // Navigation items for non-map pages
   const navigationItems = [

@@ -15,8 +15,7 @@ export class PhoneSearchService {
    * Centralized phone search that creates a result node
    */
   static async searchPhone(
-    phone: string,
-    sessionId: string
+    phone: string
   ): Promise<PhoneSearchResult> {
     try {
       // Call the Skip Trace API
@@ -56,7 +55,7 @@ export class PhoneSearchService {
     try {
       const result = await withApiToast(
         'Phone Search',
-        () => this.searchPhone(phone, _sessionId),
+        () => this.searchPhone(phone),
         {
           loadingMessage: `Searching phone: ${phone}`,
           successMessage: 'Phone search completed successfully',

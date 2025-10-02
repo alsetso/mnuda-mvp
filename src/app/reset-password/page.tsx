@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/features/auth';
 import { PasswordResetService } from '@/features/email/services/passwordResetService';
@@ -12,16 +12,16 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
+  // const [token, setToken] = useState<string | null>(null);
   
   const router = useRouter();
-  const searchParams = useSearchParams();
+  // const searchParams = useSearchParams();
   const { user } = useAuth();
 
-  useEffect(() => {
-    const tokenParam = searchParams.get('token');
-    setToken(tokenParam);
-  }, [searchParams]);
+  // useEffect(() => {
+  //   const tokenParam = searchParams.get('token');
+  //   setToken(tokenParam);
+  // }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +53,7 @@ export default function ResetPasswordPage() {
       } else {
         setError(result.error || 'Failed to update password');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);

@@ -20,7 +20,7 @@ interface PricingOption {
 export default function SignupPage() {
   const [currentStep, setCurrentStep] = useState<SignupStep>('pricing');
   const [selectedPlan, setSelectedPlan] = useState<PricingOption | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handlePlanSelect = (plan: PricingOption) => {

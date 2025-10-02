@@ -1,10 +1,10 @@
 // PDF export functionality
 
 import jsPDF from 'jspdf';
-import type { ExportData, ExportOptions, ExportResult } from '../types/exportTypes';
+import type { ExportData, ExportResult } from '../types/exportTypes';
 
 export class PdfExporter {
-  async export(data: ExportData, _options: ExportOptions): Promise<ExportResult> {
+  async export(data: ExportData): Promise<ExportResult> {
     try {
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();

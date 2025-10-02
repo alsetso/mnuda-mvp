@@ -15,10 +15,10 @@ interface TraceFormProps {
   isLoading: boolean;
 }
 
-interface TraceData {
-  type: 'name' | 'email' | 'phone' | 'address';
-  value: string;
-}
+// interface TraceData {
+//   type: 'name' | 'email' | 'phone' | 'address';
+//   value: string;
+// }
 
 export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
   const [selectedType, setSelectedType] = useState<'name' | 'email' | 'phone' | 'address'>('name');
@@ -66,14 +66,14 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
            addressData.zip.trim() !== '';
   };
 
-  const getFullName = (): string => {
-    const parts = [nameData.firstName.trim(), nameData.middleName.trim(), nameData.lastName.trim()].filter(Boolean);
-    return parts.join(' ');
-  };
+  // const getFullName = (): string => {
+  //   const parts = [nameData.firstName.trim(), nameData.middleName.trim(), nameData.lastName.trim()].filter(Boolean);
+  //   return parts.join(' ');
+  // };
 
-  const getFullAddress = (): string => {
-    return `${addressData.street}, ${addressData.city}, ${addressData.state} ${addressData.zip}`.trim();
-  };
+  // const getFullAddress = (): string => {
+  //   return `${addressData.street}, ${addressData.city}, ${addressData.state} ${addressData.zip}`.trim();
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +106,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
           
           result = await withApiToast(
             'Name Search',
-            () => NameSearchService.searchName(nameParams, currentSession.id),
+            () => NameSearchService.searchName(nameParams),
             {
               loadingMessage: `Searching name: ${nameParams.middleInitial ? `${nameParams.firstName} ${nameParams.middleInitial} ${nameParams.lastName}` : `${nameParams.firstName} ${nameParams.lastName}`}`,
               successMessage: 'Name search completed successfully',
@@ -124,7 +124,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
           
           result = await withApiToast(
             'Email Search',
-            () => EmailSearchService.searchEmail(inputValue.trim(), currentSession.id),
+            () => EmailSearchService.searchEmail(inputValue.trim()),
             {
               loadingMessage: `Searching email: ${inputValue.trim()}`,
               successMessage: 'Email search completed successfully',
@@ -142,7 +142,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
           
           result = await withApiToast(
             'Phone Search',
-            () => PhoneSearchService.searchPhone(inputValue.trim(), currentSession.id),
+            () => PhoneSearchService.searchPhone(inputValue.trim()),
             {
               loadingMessage: `Searching phone: ${inputValue.trim()}`,
               successMessage: 'Phone search completed successfully',
@@ -160,7 +160,7 @@ export default function TraceForm({ onSubmit, isLoading }: TraceFormProps) {
           
           result = await withApiToast(
             'Address Search',
-            () => AddressService.searchAddress(addressData, currentSession.id),
+            () => AddressService.searchAddress(addressData),
             {
               loadingMessage: `Searching address: ${addressData.street}, ${addressData.city}, ${addressData.state} ${addressData.zip}`,
               successMessage: 'Address search completed successfully',

@@ -16,8 +16,7 @@ export class AddressService {
    * Centralized address search that creates a result node
    */
   static async searchAddress(
-    address: { street: string; city: string; state: string; zip: string },
-    sessionId: string
+    address: { street: string; city: string; state: string; zip: string }
   ): Promise<AddressSearchResult> {
     try {
       // Geocode the address first to get coordinates
@@ -65,7 +64,7 @@ export class AddressService {
     try {
       const result = await withApiToast(
         'Skip Trace Address Search',
-        () => this.searchAddress(address, _sessionId),
+        () => this.searchAddress(address),
         {
           loadingMessage: `Searching address: ${address.street}, ${address.city}, ${address.state} ${address.zip}`,
           successMessage: 'Address search completed successfully',

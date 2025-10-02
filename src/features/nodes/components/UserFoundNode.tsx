@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useToast } from '@/features/ui/hooks/useToast';
+// import { useToast } from '@/features/ui/hooks/useToast'; // TODO: Implement toast notifications
 
 interface UserFoundNodeProps {
   onLocationFound: (coords: { lat: number; lng: number }, address?: { street: string; city: string; state: string; zip: string; coordinates?: { latitude: number; longitude: number } }) => void;
@@ -44,7 +44,7 @@ export default function UserFoundNode({
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationFound, setLocationFound] = useState(false);
   const [, setForceUpdate] = useState(0);
-  const { withApiToast: _withApiToast } = useToast();
+  // const { withApiToast } = useToast(); // TODO: Implement toast notifications
 
   // Simple retry utility
   const withRetry = async (fn: () => Promise<unknown>, retries = 2) => {
@@ -81,7 +81,7 @@ export default function UserFoundNode({
         return res;
       });
       
-      const data = await response.json();
+      const data = await (response as Response).json();
       
       if (data.features && data.features.length > 0) {
         const feature = data.features[0];
@@ -130,7 +130,7 @@ export default function UserFoundNode({
 
   // Listen for session updates to trigger re-renders
   useEffect(() => {
-    const handleSessionUpdate = (_event: CustomEvent) => {
+    const handleSessionUpdate = () => {
       // Force re-render when session is updated
       setForceUpdate(prev => prev + 1);
     };

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
-import { supabase, getCurrentUser } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { useEmailNotifications } from '@/features/email/hooks/useEmailNotifications';
 
 type AuthUser = User;
@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
           setUser(session.user);
@@ -69,12 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [emailNotifications]);
 
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });

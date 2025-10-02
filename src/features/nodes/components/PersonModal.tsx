@@ -13,7 +13,7 @@ interface PersonModalProps {
 export default function PersonModal({ isOpen, onClose, personNode }: PersonModalProps) {
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
-  const { geocodeAddress, isLoading: isGeocoding } = useGeocoding();
+  const { geocodeAddress } = useGeocoding();
 
   const personData = personNode.personData as { entityCounts?: Record<string, number>; entities?: unknown[] };
   const entityCounts = personData?.entityCounts || {};
@@ -29,8 +29,8 @@ export default function PersonModal({ isOpen, onClose, personNode }: PersonModal
 
   // Auto-geocode if coordinates available
   useEffect(() => {
-    if (personData && 'addresses' in personData && Array.isArray((personData as any).addresses) && (personData as any).addresses.length > 0) {
-      const firstAddress = (personData as any).addresses[0];
+    if (personData && 'addresses' in personData && Array.isArray((personData as Record<string, unknown>).addresses) && ((personData as Record<string, unknown>).addresses as unknown[]).length > 0) {
+      const firstAddress = ((personData as Record<string, unknown>).addresses as unknown[])[0] as Record<string, string>;
       if (firstAddress.street && firstAddress.city && firstAddress.state) {
         geocodeAddress({
           street: firstAddress.street,
@@ -62,8 +62,8 @@ export default function PersonModal({ isOpen, onClose, personNode }: PersonModal
   };
 
   // Group entities by type
-  const groupedEntities = entities.reduce((acc: Record<string, unknown[]>, entity: Record<string, unknown>) => {
-    const type = entity.type || 'person';
+  const groupedEntities = (entities as Record<string, unknown>[]).reduce((acc: Record<string, unknown[]>, entity: Record<string, unknown>) => {
+    const type = (entity.type as string) || 'person';
     if (!acc[type]) acc[type] = [];
     acc[type].push(entity);
     return acc;
@@ -220,17 +220,19 @@ export default function PersonModal({ isOpen, onClose, personNode }: PersonModal
                       {isExpanded && (
                         <div className="p-4">
                           <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {typeEntities.map((entity, index) => (
-                              <div key={index} className="flex items-center justify-between p-2 bg-white border border-gray-100 rounded">
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm text-gray-900 truncate">
-                                    {entity.name || entity.email || entity.number || entity.address || 'Unknown'}
-                                  </div>
-                                  {entity.mnEntityId && (
-                                    <div className="text-xs text-gray-500 font-mono">
-                                      {entity.mnEntityId}
+                            {typeEntities.map((entity, index) => {
+                              const entityData = entity as Record<string, unknown>;
+                              return (
+                                <div key={index} className="flex items-center justify-between p-2 bg-white border border-gray-100 rounded">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm text-gray-900 truncate">
+                                      {(entityData.name as string) || (entityData.email as string) || (entityData.number as string) || (entityData.address as string) || 'Unknown'}
                                     </div>
-                                  )}
+                                    {(entityData.mnEntityId as string) && (
+                                      <div className="text-xs text-gray-500 font-mono">
+                                        {entityData.mnEntityId as string}
+                                      </div>
+                                    )}
                                 </div>
                                 <div className="flex items-center space-x-2 ml-2">
                                   <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeLabelColor(type)}`}>
@@ -238,7 +240,8 @@ export default function PersonModal({ isOpen, onClose, personNode }: PersonModal
                                   </span>
                                 </div>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}

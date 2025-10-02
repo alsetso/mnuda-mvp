@@ -20,7 +20,7 @@ export default function EntityCard({
   entity, 
   onPersonTrace, 
   onAddressIntel,
-  showTechnicalDetails: _showTechnicalDetails = false 
+  // showTechnicalDetails: _showTechnicalDetails = false 
 }: EntityCardProps) {
   const { geocodeAddress, isLoading: isGeocoding } = useGeocoding();
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -98,30 +98,30 @@ export default function EntityCard({
     return (entity as PersonDetailEntity).mnEntityId;
   };
 
-  // Get source for display
-  const _getSource = (): string => {
-    if (isPersonRecord) {
-      return (entity as PersonRecord).source;
-    }
-    return (entity as PersonDetailEntity).source;
-  };
+  // // Get source for display
+  // const _getSource = (): string => {
+  //   if (isPersonRecord) {
+  //     return (entity as PersonRecord).source;
+  //   }
+  //   return (entity as PersonDetailEntity).source;
+  // };
 
-  // Check if entity is traceable
-  const _isTraceable = (): boolean => {
-    if (isPersonRecord) {
-      return (entity as PersonRecord).isTraceable;
-    }
-    return (entity as PersonDetailEntity).isTraceable;
-  };
+  // // Check if entity is traceable
+  // const _isTraceable = (): boolean => {
+  //   if (isPersonRecord) {
+  //     return (entity as PersonRecord).isTraceable;
+  //   }
+  //   return (entity as PersonDetailEntity).isTraceable;
+  // };
 
-  // Get API person ID for person entities
-  const _getApiPersonId = (): string | undefined => {
-    if (isPersonRecord) {
-      return (entity as PersonRecord).apiPersonId;
-    }
-    const detailEntity = entity as PersonDetailEntity;
-    return detailEntity.type === 'person' ? (typeof detailEntity.apiPersonId === 'string' ? detailEntity.apiPersonId : undefined) : undefined;
-  };
+  // // Get API person ID for person entities
+  // const _getApiPersonId = (): string | undefined => {
+  //   if (isPersonRecord) {
+  //     return (entity as PersonRecord).apiPersonId;
+  //   }
+  //   const detailEntity = entity as PersonDetailEntity;
+  //   return detailEntity.type === 'person' ? (typeof detailEntity.apiPersonId === 'string' ? detailEntity.apiPersonId : undefined) : undefined;
+  // };
 
   return (
     <>
