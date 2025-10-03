@@ -280,7 +280,9 @@ export default function NodeStack({
       subtitle,
       type: nodeData.type,
       component,
-      mnudaId: nodeData.mnNodeId
+      mnudaId: nodeData.mnNodeId,
+      timestamp: nodeData.timestamp,
+      mnNodeId: nodeData.mnNodeId
     };
   });
 
@@ -294,6 +296,11 @@ export default function NodeStack({
   if (validDisplayNodes.length === 0) {
     return null;
   }
+
+  // Simple blue status indicator for all nodes
+  const getNodeStatusColor = (): string => {
+    return 'bg-[#1dd1f5]';
+  };
 
   return (
     <div className="space-y-0 w-full max-w-full overflow-hidden">
@@ -331,16 +338,9 @@ export default function NodeStack({
             {/* Node Header */}
             <div className="relative z-10">
               <div className="flex items-center bg-white border-b border-gray-100">
-                <button
-                  onClick={() => toggleNode(node.id)}
-                  className="flex-1 flex items-center justify-between p-3 hover:bg-gray-25 transition-colors"
-                >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 flex-1 p-3">
                   <div className="flex-shrink-0">
-                    <div className={`w-3 h-3 rounded-full ${
-                      node.type === 'start' ? 'bg-blue-500' :
-                      node.type === 'api-result' ? 'bg-blue-500' : 'bg-green-500'
-                    }`}></div>
+                    <div className={`w-3 h-3 rounded-full ${getNodeStatusColor()}`}></div>
                   </div>
                   <div className="text-left min-w-0 flex-1">
                     <TitleEdit
@@ -349,51 +349,48 @@ export default function NodeStack({
                       className="mb-0.5"
                       placeholder="Enter node title..."
                     />
-                    <p className="text-xs text-gray-400 mt-0.5">{node.subtitle}</p>
                     {node.mnudaId && (
-                      <p className="text-xs text-blue-600 mt-0.5 font-mono">ID: {node.mnudaId}</p>
+                      <p className="text-xs text-[#1dd1f5] font-mono">ID: {node.mnudaId}</p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`text-xs px-2 py-0.5 rounded ${
-                    node.type === 'start' 
-                      ? 'bg-blue-50 text-blue-700'
-                      : node.type === 'api-result' 
-                      ? 'bg-slate-100 text-slate-600' 
-                      : 'bg-emerald-50 text-emerald-700'
-                  }`}>
-                    {node.type === 'start' ? 'Start Node' : 
-                     node.type === 'api-result' ? 'API Result' : 'Person Detail'}
-                  </span>
-                  <svg 
-                    className={`w-4 h-4 text-gray-400 transition-transform ${
-                      isExpanded ? 'rotate-180' : ''
-                    }`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-                </button>
-                {onDeleteNode && (
+                <div className="flex items-center space-x-1 flex-shrink-0">
+                  {/* Expand/Collapse Button */}
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (confirm('Are you sure you want to delete this node?')) {
-                        onDeleteNode(node.id);
-                      }
-                    }}
-                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    title="Delete node"
+                    onClick={() => toggleNode(node.id)}
+                    className="p-2 text-gray-400 hover:text-[#1dd1f5] transition-colors"
+                    title={isExpanded ? 'Collapse' : 'Expand'}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <svg 
+                      className={`w-4 h-4 transition-transform ${
+                        isExpanded ? 'rotate-180' : ''
+                      }`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                )}
+                  
+                  {/* Delete Button */}
+                  {onDeleteNode && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm('Are you sure you want to delete this node?')) {
+                          onDeleteNode(node.id);
+                        }
+                      }}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="Delete node"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             

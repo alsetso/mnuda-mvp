@@ -1,4 +1,13 @@
 // API service for property data calls
+import { apiUsageService } from '../../session/services/apiUsageService';
+
+// Global callback for API usage updates - will be set by the context provider
+let onApiUsageUpdate: (() => void) | null = null;
+
+export const setApiUsageUpdateCallback = (callback: (() => void) | null) => {
+  onApiUsageUpdate = callback;
+};
+
 export interface ApiOption {
   id: string;
   name: string;
@@ -39,8 +48,42 @@ export const apiOptions: ApiOption[] = [
   }
 ];
 
+// Custom error class for credit exhaustion
+export class CreditsExhaustedError extends Error {
+  constructor(message: string = 'Daily API limit reached. Please try again tomorrow.') {
+    super(message);
+    this.name = 'CreditsExhaustedError';
+  }
+}
+
+// Helper function to check and record API usage
+const checkAndRecordApiUsage = (): boolean => {
+  // Get current state
+  const currentState = apiUsageService.getUsageState();
+  
+  // Check if we can make the request
+  if (currentState.isLimitReached && !currentState.hasUnlimitedCredits) {
+    throw new CreditsExhaustedError('Daily API limit reached. Please try again tomorrow.');
+  }
+  
+  // Record the usage (this will always succeed for authenticated users)
+  const recorded = apiUsageService.recordApiRequest();
+  if (!recorded) {
+    throw new CreditsExhaustedError('Failed to record API usage. Please try again.');
+  }
+  
+  // Trigger real-time update in the UI
+  if (onApiUsageUpdate) {
+    onApiUsageUpdate();
+  }
+  
+  return true;
+};
+
 export const apiService = {
   async callZillowAPI(address: { street: string; city: string; state: string; zip: string }): Promise<unknown> {
+    // Check and record API usage
+    checkAndRecordApiUsage();
     console.log('Zillow API - Input address:', address);
     const fullAddress = `${address.street} ${address.city} ${address.state} ${address.zip}`;
     const encodedAddress = encodeURIComponent(fullAddress);
@@ -66,6 +109,8 @@ export const apiService = {
   },
 
   async callSkipTraceAPI(address: { street: string; city: string; state: string; zip: string }): Promise<unknown> {
+    // Check and record API usage
+    checkAndRecordApiUsage();
     console.log('Skip Trace API - Input address:', address);
     const cityStateZip = `${address.city}, ${address.state} ${address.zip}`;
     const encodedStreet = encodeURIComponent(address.street);
@@ -93,6 +138,10 @@ export const apiService = {
   },
 
   async callPersonAPI(personId: string, retryCount = 0): Promise<unknown> {
+    // Check and record API usage (only on first attempt, not retries)
+    if (retryCount === 0) {
+      checkAndRecordApiUsage();
+    }
     console.log('Person API - Input person ID:', personId);
     const url = `https://skip-tracing-working-api.p.rapidapi.com/search/detailsbyID?peo_id=${personId}`;
     
@@ -123,6 +172,8 @@ export const apiService = {
   },
 
   async callNameSearchAPI(name: { firstName: string; middleInitial?: string; lastName: string }): Promise<unknown> {
+    // Check and record API usage
+    checkAndRecordApiUsage();
     console.log('Name Search API - Input name:', name);
     
     // Format name as "FirstName MiddleInitial LastName" or "FirstName LastName"
@@ -153,6 +204,8 @@ export const apiService = {
   },
 
   async callEmailSearchAPI(email: string): Promise<unknown> {
+    // Check and record API usage
+    checkAndRecordApiUsage();
     console.log('Email Search API - Input email:', email);
     
     const encodedEmail = encodeURIComponent(email);
@@ -177,6 +230,8 @@ export const apiService = {
   },
 
   async callPhoneSearchAPI(phone: string): Promise<unknown> {
+    // Check and record API usage
+    checkAndRecordApiUsage();
     console.log('Phone Search API - Input phone:', phone);
     
     const encodedPhone = encodeURIComponent(phone);

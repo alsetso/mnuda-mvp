@@ -26,7 +26,7 @@ export default function RelationshipIndicator({ node, allNodes }: RelationshipIn
       {parentNode && (
         <div className="mb-1">
           <span className="text-gray-500">Parent:</span>
-          <span className="ml-1 text-blue-600">
+          <span className="ml-1 text-[#1dd1f5]">
             {parentNode.mnNodeId}
           </span>
         </div>

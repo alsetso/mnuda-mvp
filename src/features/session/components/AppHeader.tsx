@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import SessionSelector from './SessionSelector';
+import SessionBanner from './SessionBanner';
 import UsageDropdown from './UsageDropdown';
 import { SessionData } from '../services/sessionStorage';
 import { useAuth } from '@/features/auth';
+import { ApiStatusLabel } from '@/features/shared';
 
 interface AppHeaderProps {
   currentSession: SessionData | null;
@@ -37,17 +38,12 @@ export default function AppHeader({
   onNewSession,
   onSessionSwitch,
   onSessionRename,
-  updateUrl = false,
-  showSessionSelector = true,
   showMobileToggle = false,
   mobileView = 'map',
   onMobileViewToggle,
   showSidebarToggle = false,
   isSidebarOpen = true,
   onSidebarToggle,
-  showSkipTraceToggle = false,
-  isSkipTraceSidebarOpen = false,
-  onSkipTraceSidebarToggle,
 }: AppHeaderProps) {
   const { user } = useAuth();
   const pathname = usePathname();
@@ -77,21 +73,8 @@ export default function AppHeader({
             {/* Left Section - Unified Navigation + Page-specific controls (1/3) */}
             <div className="w-1/3 flex items-center justify-start pr-1 sm:pr-4">
               <div className="flex items-center space-x-1 sm:space-x-2 w-full min-w-0">
-                {/* Skip Trace Toggle - Only on map page, positioned before navigation */}
-                {isMapPage && showSkipTraceToggle && onSkipTraceSidebarToggle && (
-                  <button
-                    onClick={onSkipTraceSidebarToggle}
-                    className="flex-shrink-0 p-2 text-gray-400 hover:text-[#1dd1f5] hover:bg-[#1dd1f5]/10 rounded-lg transition-colors touch-manipulation"
-                    title={isSkipTraceSidebarOpen ? "Hide Skip Trace List" : "Show Skip Trace List"}
-                  >
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </button>
-                )}
-
-                {/* Universal Navigation - Hide on map and trace pages */}
-                {!isMapPage && !isTracePage && (
+                {/* Universal Navigation - Show on all pages */}
+                {(
                   <>
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex items-center space-x-1">
@@ -139,19 +122,8 @@ export default function AppHeader({
             
             {/* Right Section - Unified controls (1/3) */}
             <div className="w-1/3 flex items-center justify-end space-x-1 sm:space-x-2 pl-2 sm:pl-4">
-              {/* Session Selector - Show on pages that need session management */}
-              {needsSessionManagement && showSessionSelector && (
-                <div className="flex-1 min-w-0 max-w-xs overflow-hidden">
-                  <SessionSelector 
-                    onNewSession={onNewSession}
-                    currentSession={currentSession}
-                    sessions={sessions}
-                    onSessionSwitch={onSessionSwitch}
-                    onSessionRename={onSessionRename}
-                    updateUrl={updateUrl}
-                  />
-                </div>
-              )}
+              {/* API Status Label */}
+              <ApiStatusLabel />
 
               {/* Map-specific controls */}
               {isMapPage && (
@@ -213,9 +185,20 @@ export default function AppHeader({
           </div>
         </div>
       </div>
+
+      {/* Session Banner - Show on pages that need session management */}
+      {needsSessionManagement && (
+        <SessionBanner
+          currentSession={currentSession}
+          sessions={sessions}
+          onSessionSwitch={onSessionSwitch}
+          onCreateNewSession={onNewSession}
+          onSessionRename={onSessionRename}
+        />
+      )}
       
-      {/* Mobile Navigation Menu - Hide on map and trace pages */}
-      {isMobileMenuOpen && !isMapPage && !isTracePage && (
+      {/* Mobile Navigation Menu - Show on all pages */}
+      {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 shadow-sm">
           <div className="px-4 py-2 space-y-1">
             {navigationItems.map((item) => (

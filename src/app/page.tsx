@@ -45,16 +45,16 @@ export default function Home() {
 
             {/* Main Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-              Find Property Owners
+              Skip Trace Any Address
               <br />
               <span className="bg-gradient-to-r from-[#1dd1f5] to-[#014463] bg-clip-text text-transparent">
-                Instantly
+                in Minnesota
               </span>
             </h1>
             
             {/* Subheadline */}
             <p className="text-xl sm:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed">
-              Skip trace any Minnesota address in seconds. Get owner names, contact info, and property details—completely free, no strings attached.
+              Discover property owners, residents, relatives, and associates. Get contact info, property details, and relationship maps—all in seconds, completely free.
             </p>
 
             {/* CTA Button */}
@@ -91,7 +91,7 @@ export default function Home() {
                 <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
-                Always free, no limits
+                100 free searches daily
               </div>
             </div>
           </div>

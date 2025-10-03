@@ -83,7 +83,7 @@ export default function TitleEdit({
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
         maxLength={maxLength}
-        className={`bg-transparent border-b-2 border-blue-500 outline-none text-sm font-semibold text-gray-800 min-w-0 flex-1 ${className}`}
+        className={`bg-transparent border-b-2 border-[#1dd1f5] outline-none text-sm font-semibold text-gray-800 min-w-0 flex-1 ${className}`}
         placeholder={placeholder}
       />
     );

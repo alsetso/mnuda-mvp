@@ -8,7 +8,9 @@ import { EmailSearchService } from '@/features/api/services/emailSearchService';
 import { PhoneSearchService } from '@/features/api/services/phoneSearchService';
 import { AddressService } from '@/features/api/services/addressService';
 import { useToast } from '@/features/ui/hooks/useToast';
-import { useSessionManager } from '@/features/session';
+import { useSessionManager, useApiUsageContext } from '@/features/session';
+import { apiUsageService } from '@/features/session/services/apiUsageService';
+import { CreditsExhaustedError } from '@/features/api/services/apiService';
 
 interface TraceFormProps {
   onSubmit: (node: NodeData) => Promise<void>;
@@ -26,6 +28,7 @@ export default function TraceForm({ onSubmit }: TraceFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { withApiToast } = useToast();
   const { currentSession } = useSessionManager();
+  const { showCreditsModal } = useApiUsageContext();
   
   // New state for enhanced inputs
   const [nameData, setNameData] = useState({
@@ -81,6 +84,13 @@ export default function TraceForm({ onSubmit }: TraceFormProps) {
 
     if (!currentSession) {
       setError('No session selected');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Check credits before making any API calls
+    if (!apiUsageService.canMakeRequest()) {
+      showCreditsModal();
       setIsSubmitting(false);
       return;
     }
@@ -187,6 +197,10 @@ export default function TraceForm({ onSubmit }: TraceFormProps) {
       }
     } catch (err) {
       console.error('Trace submission error:', err);
+      if (err instanceof CreditsExhaustedError) {
+        showCreditsModal();
+        return;
+      }
       setError('Failed to submit trace. Please try again.');
     } finally {
       setIsSubmitting(false);

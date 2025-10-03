@@ -27,7 +27,9 @@ export class AddressService {
       };
 
       // Call the Skip Trace API
+      console.log('AddressService - Calling Skip Trace API with address:', address);
       const response = await apiService.callSkipTraceAPI(address);
+      console.log('AddressService - Skip Trace API response:', response);
 
       // Create the result node
       const node: NodeData = {
@@ -40,6 +42,7 @@ export class AddressService {
         mnNodeId: MnudaIdService.generateTypedId('node'),
       };
 
+      console.log('AddressService - Created node:', node);
       return {
         success: true,
         node

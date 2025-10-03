@@ -122,7 +122,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
           <div className="flex items-center space-x-2 flex-shrink-0">
             <button
               onClick={() => setIsPersonModalOpen(true)}
-              className="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+              className="px-3 py-1 text-xs font-medium text-white bg-[#1dd1f5] hover:bg-[#014463] rounded transition-colors"
             >
               View Details
             </button>
@@ -204,7 +204,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
                 }
                 return newSet;
               })}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+              className="text-xs text-[#1dd1f5] hover:text-[#014463] font-medium px-2 py-1 rounded hover:bg-[#1dd1f5]/10 transition-colors"
             >
               {expandedGroups.has('triggered-entity') ? 'Collapse' : 'Expand'}
             </button>
@@ -402,7 +402,7 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
           <h4 className="text-sm font-medium text-gray-900">Raw Response</h4>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+            className="text-xs text-[#1dd1f5] hover:text-[#014463] font-medium px-2 py-1 rounded hover:bg-[#1dd1f5]/10 transition-colors"
           >
             {isExpanded ? 'Collapse' : 'Expand'}
           </button>
@@ -424,41 +424,41 @@ export default function PersonDetailNode({ personId, personData, apiName, mnudaI
              <h4 className="text-sm font-medium text-gray-900">🔗 Technical Details</h4>
              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Debug Info</span>
            </div>
-        <div className="bg-blue-50 border border-blue-200 rounded p-3 sm:p-4">
+        <div className="bg-[#1dd1f5]/10 border border-[#1dd1f5]/20 rounded p-3 sm:p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
             <div>
-              <span className="font-semibold text-blue-800">Node ID:</span>
-              <div className="mt-1 font-mono text-blue-700 bg-blue-100 px-2 py-1 rounded">
+              <span className="font-semibold text-[#014463]">Node ID:</span>
+              <div className="mt-1 font-mono text-[#1dd1f5] bg-[#1dd1f5]/20 px-2 py-1 rounded">
                 {mnudaId || 'N/A'}
               </div>
             </div>
             <div>
-              <span className="font-semibold text-blue-800">Person ID:</span>
-              <div className="mt-1 font-mono text-blue-700 bg-blue-100 px-2 py-1 rounded">
+              <span className="font-semibold text-[#014463]">Person ID:</span>
+              <div className="mt-1 font-mono text-[#1dd1f5] bg-[#1dd1f5]/20 px-2 py-1 rounded">
                 {personId || 'N/A'}
               </div>
             </div>
             <div>
-              <span className="font-semibold text-blue-800">Entity ID:</span>
-              <div className="mt-1 font-mono text-blue-700 bg-blue-100 px-2 py-1 rounded">
+              <span className="font-semibold text-[#014463]">Entity ID:</span>
+              <div className="mt-1 font-mono text-[#1dd1f5] bg-[#1dd1f5]/20 px-2 py-1 rounded">
                 {clickedEntityId || personEntity?.mnEntityId || 'N/A'}
               </div>
             </div>
             <div>
-              <span className="font-semibold text-blue-800">API Source:</span>
-              <div className="mt-1 text-blue-700 bg-blue-100 px-2 py-1 rounded">
+              <span className="font-semibold text-[#014463]">API Source:</span>
+              <div className="mt-1 text-[#1dd1f5] bg-[#1dd1f5]/20 px-2 py-1 rounded">
                 {apiName || 'N/A'}
               </div>
             </div>
             <div>
-              <span className="font-semibold text-blue-800">Entity Count:</span>
-              <div className="mt-1 text-blue-700 bg-blue-100 px-2 py-1 rounded">
+              <span className="font-semibold text-[#014463]">Entity Count:</span>
+              <div className="mt-1 text-[#1dd1f5] bg-[#1dd1f5]/20 px-2 py-1 rounded">
                 {parsedData.entities.length} entities
               </div>
             </div>
           </div>
-          <div className="mt-3 pt-3 border-t border-blue-200">
-            <p className="text-xs text-blue-600">
+          <div className="mt-3 pt-3 border-t border-[#1dd1f5]/20">
+            <p className="text-xs text-[#1dd1f5]">
               <strong>Note:</strong> Use these IDs to track the relationship chain and make subsequent API calls. 
               The Node ID identifies this node, and the Person ID is used for API calls. Entity IDs are only assigned to traceable entities.
             </p>

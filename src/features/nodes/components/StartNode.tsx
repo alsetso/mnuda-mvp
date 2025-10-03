@@ -158,7 +158,7 @@ export default function StartNode({ onAddressSearch, isSearching = false, hasCom
               isSearching ? 'bg-yellow-400' : 
               hasCompleted ? 'bg-green-400' : 
               hasSearched ? 'bg-green-400' : 
-              'bg-blue-400'
+              'bg-[#1dd1f5]'
             }`}></div>
             <span className="text-xs text-gray-400">
               {isSearching ? 'Searching...' : 
@@ -202,7 +202,7 @@ export default function StartNode({ onAddressSearch, isSearching = false, hasCom
                   onChange={(e) => handleFieldChange('city', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="New York"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
                 />
               </div>
 
@@ -217,7 +217,7 @@ export default function StartNode({ onAddressSearch, isSearching = false, hasCom
                   onChange={(e) => handleFieldChange('state', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="NY"
-                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
                 />
               </div>
               
@@ -232,7 +232,7 @@ export default function StartNode({ onAddressSearch, isSearching = false, hasCom
                   onChange={(e) => handleFieldChange('zip', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="10001"
-                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
                 />
               </div>
             </div>

@@ -1,21 +1,23 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import AppHeader from '@/features/session/components/AppHeader';
 import PersonModal from '@/features/nodes/components/PersonModal';
-import SkipTracePinsList from '@/features/map/components/SkipTracePinsList';
+import NodeStack from '@/features/nodes/components/NodeStack';
 import { useMap } from '@/features/map/hooks/useMap';
 import { useAddressSync } from '@/features/map/hooks/useAddressSync';
 import { useUserLocationTracker } from '@/features/map/hooks/useUserLocationTracker';
 import { useSkipTracePins } from '@/features/map/hooks/useSkipTracePins';
 import { Address, MapboxFeature } from '@/features/map/types';
 import { AddressParser as AddressParserService } from '@/features/map/services/addressParser';
-import { useSessionManager, SessionOverlay } from '@/features/session';
+import { useSessionManager, SessionOverlay, useApiUsageContext } from '@/features/session';
+import CreditsExhaustedOverlay from '@/features/session/components/CreditsExhaustedOverlay';
+import { apiUsageService } from '@/features/session/services/apiUsageService';
 import { useToast } from '@/features/ui/hooks/useToast';
 import { NodeData, sessionStorageService } from '@/features/session/services/sessionStorage';
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
-import { apiService } from '@/features/api/services/apiService';
+import { apiService, CreditsExhaustedError } from '@/features/api/services/apiService';
 // import { GeocodingService } from '@/features/map/services/geocodingService';
 import { AddressService } from '@/features/api/services/addressService';
 import { personDetailParseService } from '@/features/api/services/personDetailParse';
@@ -34,12 +36,14 @@ type UserFoundLifecycle = 'idle' | 'locating' | 'active' | 'completed';
 function MapPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // --- UI state ---
-  const [isSkipTraceSidebarOpen, setIsSkipTraceSidebarOpen] = useState(true); // Skip trace sidebar state - start open
   const [selectedPersonNode, setSelectedPersonNode] = useState<NodeData | null>(null);
   const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<'map' | 'results'>('map'); // Mobile view toggle
   const { withApiToast } = useToast();
+  const { showCreditsModal } = useApiUsageContext();
 
   // --- Session manager ---
   const {
@@ -49,6 +53,7 @@ function MapPageContent() {
     switchSession,
     renameSession,
     addNode,
+    deleteNode,
   } = useSessionManager();
 
   // --- User location tracker ---
@@ -71,7 +76,6 @@ function MapPageContent() {
     addMarker,
     removeMarker,
     updateMarkerPopup,
-    map,
   } = useMap({
     mapContainer,
     onMapReady: (mapInstance) => console.log('Map ready:', mapInstance),
@@ -121,8 +125,10 @@ function MapPageContent() {
   const handleSessionSwitch = useCallback(
     (sessionId: string) => {
       switchSession(sessionId);
+      // Update URL with the new session ID
+      router.push(`/map?session=${sessionId}`);
     },
-    [switchSession]
+    [switchSession, router]
   );
 
   // Handle URL parameter changes for session switching
@@ -137,8 +143,8 @@ function MapPageContent() {
     }
   }, [searchParams, currentSession?.id, sessions, switchSession]);
 
-  // Show session overlay when no session is selected
-  const shouldShowSessionOverlay = !currentSession;
+  // Session overlay disabled - allow access without session selection
+  const shouldShowSessionOverlay = false;
 
 
   // ---------------------------------------------------------------------------
@@ -219,16 +225,6 @@ function MapPageContent() {
     flyTo,
   ]);
 
-  // Handle map resize when sidebar visibility changes
-  useEffect(() => {
-    if (map && mapLoaded) {
-      // Small delay to ensure DOM has updated
-      const timeoutId = setTimeout(() => {
-        map.resize();
-      }, 50);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [map, mapLoaded]);
 
   // Handle person clicks from skip trace pin popups (moved after handlePersonTrace is defined)
   
@@ -238,6 +234,12 @@ function MapPageContent() {
   const handleMapClickWithSession = useCallback(
     async (coordinates: Coords) => {
       if (!currentSession) return;
+      
+      // Check credits before making any API calls
+      if (!apiUsageService.canMakeRequest()) {
+        showCreditsModal();
+        return;
+      }
       try {
         addAddressPin(coordinates);
         const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates.lng},${coordinates.lat}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}&types=address&limit=1`;
@@ -260,20 +262,31 @@ function MapPageContent() {
           coordinates: { latitude: coordinates.lat, longitude: coordinates.lng },
         };
 
+        console.log('Map click - Calling AddressService with address:', address);
         const result = await AddressService.searchAddressWithToast(
           address,
           currentSession.id,
           withApiToast
         );
-        if (result.success && result.node) addNode(result.node);
+        console.log('Map click - AddressService result:', result);
+        if (result.success && result.node) {
+          console.log('Map click - Adding node:', result.node);
+          addNode(result.node);
+        } else {
+          console.warn('Map click - AddressService failed or no node returned:', result);
+        }
       } catch (err) {
         console.error('Map click error:', err);
+        if (err instanceof CreditsExhaustedError) {
+          showCreditsModal();
+          return;
+        }
         await withApiToast('Error', () => Promise.reject(err as Error), {
           errorMessage: 'Failed to resolve address',
         });
       }
     },
-    [currentSession, addNode, addAddressPin, withApiToast, parseMapboxAddress]
+    [currentSession, addNode, addAddressPin, withApiToast, parseMapboxAddress, showCreditsModal]
   );
 
   // ---------------------------------------------------------------------------
@@ -282,6 +295,12 @@ function MapPageContent() {
   const handlePersonTrace = useCallback(
     async (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => {
       if (!currentSession) return;
+      
+      // Check credits before making any API calls
+      if (!apiUsageService.canMakeRequest()) {
+        showCreditsModal();
+        return;
+      }
       try {
         const resp = await withApiToast(
           'Person Trace',
@@ -311,6 +330,12 @@ function MapPageContent() {
         addNode(node);
       } catch (err) {
         console.error('Person trace error:', err);
+        
+        // Check if it's a credits exhausted error
+        if (err instanceof CreditsExhaustedError) {
+          showCreditsModal();
+          return;
+        }
         
         // Check if it's a rate limit error
         if (err instanceof Error && err.message.includes('rate limit')) {
@@ -349,13 +374,11 @@ function MapPageContent() {
         addNode(node);
       }
     },
-    [currentSession, addNode, withApiToast]
+    [currentSession, addNode, withApiToast, showCreditsModal]
   );
 
   // --- Skip trace pins ---
   const {
-    skipTraceAddresses,
-    isLoading: isSkipTracePinsLoading,
   } = useSkipTracePins({
     nodes: currentSession?.nodes || [],
     addMarker,
@@ -363,6 +386,7 @@ function MapPageContent() {
     mapLoaded,
     onPersonTrace: handlePersonTrace,
     updateMarkerPopup,
+    sessionId: currentSession?.id,
   });
 
   // Handle person clicks from skip trace pin popups
@@ -435,23 +459,6 @@ function MapPageContent() {
   // ---------------------------------------------------------------------------
   // UI helpers
   // ---------------------------------------------------------------------------
-  const handleSkipTraceSidebarToggle = () =>
-    setIsSkipTraceSidebarOpen((prev) => !prev);
-
-  const handleSkipTraceAddressClick = useCallback((address: { coordinates?: { latitude: number; longitude: number } }) => {
-    if (address.coordinates) {
-      // Close sidebar on mobile after click for better UX
-      if (window.innerWidth < 768) {
-        setIsSkipTraceSidebarOpen(false);
-      }
-      
-      // Fly to location
-      flyTo({
-        lat: address.coordinates.latitude,
-        lng: address.coordinates.longitude
-      });
-    }
-  }, [flyTo]);
 
   const StatusBanner = () => {
     if (!mapLoaded) return <Banner className="bg-gray-100"><Spinner /><span>Loading map…</span></Banner>;
@@ -497,55 +504,15 @@ function MapPageContent() {
           onSessionRename={renameSession}
           updateUrl={true}
           showSessionSelector={true}
-          showMobileToggle={false}
-          showSidebarToggle={false}
-          showSkipTraceToggle={true}
-          isSkipTraceSidebarOpen={isSkipTraceSidebarOpen}
-          onSkipTraceSidebarToggle={handleSkipTraceSidebarToggle}
-          skipTracePinsCount={skipTraceAddresses.length}
         />
       </div>
 
       {/* Body */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Mobile backdrop overlay */}
-        {isSkipTraceSidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-            onClick={() => setIsSkipTraceSidebarOpen(false)}
-          />
-        )}
-
-        {/* Skip Trace Sidebar */}
-        {isSkipTraceSidebarOpen && (
-          <div className={`
-            fixed md:relative top-14 md:top-auto inset-x-0 md:inset-x-auto bottom-0 md:bottom-auto z-50 md:z-auto
-            w-full md:w-80 md:flex-shrink-0
-            bg-white md:bg-white
-            border-r border-gray-200
-            transform md:transform-none
-            transition-transform duration-300 ease-in-out
-            ${isSkipTraceSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            md:translate-x-0
-            flex flex-col
-          `}>
-            <SkipTracePinsList
-              skipTraceAddresses={skipTraceAddresses}
-              isLoading={isSkipTracePinsLoading}
-              nodes={currentSession?.nodes || []}
-              onAddressClick={handleSkipTraceAddressClick}
-              currentSession={currentSession}
-              sessions={sessions}
-              onNewSession={createNewSession}
-              onSessionSwitch={handleSessionSwitch}
-              onClose={() => setIsSkipTraceSidebarOpen(false)}
-            />
-          </div>
-        )}
-
-        {/* Map - Full width, no right sidebar */}
-        <div className="flex-1 min-w-0 relative">
+        {/* Map - 50% width on desktop, full width on mobile when selected */}
+        <div className={`flex-1 min-w-0 relative ${mobileView === 'results' ? 'hidden md:block' : ''}`}>
           <div ref={mapContainer} className="w-full h-full" />
+          <CreditsExhaustedOverlay className="absolute inset-0" />
 
           <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10"><StatusBanner /></div>
           {selectedAddress && !currentSession && <AddressCard title="Selected" address={selectedAddress} />}
@@ -561,6 +528,77 @@ function MapPageContent() {
               <div className="opacity-70">pts: {locationHistory.length}</div>
             </div>
           )}
+        </div>
+
+        {/* Node Stack Panel - 50% width on desktop, full width on mobile when selected */}
+        <div className={`flex-1 min-w-0 bg-white border-l border-gray-200 overflow-y-auto ${mobileView === 'map' ? 'hidden md:block' : ''}`}>
+          <div className="p-4 md:p-6">
+            <div className="max-w-4xl mx-auto">
+              {/* Panel Header */}
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Session Results</h3>
+                <p className="text-gray-600">
+                  {currentSession ? `${currentSession.nodes.length} result${currentSession.nodes.length !== 1 ? 's' : ''} found` : 'No session selected'}
+                </p>
+              </div>
+
+              {/* Node Stack */}
+              {currentSession && currentSession.nodes.length > 0 ? (
+                <NodeStack
+                  nodes={currentSession.nodes}
+                  onPersonTrace={handlePersonTrace}
+                  onDeleteNode={deleteNode}
+                  onAddNode={addNode}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-4">
+                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No Results Yet</h4>
+                  <p className="text-gray-500">
+                    Click on the map to search addresses or use the floating menu to switch sessions.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Toggle Button - Only visible on mobile */}
+      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-1">
+          <div className="flex">
+            <button
+              onClick={() => setMobileView('map')}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                mobileView === 'map'
+                  ? 'bg-[#1dd1f5] text-white'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              <span>Map</span>
+            </button>
+            <button
+              onClick={() => setMobileView('results')}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                mobileView === 'results'
+                  ? 'bg-[#1dd1f5] text-white'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Results</span>
+            </button>
+          </div>
         </div>
       </div>
 

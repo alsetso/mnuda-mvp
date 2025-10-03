@@ -5,7 +5,7 @@ import { NodeData } from '@/features/session/services/sessionStorage';
 import { SkipTraceAddressExtractor, SkipTraceAddress } from '../services/skipTraceAddressExtractor';
 import { useGeocoding } from './useGeocoding';
 import { MAP_CONFIG } from '../config';
-import { peopleParseService, PersonRecord } from '@/features/api/services/peopleParse';
+import { PersonRecord } from '@/features/api/services/peopleParse';
 
 interface UseSkipTracePinsProps {
   nodes: NodeData[];
@@ -14,6 +14,7 @@ interface UseSkipTracePinsProps {
   mapLoaded: boolean;
   onPersonTrace?: (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => void;
   updateMarkerPopup?: (id: string, popupContent: string) => void;
+  sessionId?: string; // Add session ID to track session changes
 }
 
 interface UseSkipTracePinsReturn {
@@ -33,11 +34,95 @@ export function useSkipTracePins({
   removeMarker,
   mapLoaded,
   // onPersonTrace,
-  updateMarkerPopup,
+  sessionId,
 }: UseSkipTracePinsProps): UseSkipTracePinsReturn {
   const [skipTraceAddresses, setSkipTraceAddresses] = useState<SkipTraceAddress[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { geocodeAddress } = useGeocoding();
+
+  // Parse skip trace response to extract people data
+  const parseSkipTraceResponse = useCallback((rawResponse: unknown, nodeId: string): { people: PersonRecord[]; totalRecords: number } => {
+    try {
+      const response = rawResponse as Record<string, unknown>;
+      const people: PersonRecord[] = [];
+      
+      // Try to parse different response structures
+      if (response.PeopleDetails && Array.isArray(response.PeopleDetails)) {
+        // SkipTracePeopleResponse structure
+        response.PeopleDetails.forEach((person: Record<string, unknown>) => {
+          people.push({
+            name: (person.Name as string) || '',
+            age: (person.Age as number) || undefined,
+            lives_in: (person["Lives in"] as string) || undefined,
+            used_to_live_in: (person["Used to live in"] as string) || undefined,
+            related_to: (person["Related to"] as string) || undefined,
+            person_link: (person.Link as string) || undefined,
+            apiPersonId: (person["Person ID"] as string) || undefined,
+            source: typeof response.Source === 'string' ? response.Source : 'Unknown',
+            mnEntityId: `person-${nodeId}-${people.length}`,
+            parentNodeId: nodeId,
+            isTraceable: true
+          });
+        });
+      } else if (response["Person Details"] && Array.isArray(response["Person Details"])) {
+        // SkipTracePersonDetailResponse structure
+        response["Person Details"].forEach((person: Record<string, unknown>) => {
+          people.push({
+            name: (person.Person_name as string) || '',
+            age: (person.Age as number) || undefined,
+            lives_in: (person["Lives in"] as string) || undefined,
+            source: typeof response.Source === 'string' ? response.Source : 'Unknown',
+            mnEntityId: `person-${nodeId}-${people.length}`,
+            parentNodeId: nodeId,
+            isTraceable: true
+          });
+        });
+        
+        // Add relatives
+        if (response["All Relatives"] && Array.isArray(response["All Relatives"])) {
+          response["All Relatives"].forEach((relative: Record<string, unknown>) => {
+            people.push({
+              name: (relative.Name as string) || '',
+              age: (relative.Age as number) || undefined,
+              person_link: (relative["Person Link"] as string) || undefined,
+              apiPersonId: (relative["Person ID"] as string) || undefined,
+              source: typeof response.Source === 'string' ? response.Source : 'Unknown',
+              mnEntityId: `relative-${nodeId}-${people.length}`,
+              parentNodeId: nodeId,
+              isTraceable: true
+            });
+          });
+        }
+        
+        // Add associates
+        if (response["All Associates"] && Array.isArray(response["All Associates"])) {
+          response["All Associates"].forEach((associate: Record<string, unknown>) => {
+            people.push({
+              name: (associate.Name as string) || '',
+              age: (associate.Age as number) || undefined,
+              person_link: (associate["Person Link"] as string) || undefined,
+              apiPersonId: (associate["Person ID"] as string) || undefined,
+              source: typeof response.Source === 'string' ? response.Source : 'Unknown',
+              mnEntityId: `associate-${nodeId}-${people.length}`,
+              parentNodeId: nodeId,
+              isTraceable: true
+            });
+          });
+        }
+      }
+      
+      return {
+        people,
+        totalRecords: people.length
+      };
+    } catch (error) {
+      console.warn('Error parsing skip trace response:', error);
+      return {
+        people: [],
+        totalRecords: 0
+      };
+    }
+  }, []);
 
   // Create a custom popup with clickable person items and child node results
   const createSkipTracePopup = useCallback((address: SkipTraceAddress, peopleData: { people: PersonRecord[]; totalRecords: number }) => {
@@ -215,10 +300,7 @@ export function useSkipTracePins({
     };
 
     // Parse the response data the same way the node does
-    const peopleData = peopleParseService.parsePeopleResponse(
-      address.rawResponse as Record<string, unknown>, 
-      address.nodeId
-    );
+    const peopleData = parseSkipTraceResponse(address.rawResponse, address.nodeId);
 
     // Create popup content with clickable person items
     const popupContent = createSkipTracePopup(address, peopleData);
@@ -266,31 +348,8 @@ export function useSkipTracePins({
       element: markerElement,
       popupContent,
     });
-  }, [addMarker, createSkipTracePopup]);
+  }, [addMarker, createSkipTracePopup, parseSkipTraceResponse]);
 
-  /**
-   * Update existing popups with new data without recreating markers
-   */
-  const updateExistingPopups = useCallback(() => {
-    if (!updateMarkerPopup) return;
-
-    // Get all current skip trace addresses
-    const addresses = SkipTraceAddressExtractor.extractSkipTraceAddresses(nodes);
-    
-    addresses.forEach(address => {
-      // Parse the response data
-      const peopleData = peopleParseService.parsePeopleResponse(
-        address.rawResponse as Record<string, unknown>, 
-        address.nodeId
-      );
-      
-      // Create new popup content
-      const newPopupContent = createSkipTracePopup(address, peopleData);
-      
-      // Update the popup content
-      updateMarkerPopup(address.id, newPopupContent);
-    });
-  }, [nodes, createSkipTracePopup, updateMarkerPopup]);
 
   /**
    * Restore skip trace pins from session nodes
@@ -363,27 +422,20 @@ export function useSkipTracePins({
     setSkipTraceAddresses([]);
   }, [removeMarker, skipTraceAddresses]);
 
-  // Auto-restore pins when nodes change, but only for new skip trace nodes
+  // Auto-restore pins when nodes change or when session changes
   useEffect(() => {
-    if (!mapLoaded || nodes.length === 0) return;
+    if (!mapLoaded) return;
 
-    // Only restore if we have new skip trace nodes that aren't already represented
-    const currentSkipTraceNodes = nodes.filter(node =>
-      node.type === 'api-result' && node.apiName === 'Skip Trace'
-    );
-
-    // Check if we need to update (only if we have new skip trace nodes)
-    const hasNewSkipTraceNodes = currentSkipTraceNodes.length > skipTraceAddresses.length;
-
-    if (hasNewSkipTraceNodes) {
-      // Only recreate markers if we have completely new skip trace addresses
-      restoreSkipTracePins();
-    } else {
-      // Always update existing popups with new data (including new child results)
-      updateExistingPopups();
-    }
+    // Always restore pins when nodes change (this handles session switching)
+    // Clear existing pins first to ensure clean state
+    skipTraceAddresses.forEach(address => {
+      removeMarker(address.id);
+    });
+    
+    // Then restore with new session data
+    restoreSkipTracePins();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, mapLoaded, skipTraceAddresses.length]); // Intentionally excluding function dependencies to prevent infinite loops
+  }, [nodes, mapLoaded, sessionId]); // Added sessionId to ensure it updates on session switch
 
   // Note: Cleanup is handled by the component using this hook
   // No need for useEffect cleanup here as it causes infinite loops

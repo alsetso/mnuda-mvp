@@ -211,7 +211,7 @@ export default function UserFoundNode({
             <div className={`w-2 h-2 rounded-full ${
               (status === 'ready' || locationFound) ? 'bg-green-400' : 
               isTracking ? 'bg-yellow-400' : 
-              'bg-blue-400'
+              'bg-[#1dd1f5]'
             }`}></div>
             <span className="text-xs text-gray-400">
               {(status === 'ready' || locationFound) ? 'Location Found' : 
@@ -228,8 +228,8 @@ export default function UserFoundNode({
           /* Pending State - Find Location */
           <div className="space-y-3 sm:space-y-4">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 mx-auto mb-4 bg-[#1dd1f5]/10 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-[#1dd1f5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -247,7 +247,7 @@ export default function UserFoundNode({
                 disabled={isTracking || isRequesting || !isOnline}
                 aria-label={isTracking ? "Finding your location" : "Find my current location"}
                 aria-describedby="location-help-text"
-                className="w-full sm:w-auto px-6 py-3 sm:py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px]"
+                className="w-full sm:w-auto px-6 py-3 sm:py-2 text-sm font-medium text-white bg-[#1dd1f5] border border-transparent rounded hover:bg-[#014463] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1dd1f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px]"
               >
                 {(isTracking || isRequesting) ? (
                   <>
@@ -287,7 +287,7 @@ export default function UserFoundNode({
                     onClick={onCreateNewLocationSession}
                     disabled={isRequesting}
                     aria-label="Start a new location tracking session"
-                    className="text-xs bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-2 py-1 rounded transition-colors flex items-center space-x-1"
+                    className="text-xs bg-[#1dd1f5] hover:bg-[#014463] disabled:opacity-50 disabled:cursor-not-allowed text-white px-2 py-1 rounded transition-colors flex items-center space-x-1"
                   >
                     {isRequesting && <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>}
                     <span>New Location Session</span>
@@ -332,7 +332,7 @@ export default function UserFoundNode({
                 <div className="text-xs text-gray-500">
                   <button
                     onClick={() => setShowLocationHistory(!showLocationHistory)}
-                    className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                    className="text-[#1dd1f5] hover:text-[#014463] underline cursor-pointer"
                   >
                     {payload.locationHistory.length} location{payload.locationHistory.length !== 1 ? 's' : ''} recorded
                   </button>
@@ -410,7 +410,7 @@ export default function UserFoundNode({
                 <div className="text-xs text-gray-500">
                   <button
                     onClick={() => setShowLocationHistory(!showLocationHistory)}
-                    className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                    className="text-[#1dd1f5] hover:text-[#014463] underline cursor-pointer"
                   >
                     {payload.locationHistory.length} location{payload.locationHistory.length !== 1 ? 's' : ''} recorded
                   </button>

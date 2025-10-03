@@ -164,7 +164,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('firstName', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="John"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
                 />
               </div>
 
@@ -180,7 +180,7 @@ export default function InputNode({
                   readOnly={hasCompleted}
                   placeholder="M"
                   maxLength={1}
-                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
                 />
               </div>
               
@@ -195,7 +195,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('lastName', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="Doe"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
                 />
               </div>
             </div>
@@ -215,7 +215,7 @@ export default function InputNode({
                 onChange={(e) => handleFieldChange('email', e.target.value)}
                 readOnly={hasCompleted}
                 placeholder="john.doe@example.com"
-                className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
               />
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function InputNode({
                 onChange={(e) => handleFieldChange('phone', e.target.value)}
                 readOnly={hasCompleted}
                 placeholder="(555) 123-4567"
-                className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
               />
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('city', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="New York"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
                 />
               </div>
 
@@ -286,7 +286,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('state', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="NY"
-                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
                 />
               </div>
               
@@ -301,7 +301,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('zip', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="10001"
-                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
                 />
               </div>
             </div>
@@ -327,7 +327,7 @@ export default function InputNode({
               isSearching ? 'bg-yellow-400' : 
               hasCompleted ? 'bg-green-400' : 
               hasSearched ? 'bg-green-400' : 
-              'bg-blue-400'
+              'bg-[#1dd1f5]'
             }`}></div>
             <span className="text-xs text-gray-400">
               {isSearching ? 'Searching...' : 

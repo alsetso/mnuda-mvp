@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Footer from '@/features/ui/components/Footer';
 
 interface LeadFormProps {
   type: 'buy' | 'sell' | 'loan';
@@ -52,7 +51,7 @@ export default function LeadForm({ type, title, subtitle }: LeadFormProps) {
 
       if (response.ok) {
         setIsSuccess(true);
-        setMessage('Thank you! We\'ll contact you soon about your Minnesota real estate needs.');
+        setMessage('Thank you! We&apos;ll contact you soon about your Minnesota real estate needs.');
         // Reset form
         setFormData({
           name: '',
@@ -79,145 +78,196 @@ export default function LeadForm({ type, title, subtitle }: LeadFormProps) {
       case 'buy':
         return (
           <>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <select
-                name="budget"
-                value={formData.budget}
-                onChange={handleInputChange}
-                required
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-              >
-                <option value="">Budget Range</option>
-                <option value="under-200k">Under $200K</option>
-                <option value="200k-300k">$200K - $300K</option>
-                <option value="300k-500k">$300K - $500K</option>
-                <option value="500k-750k">$500K - $750K</option>
-                <option value="750k-1m">$750K - $1M</option>
-                <option value="over-1m">Over $1M</option>
-              </select>
-              <select
-                name="propertyType"
-                value={formData.propertyType}
-                onChange={handleInputChange}
-                required
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-              >
-                <option value="">Property Type</option>
-                <option value="single-family">Single Family</option>
-                <option value="condo">Condo</option>
-                <option value="townhouse">Townhouse</option>
-                <option value="multi-family">Multi-Family</option>
-                <option value="commercial">Commercial</option>
-              </select>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">What&apos;s your budget range?</label>
+                <select
+                  name="budget"
+                  value={formData.budget}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent text-gray-900"
+                >
+                  <option value="">Select your budget range</option>
+                  <option value="under-150k">Under $150K</option>
+                  <option value="150k-250k">$150K - $250K</option>
+                  <option value="250k-350k">$250K - $350K</option>
+                  <option value="350k-500k">$350K - $500K</option>
+                  <option value="500k-750k">$500K - $750K</option>
+                  <option value="750k-1m">$750K - $1M</option>
+                  <option value="1m-1.5m">$1M - $1.5M</option>
+                  <option value="over-1.5m">Over $1.5M</option>
+                  <option value="not-sure">Not sure yet</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">What type of property are you looking for?</label>
+                <select
+                  name="propertyType"
+                  value={formData.propertyType}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent text-gray-900"
+                >
+                  <option value="">Select property type</option>
+                  <option value="single-family">Single Family Home</option>
+                  <option value="condo">Condominium</option>
+                  <option value="townhouse">Townhouse</option>
+                  <option value="duplex">Duplex</option>
+                  <option value="multi-family">Multi-Family (3+ units)</option>
+                  <option value="land">Land/Lot</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="not-sure">Not sure yet</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">When are you looking to buy?</label>
+                <select
+                  name="timeline"
+                  value={formData.timeline}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent text-gray-900"
+                >
+                  <option value="">Select your timeline</option>
+                  <option value="asap">ASAP - Ready to buy now</option>
+                  <option value="1-month">Within 1 month</option>
+                  <option value="1-3-months">1-3 months</option>
+                  <option value="3-6-months">3-6 months</option>
+                  <option value="6-12-months">6-12 months</option>
+                  <option value="just-looking">Just looking/exploring</option>
+                </select>
+              </div>
             </div>
-            <select
-              name="timeline"
-              value={formData.timeline}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-            >
-              <option value="">Timeline</option>
-              <option value="immediately">Immediately</option>
-              <option value="1-3-months">1-3 Months</option>
-              <option value="3-6-months">3-6 Months</option>
-              <option value="6-12-months">6-12 Months</option>
-              <option value="just-looking">Just Looking</option>
-            </select>
           </>
         );
       case 'sell':
         return (
           <>
-            <input
-              type="text"
-              name="address"
-              placeholder="Property Address"
-              value={formData.address}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-            />
-            <div className="flex flex-col sm:flex-row gap-4">
-              <select
-                name="propertyType"
-                value={formData.propertyType}
-                onChange={handleInputChange}
-                required
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-              >
-                <option value="">Property Type</option>
-                <option value="single-family">Single Family</option>
-                <option value="condo">Condo</option>
-                <option value="townhouse">Townhouse</option>
-                <option value="multi-family">Multi-Family</option>
-                <option value="commercial">Commercial</option>
-                <option value="land">Land</option>
-              </select>
-              <select
-                name="timeline"
-                value={formData.timeline}
-                onChange={handleInputChange}
-                required
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-              >
-                <option value="">Timeline</option>
-                <option value="immediately">Immediately</option>
-                <option value="1-3-months">1-3 Months</option>
-                <option value="3-6-months">3-6 Months</option>
-                <option value="6-12-months">6-12 Months</option>
-                <option value="just-exploring">Just Exploring</option>
-              </select>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">What&apos;s your property address?</label>
+                <input
+                  type="text"
+                  name="address"
+                  placeholder="123 Main St, Minneapolis, MN 55401"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent text-gray-900"
+                />
+                <p className="text-xs text-gray-500 mt-1">We&apos;ll use this to provide an accurate market analysis</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">What type of property are you selling?</label>
+                <select
+                  name="propertyType"
+                  value={formData.propertyType}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent text-gray-900"
+                >
+                  <option value="">Select property type</option>
+                  <option value="single-family">Single Family Home</option>
+                  <option value="condo">Condominium</option>
+                  <option value="townhouse">Townhouse</option>
+                  <option value="duplex">Duplex</option>
+                  <option value="multi-family">Multi-Family (3+ units)</option>
+                  <option value="land">Land/Lot</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="mobile-home">Mobile Home</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">When do you want to sell?</label>
+                <select
+                  name="timeline"
+                  value={formData.timeline}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent text-gray-900"
+                >
+                  <option value="">Select your timeline</option>
+                  <option value="asap">ASAP - Ready to list now</option>
+                  <option value="1-month">Within 1 month</option>
+                  <option value="1-3-months">1-3 months</option>
+                  <option value="3-6-months">3-6 months</option>
+                  <option value="6-12-months">6-12 months</option>
+                  <option value="just-exploring">Just exploring/getting info</option>
+                </select>
+              </div>
             </div>
           </>
         );
       case 'loan':
         return (
           <>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <select
-                name="loanType"
-                value={formData.loanType}
-                onChange={handleInputChange}
-                required
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-              >
-                <option value="">Loan Type</option>
-                <option value="purchase">Purchase</option>
-                <option value="refinance">Refinance</option>
-                <option value="cash-out-refinance">Cash-Out Refinance</option>
-                <option value="heloc">HELOC</option>
-              </select>
-              <select
-                name="propertyValue"
-                value={formData.propertyValue}
-                onChange={handleInputChange}
-                required
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-              >
-                <option value="">Property Value</option>
-                <option value="under-200k">Under $200K</option>
-                <option value="200k-300k">$200K - $300K</option>
-                <option value="300k-500k">$300K - $500K</option>
-                <option value="500k-750k">$500K - $750K</option>
-                <option value="750k-1m">$750K - $1M</option>
-                <option value="over-1m">Over $1M</option>
-              </select>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">What type of loan do you need?</label>
+                <select
+                  name="loanType"
+                  value={formData.loanType}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent text-gray-900"
+                >
+                  <option value="">Select loan type</option>
+                  <option value="purchase">Purchase Loan (Buying a home)</option>
+                  <option value="refinance">Rate & Term Refinance</option>
+                  <option value="cash-out-refinance">Cash-Out Refinance</option>
+                  <option value="heloc">Home Equity Line of Credit (HELOC)</option>
+                  <option value="construction">Construction Loan</option>
+                  <option value="investment">Investment Property Loan</option>
+                  <option value="not-sure">Not sure yet</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">What&apos;s the property value or loan amount?</label>
+                <select
+                  name="propertyValue"
+                  value={formData.propertyValue}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent text-gray-900"
+                >
+                  <option value="">Select loan amount range</option>
+                  <option value="under-150k">Under $150K</option>
+                  <option value="150k-250k">$150K - $250K</option>
+                  <option value="250k-350k">$250K - $350K</option>
+                  <option value="350k-500k">$350K - $500K</option>
+                  <option value="500k-750k">$500K - $750K</option>
+                  <option value="750k-1m">$750K - $1M</option>
+                  <option value="1m-1.5m">$1M - $1.5M</option>
+                  <option value="over-1.5m">Over $1.5M</option>
+                  <option value="not-sure">Not sure yet</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">When do you need the loan?</label>
+                <select
+                  name="timeline"
+                  value={formData.timeline}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent text-gray-900"
+                >
+                  <option value="">Select your timeline</option>
+                  <option value="asap">ASAP - Need pre-approval now</option>
+                  <option value="1-month">Within 1 month</option>
+                  <option value="1-3-months">1-3 months</option>
+                  <option value="3-6-months">3-6 months</option>
+                  <option value="6-12-months">6-12 months</option>
+                  <option value="just-exploring">Just exploring/getting info</option>
+                </select>
+              </div>
             </div>
-            <select
-              name="timeline"
-              value={formData.timeline}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:border-transparent"
-            >
-              <option value="">Timeline</option>
-              <option value="immediately">Immediately</option>
-              <option value="1-3-months">1-3 Months</option>
-              <option value="3-6-months">3-6 Months</option>
-              <option value="6-12-months">6-12 Months</option>
-              <option value="just-exploring">Just Exploring</option>
-            </select>
           </>
         );
       default:
@@ -299,7 +349,6 @@ export default function LeadForm({ type, title, subtitle }: LeadFormProps) {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

@@ -26,10 +26,10 @@ interface SkipTraceResultNodeProps {
 }
 
 export default function SkipTraceResultNode({ address, apiResponse, apiName, onPersonTrace, node, allNodes }: SkipTraceResultNodeProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded] = useState(false);
   const [isRelationshipExpanded, setIsRelationshipExpanded] = useState(false);
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
-  const { geocodeAddress, isLoading: isGeocoding } = useGeocoding();
+  const { geocodeAddress } = useGeocoding();
 
   // Parse people data if this is a Skip Trace response
   const peopleData: FormattedPeopleData | null = apiName === 'Skip Trace' 
@@ -55,131 +55,127 @@ export default function SkipTraceResultNode({ address, apiResponse, apiName, onP
 
   return (
     <div className="bg-white">
-      {/* Header */}
-      <div className="px-3 sm:px-4 lg:px-6 py-2 border-b border-gray-100">
+      {/* Header - Compact */}
+      <div className="px-3 py-2 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold text-gray-800 truncate">SkipTraceResultNode</h3>
-            <p className="text-xs text-gray-400">{apiName}</p>
+            <h3 className="text-sm font-semibold text-gray-800 truncate">Skip Trace</h3>
+            <p className="text-xs text-gray-500 truncate">{formatAddress()}</p>
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
-            <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
-            <span className="text-xs text-gray-400">Success</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Address Info */}
-      <div className="px-3 sm:px-4 lg:px-6 py-2 border-b border-gray-100">
-        <div className="text-sm">
-          <span className="text-gray-400 font-medium">Address:</span>
-          <span className="ml-2 text-gray-700 break-words">{formatAddress()}</span>
-        </div>
-        
-        {/* Coordinates */}
-        <div className="mt-0.5 text-sm">
-          <span className="text-gray-400 font-medium">Coordinates:</span>
-          {isGeocoding ? (
-            <span className="ml-2 text-gray-500">Loading...</span>
-          ) : coordinates ? (
-            <span className="ml-2 text-gray-700">
-              {coordinates.latitude.toFixed(6)}, {coordinates.longitude.toFixed(6)}
+            <div className={`w-2 h-2 rounded-full ${
+              peopleData && peopleData.totalRecords > 0 ? 'bg-green-500' : 'bg-red-500'
+            }`}></div>
+            <span className="text-xs text-gray-500">
+              {peopleData ? `${peopleData.totalRecords} found` : '0 found'}
             </span>
-          ) : (
-            <span className="ml-2 text-gray-500">Not available</span>
-          )}
-        </div>
-        
-        {peopleData && (
-          <div className="mt-0.5 text-sm">
-            <span className="text-gray-400 font-medium">Records found:</span>
-            <span className="ml-2 text-gray-700">{peopleData.totalRecords} person{peopleData.totalRecords !== 1 ? 's' : ''}</span>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Person List - Only show for Skip Trace API */}
+      {/* Compact Results - Always Visible */}
       {peopleData && peopleData.totalRecords > 0 && (
-        <PersonListSection records={peopleData.people} onPersonTrace={onPersonTrace} />
+        <div className="px-3 py-2 border-b border-gray-100">
+          <div className="flex items-center space-x-3 text-xs text-gray-600">
+            <div className="flex items-center space-x-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>{peopleData.totalRecords} person{peopleData.totalRecords !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>{apiName}</span>
+            </div>
+          </div>
+        </div>
       )}
 
-
-      {/* Relationship Section */}
-      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-t border-gray-100">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-medium text-gray-900">Relationship Context</h4>
-          <button
-            onClick={() => setIsRelationshipExpanded(!isRelationshipExpanded)}
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-          >
-            {isRelationshipExpanded ? 'Collapse' : 'Expand'}
-          </button>
+      {/* Person List - Always Visible */}
+      {peopleData && peopleData.totalRecords > 0 && (
+        <div className="px-3 py-2">
+          <PersonListSection records={peopleData.people} onPersonTrace={onPersonTrace} />
         </div>
+      )}
 
-        {isRelationshipExpanded && (
-          <div className="mt-3 space-y-4">
-            {/* Green Relationship Context */}
-            <div className="bg-green-50 border border-green-200 rounded p-3 sm:p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <span className="font-semibold text-green-800">API Source:</span>
-                  <div className="mt-1 text-green-700 bg-green-100 px-2 py-1 rounded">
-                    {apiName || 'N/A'}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-semibold text-green-800">Address:</span>
-                  <div className="mt-1 text-green-700 bg-green-100 px-2 py-1 rounded">
-                    {formatAddress()}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-semibold text-green-800">Coordinates:</span>
-                  <div className="mt-1 text-green-700 bg-green-100 px-2 py-1 rounded">
-                    {coordinates ? `${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}` : 'Not available'}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-semibold text-green-800">Response Type:</span>
-                  <div className="mt-1 text-green-700 bg-green-100 px-2 py-1 rounded">
-                    Address Result
-                  </div>
-                </div>
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="px-3 py-3 space-y-3">
+          {/* Address Details */}
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-gray-500 font-medium">Address:</span>
+                <p className="text-gray-800 break-words">{formatAddress()}</p>
               </div>
-              <div className="mt-3 pt-3 border-t border-green-200">
-                <p className="text-xs text-green-600">
-                  <strong>Note:</strong> This address result can be used to trace people or properties. 
-                  Use the address information to make subsequent API calls for person details or property information.
-                </p>
-              </div>
-            </div>
-
-            {/* Node Relationships */}
-            {node && allNodes && (
-              <RelationshipIndicator node={node} allNodes={allNodes} />
-            )}
-
-            {/* Raw Response Data */}
-            <div className="bg-gray-50 border border-gray-200 rounded p-3 sm:p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h5 className="text-sm font-medium text-gray-900">Raw Response</h5>
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-                >
-                  {isExpanded ? 'Collapse' : 'Expand'}
-                </button>
-              </div>
-
-              {isExpanded && (
-                <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono overflow-x-auto">
-                  {JSON.stringify(apiResponse, null, 2)}
-                </pre>
+              {coordinates && (
+                <div>
+                  <span className="text-gray-500 font-medium">Coordinates:</span>
+                  <p className="text-gray-800 font-mono text-xs">
+                    {coordinates.latitude.toFixed(6)}, {coordinates.longitude.toFixed(6)}
+                  </p>
+                </div>
               )}
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Results Summary */}
+          {peopleData && (
+            <div className="bg-blue-50 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium text-blue-800">Records Found</span>
+                  <p className="text-lg font-bold text-blue-900">{peopleData.totalRecords}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-blue-600">person{peopleData.totalRecords !== 1 ? 's' : ''}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+          {/* Advanced Options */}
+          <div className="border-t border-gray-200 pt-3">
+            <button
+              onClick={() => setIsRelationshipExpanded(!isRelationshipExpanded)}
+              className="flex items-center justify-between w-full text-left hover:bg-gray-50 -mx-3 px-3 py-2 rounded transition-colors"
+            >
+              <span className="text-sm font-medium text-gray-700">Advanced Details</span>
+              <svg 
+                className={`w-4 h-4 text-gray-400 transition-transform ${isRelationshipExpanded ? 'rotate-180' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isRelationshipExpanded && (
+              <div className="mt-3 space-y-3">
+                {/* Node Relationships */}
+                {node && allNodes && (
+                  <RelationshipIndicator node={node} allNodes={allNodes} />
+                )}
+
+                {/* Raw Response Data */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-sm font-medium text-gray-900">Raw Response</h5>
+                    <span className="text-xs text-gray-500">JSON</span>
+                  </div>
+                  <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono overflow-x-auto max-h-32 bg-white p-2 rounded border">
+                    {JSON.stringify(apiResponse, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

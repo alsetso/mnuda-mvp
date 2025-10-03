@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useEmailNotifications } from '@/features/email/hooks/useEmailNotifications';
@@ -21,6 +21,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const emailNotifications = useEmailNotifications();
+
+  // Memoize the welcome email function to prevent infinite re-renders
+  const handleWelcomeEmail = useCallback(async (user: User) => {
+    if (user.email_confirmed_at) {
+      const welcomeResult = await emailNotifications.sendWelcomeEmail(
+        user.email!,
+        user.user_metadata?.full_name
+      );
+      
+      if (!welcomeResult.success) {
+        console.warn('Custom welcome email failed:', welcomeResult.error);
+      }
+    }
+  }, [emailNotifications]);
 
   useEffect(() => {
     // Get initial session
@@ -51,15 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(session.user);
           
           // Send welcome email on first sign in
-          if (event === 'SIGNED_IN' && session.user.email_confirmed_at) {
-            const welcomeResult = await emailNotifications.sendWelcomeEmail(
-              session.user.email!,
-              session.user.user_metadata?.full_name
-            );
-            
-            if (!welcomeResult.success) {
-              console.warn('Custom welcome email failed:', welcomeResult.error);
-            }
+          if (event === 'SIGNED_IN') {
+            await handleWelcomeEmail(session.user);
           }
         } else {
           setUser(null);
@@ -69,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
-  }, [emailNotifications]);
+  }, [handleWelcomeEmail]);
 
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
@@ -137,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear any local storage data
       localStorage.removeItem('freemap_sessions');
       localStorage.removeItem('freemap_current_session');
+      localStorage.removeItem('freemap_api_usage');
       
       // User will also be cleared by the auth state change listener
     } catch (error) {

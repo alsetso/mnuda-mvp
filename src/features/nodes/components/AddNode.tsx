@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { NodeData } from '@/features/session/services/sessionStorage';
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
+import { useApiUsageContext } from '@/features/session/contexts/ApiUsageContext';
 
 interface AddNodeProps {
   onAddNode: (node: NodeData) => void;
@@ -57,9 +58,15 @@ const NODE_TYPE_OPTIONS: NodeTypeOption[] = [
 ];
 
 export default function AddNode({ onAddNode, onNodeCreated, disabled = false }: AddNodeProps) {
+  const { apiUsage, showCreditsModal } = useApiUsageContext();
   const [isOpen, setIsOpen] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Check if credits are exhausted
+  const isCreditsExhausted = apiUsage?.isLimitReached || false;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -78,7 +85,31 @@ export default function AddNode({ onAddNode, onNodeCreated, disabled = false }: 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Trigger shake animation when credits are exhausted
+  useEffect(() => {
+    if (isCreditsExhausted) {
+      setIsShaking(true);
+      const timer = setTimeout(() => setIsShaking(false), 600); // Animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [isCreditsExhausted]);
+
+  const handleButtonClick = () => {
+    if (isCreditsExhausted) {
+      showCreditsModal();
+      return;
+    }
+    setIsOpen(!isOpen);
+  };
+
   const handleOptionSelect = async (option: NodeTypeOption) => {
+    // Check credits before creating node
+    if (isCreditsExhausted) {
+      showCreditsModal();
+      setIsOpen(false);
+      return;
+    }
+
     try {
       const nodeId = `${option.type}-${Date.now()}`;
       
@@ -125,17 +156,20 @@ export default function AddNode({ onAddNode, onNodeCreated, disabled = false }: 
       {/* Add Node Button */}
       <button
         ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleButtonClick}
         disabled={disabled}
         className={`
           w-12 h-12 rounded-full flex items-center justify-center
-          transition-colors duration-200
+          transition-all duration-200
+          ${isShaking ? 'credit-shake' : ''}
           ${disabled 
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-            : 'bg-blue-500 hover:bg-blue-700 text-white shadow-md'
+            : isCreditsExhausted
+              ? 'bg-red-500 hover:bg-red-600 text-white shadow-md ring-2 ring-red-300'
+              : 'bg-[#1dd1f5] hover:bg-[#014463] text-white shadow-md'
           }
         `}
-        title="Add new search node"
+        title={isCreditsExhausted ? "Credits exhausted - click to view options" : "Add new search node"}
       >
         <svg 
           className={`w-6 h-6 transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`} 

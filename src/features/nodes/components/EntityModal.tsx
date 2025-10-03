@@ -4,6 +4,8 @@ import { PersonRecord } from '@/features/api/services/peopleParse';
 import { PersonDetailEntity, AddressEntity } from '@/features/api/services/personDetailParse';
 import { useToast } from '@/features/ui/hooks/useToast';
 import { apiService } from '@/features/api/services/apiService';
+import { useApiUsageContext } from '@/features/session/contexts/ApiUsageContext';
+import { apiUsageService } from '@/features/session/services/apiUsageService';
 
 // Union type for all possible entity types
 type EntityData = PersonRecord | PersonDetailEntity;
@@ -29,8 +31,12 @@ export default function EntityModal({
   onPersonTrace,
   onAddressIntel
 }: EntityModalProps) {
+  const { apiUsage, showCreditsModal } = useApiUsageContext();
   const { withApiToast } = useToast();
   const isPersonRecord = !('type' in entity);
+  
+  // Check if credits are exhausted
+  const isCreditsExhausted = apiUsage?.isLimitReached || false;
 
   if (!isOpen) return null;
 
@@ -139,6 +145,12 @@ export default function EntityModal({
     const apiPersonId = getApiPersonId();
     if (!apiPersonId || !onPersonTrace) return;
 
+    // Check credits before making any API calls
+    if (isCreditsExhausted || !apiUsageService.canMakeRequest()) {
+      showCreditsModal();
+      return;
+    }
+
     try {
       const personData = await withApiToast(
         'Person Details Lookup',
@@ -173,6 +185,12 @@ export default function EntityModal({
   // Handle address intel action
   const handleAddressIntel = () => {
     if (entityType !== 'address' || !onAddressIntel) return;
+    
+    // Check credits before making any API calls
+    if (isCreditsExhausted || !apiUsageService.canMakeRequest()) {
+      showCreditsModal();
+      return;
+    }
     
     const addressEntity = entity as AddressEntity;
     if (addressEntity.street && addressEntity.city && addressEntity.state) {
@@ -300,7 +318,12 @@ export default function EntityModal({
           {entityType === 'address' && onAddressIntel && (
             <button
               onClick={handleAddressIntel}
-              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+              className={`px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 ${
+                isCreditsExhausted
+                  ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500 ring-2 ring-red-300 credit-shake'
+                  : 'bg-gray-900 hover:bg-gray-800 focus:ring-gray-500'
+              }`}
+              title={isCreditsExhausted ? "Credits exhausted - click to view options" : "Get address intelligence"}
             >
               Address Intel
             </button>
@@ -310,7 +333,12 @@ export default function EntityModal({
           {entityType === 'person' && getApiPersonId() && onPersonTrace && (
             <button
               onClick={handlePersonTrace}
-              className="px-4 py-2 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+              className={`px-4 py-2 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 ${
+                isCreditsExhausted
+                  ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500 ring-2 ring-red-300 credit-shake'
+                  : 'bg-gray-900 hover:bg-gray-800 focus:ring-gray-500'
+              }`}
+              title={isCreditsExhausted ? "Credits exhausted - click to view options" : "Trace person details"}
             >
               Trace Person
             </button>

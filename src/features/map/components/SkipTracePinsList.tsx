@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { SkipTraceAddress } from '../services/skipTraceAddressExtractor';
 import { NodeData, SessionData } from '@/features/session/services/sessionStorage';
-import { peopleParseService } from '@/features/api/services/peopleParse';
 import SessionSelectorAccordion from '@/features/session/components/SessionSelectorAccordion';
 
 interface SkipTracePinsListProps {
@@ -54,16 +53,44 @@ export default function SkipTracePinsList({
   const getAddressStats = (address: SkipTraceAddress) => {
     try {
       // Parse the people data from the address
-      const peopleData = peopleParseService.parsePeopleResponse(
-        address.rawResponse as Record<string, unknown>, 
-        address.nodeId
-      );
+      // The skip trace API response structure varies, so we need to handle it properly
+      const rawResponse = address.rawResponse as Record<string, unknown>;
+      
+      let personCount = 0;
+      
+      // Try to extract person count from different possible response structures
+      if (rawResponse.PeopleDetails && Array.isArray(rawResponse.PeopleDetails)) {
+        // This is a SkipTracePeopleResponse structure
+        personCount = rawResponse.PeopleDetails.length;
+      } else if (rawResponse["Person Details"] && Array.isArray(rawResponse["Person Details"])) {
+        // This is a SkipTracePersonDetailResponse structure
+        personCount = rawResponse["Person Details"].length;
+        
+        // Also count relatives and associates if they exist
+        if (rawResponse["All Relatives"] && Array.isArray(rawResponse["All Relatives"])) {
+          personCount += rawResponse["All Relatives"].length;
+        }
+        if (rawResponse["All Associates"] && Array.isArray(rawResponse["All Associates"])) {
+          personCount += rawResponse["All Associates"].length;
+        }
+      } else {
+        // Fallback: try to count any person-related arrays
+        const personKeys = Object.keys(rawResponse).filter(key => 
+          key.toLowerCase().includes('person') || 
+          key.toLowerCase().includes('relative') || 
+          key.toLowerCase().includes('associate')
+        );
+        
+        personCount = personKeys.reduce((total, key) => {
+          const value = rawResponse[key];
+          return total + (Array.isArray(value) ? value.length : 0);
+        }, 0);
+      }
       
       // Find child nodes that were created from this address's people
       const childNodes = nodes.filter(node => 
         node.type === 'people-result' && 
-        (node.parentNodeId === address.nodeId || 
-         (node.clickedEntityId && peopleData.people.some(p => p.mnEntityId === node.clickedEntityId)))
+        node.parentNodeId === address.nodeId
       );
 
       // Calculate total entities from child nodes
@@ -76,7 +103,7 @@ export default function SkipTracePinsList({
       }, 0);
 
       return {
-        personCount: peopleData.people.length,
+        personCount,
         childNodeCount: childNodes.length,
         totalChildEntities
       };

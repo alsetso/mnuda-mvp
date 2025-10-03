@@ -1,23 +1,21 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import AppHeader from '@/features/session/components/AppHeader';
 import TraceForm from '@/components/TraceForm';
 import NodeStack from '@/features/nodes/components/NodeStack';
-import SkipTracePinsList from '@/features/map/components/SkipTracePinsList';
-import { useSessionManager } from '@/features/session';
+import { useSessionManager, useApiUsageContext } from '@/features/session';
+import { apiUsageService } from '@/features/session/services/apiUsageService';
 import { NodeData } from '@/features/session/services/sessionStorage';
 import { useToast } from '@/features/ui/hooks/useToast';
-import { apiService } from '@/features/api/services/apiService';
+import { apiService, CreditsExhaustedError } from '@/features/api/services/apiService';
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 import { personDetailParseService } from '@/features/api/services/personDetailParse';
-import { useSkipTracePins } from '@/features/map/hooks/useSkipTracePins';
-import { SkipTraceAddress } from '@/features/map/services/skipTraceAddressExtractor';
 
 
 export default function TracePage() {
-  const [isSkipTraceSidebarOpen, setIsSkipTraceSidebarOpen] = useState(true); // Skip trace sidebar state - start open
   const { error, success, withApiToast } = useToast();
+  const { showCreditsModal } = useApiUsageContext();
   
   // Session management
   const {
@@ -38,6 +36,12 @@ export default function TracePage() {
   // Handle person trace from NodeStack
   const handlePersonTrace = useCallback(async (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => {
     if (!currentSession) return;
+    
+    // Check credits before making any API calls
+    if (!apiUsageService.canMakeRequest()) {
+      showCreditsModal();
+      return;
+    }
     try {
       const resp = await withApiToast(
         'Person Trace',
@@ -67,21 +71,13 @@ export default function TracePage() {
       addNode(node);
     } catch (err) {
       console.error('Person trace error:', err);
+      if (err instanceof CreditsExhaustedError) {
+        showCreditsModal();
+        return;
+      }
     }
-  }, [currentSession, addNode, withApiToast]);
+  }, [currentSession, addNode, withApiToast, showCreditsModal]);
 
-  // Skip trace pins management
-  const {
-    skipTraceAddresses,
-    isLoading: isSkipTracePinsLoading,
-  } = useSkipTracePins({
-    nodes: currentSession?.nodes || [],
-    addMarker: () => {}, // No map on trace page, so no-op
-    removeMarker: () => {}, // No map on trace page, so no-op
-    mapLoaded: true, // Always "loaded" since no map
-    onPersonTrace: handlePersonTrace,
-    updateMarkerPopup: () => {}, // No map on trace page, so no-op
-  });
 
   const handleTraceSubmit = async (node: NodeData) => {
     if (!currentSession) {
@@ -104,15 +100,6 @@ export default function TracePage() {
   //   console.log('Node clicked:', node);
   // };
 
-  // UI helpers
-  const handleSkipTraceSidebarToggle = useCallback(() => {
-    setIsSkipTraceSidebarOpen((prev) => !prev);
-  }, []);
-
-  const handleSkipTraceAddressClick = useCallback((address: SkipTraceAddress) => {
-    // On trace page, we don't have a map to fly to, so just log the click
-    console.log('Skip trace address clicked:', address);
-  }, []);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-white">
@@ -126,52 +113,11 @@ export default function TracePage() {
           onSessionRename={renameSession}
           updateUrl={false}
           showSessionSelector={true}
-          showMobileToggle={false}
-          showSidebarToggle={false}
-          showSkipTraceToggle={true}
-          isSkipTraceSidebarOpen={isSkipTraceSidebarOpen}
-          onSkipTraceSidebarToggle={handleSkipTraceSidebarToggle}
-          skipTracePinsCount={skipTraceAddresses.length}
         />
       </div>
 
       {/* Body */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Mobile backdrop overlay */}
-        {isSkipTraceSidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-            onClick={() => setIsSkipTraceSidebarOpen(false)}
-          />
-        )}
-
-        {/* Skip Trace Sidebar */}
-        {isSkipTraceSidebarOpen && (
-          <div className={`
-            fixed md:relative top-14 md:top-auto inset-x-0 md:inset-x-auto bottom-0 md:bottom-auto z-50 md:z-auto
-            w-full md:w-80 md:flex-shrink-0
-            bg-white md:bg-white
-            border-r border-gray-200
-            transform md:transform-none
-            transition-transform duration-300 ease-in-out
-            ${isSkipTraceSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            md:translate-x-0
-            flex flex-col
-          `}>
-            <SkipTracePinsList
-              skipTraceAddresses={skipTraceAddresses}
-              isLoading={isSkipTracePinsLoading}
-              nodes={currentSession?.nodes || []}
-              onAddressClick={handleSkipTraceAddressClick}
-              currentSession={currentSession}
-              sessions={sessions}
-              onNewSession={createNewSession}
-              onSessionSwitch={handleSessionSwitch}
-              onClose={() => setIsSkipTraceSidebarOpen(false)}
-            />
-          </div>
-        )}
-
         {/* Main Content */}
         <div className="flex-1 min-w-0 overflow-y-auto">
           <div className="p-4 md:p-6">
