@@ -105,6 +105,11 @@ export default function AppHeader({
                         </svg>
                       </button>
                     </div>
+                    
+                    {/* API Status Label - Mobile only, positioned after hamburger menu */}
+                    <div className="md:hidden">
+                      <ApiStatusLabel />
+                    </div>
                   </>
                 )}
               </div>
@@ -122,9 +127,10 @@ export default function AppHeader({
             
             {/* Right Section - Unified controls (1/3) */}
             <div className="w-1/3 flex items-center justify-end space-x-1 sm:space-x-2 pl-2 sm:pl-4">
-              {/* API Status Label - Moved to far left */}
-              <ApiStatusLabel />
-              
+              {/* API Status Label - Desktop only */}
+              <div className="hidden md:block">
+                <ApiStatusLabel />
+              </div>
 
               {/* Map-specific controls */}
               {isMapPage && (
