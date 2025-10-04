@@ -620,8 +620,8 @@ function MapPageContent() {
           
           <TrackingFab />
 
-          {/* Weather Dialog - Bottom Left */}
-          <div className="absolute bottom-4 left-4 z-20">
+          {/* Weather Dialog - Bottom Left, adjusted for mobile toggle */}
+          <div className="absolute bottom-16 left-4 z-20 md:bottom-4 md:left-4">
             <WeatherDialog userLocation={userLocation} />
           </div>
 

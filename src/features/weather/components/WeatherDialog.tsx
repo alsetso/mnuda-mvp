@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useWeather } from '../hooks/useWeather';
 import { WeatherData } from '../types';
 
@@ -8,42 +8,6 @@ interface WeatherDialogProps {
   className?: string;
   userLocation?: { latitude: number; longitude: number } | null;
 }
-
-// Weather code to description mapping (WMO Weather interpretation codes)
-const getWeatherDescription = (code: number, isDay: number): string => {
-  const descriptions: Record<number, string> = {
-    0: isDay ? 'Clear sky' : 'Clear night',
-    1: isDay ? 'Mainly clear' : 'Mainly clear',
-    2: 'Partly cloudy',
-    3: 'Overcast',
-    45: 'Fog',
-    48: 'Depositing rime fog',
-    51: 'Light drizzle',
-    53: 'Moderate drizzle',
-    55: 'Dense drizzle',
-    56: 'Light freezing drizzle',
-    57: 'Dense freezing drizzle',
-    61: 'Slight rain',
-    63: 'Moderate rain',
-    65: 'Heavy rain',
-    66: 'Light freezing rain',
-    67: 'Heavy freezing rain',
-    71: 'Slight snow fall',
-    73: 'Moderate snow fall',
-    75: 'Heavy snow fall',
-    77: 'Snow grains',
-    80: 'Slight rain showers',
-    81: 'Moderate rain showers',
-    82: 'Violent rain showers',
-    85: 'Slight snow showers',
-    86: 'Heavy snow showers',
-    95: 'Thunderstorm',
-    96: 'Thunderstorm with slight hail',
-    99: 'Thunderstorm with heavy hail',
-  };
-  
-  return descriptions[code] || 'Unknown';
-};
 
 // Weather code to icon mapping
 const getWeatherIcon = (code: number, isDay: number): string => {
@@ -62,17 +26,6 @@ const celsiusToFahrenheit = (celsius: number): number => {
   return Math.round((celsius * 9/5) + 32);
 };
 
-// Convert wind speed from km/h to mph
-const kmhToMph = (kmh: number): number => {
-  return Math.round(kmh * 0.621371);
-};
-
-// Get wind direction as text
-const getWindDirection = (degrees: number): string => {
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-  const index = Math.round(degrees / 22.5) % 16;
-  return directions[index];
-};
 
 // Get dynamic theme based on weather and time
 const getWeatherTheme = (weatherData: WeatherData) => {
@@ -209,7 +162,6 @@ export function WeatherDialog({ className = '', userLocation }: WeatherDialogPro
     userLocation,
   });
   
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // Get default theme for weather display
   const theme = useMemo(() => {
@@ -240,57 +192,16 @@ export function WeatherDialog({ className = '', userLocation }: WeatherDialogPro
     refreshWeather();
   };
 
-  const formatLocation = (): string => {
-    if (!location) return 'Minneapolis, MN';
-    
-    // Try to get city and state first
-    const parts = [location.city, location.state].filter(Boolean);
-    if (parts.length > 0) {
-      return parts.join(', ');
-    }
-    
-    // If we have coordinates but no city/state, try to show a more user-friendly format
-    if (location.latitude && location.longitude) {
-      // Check if we're using GPS location
-      if (userLocation) {
-        // Show coordinates with a note that we're getting location details
-        return `Getting location... (${location.latitude.toFixed(3)}, ${location.longitude.toFixed(3)})`;
-      } else {
-        // For non-GPS locations, just show coordinates
-        return `${location.latitude.toFixed(3)}, ${location.longitude.toFixed(3)}`;
-      }
-    }
-    
-    // Final fallback
-    return 'Minneapolis, MN';
-  };
-
-  const formatTime = (timeString: string): string => {
-    try {
-      const date = new Date(timeString);
-      return date.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-      });
-    } catch {
-      return 'Unknown';
-    }
-  };
 
   if (isError) {
     return (
-      <div className={`bg-gradient-to-br from-red-50 to-orange-50 backdrop-blur-sm border border-red-200 rounded-lg shadow-lg p-2 max-w-xs ${className}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">⚠️</span>
-            <div>
-              <div className="text-xs font-medium text-red-900">Weather Unavailable</div>
-            </div>
-          </div>
+      <div className={`bg-white/90 backdrop-blur-sm border border-red-200 rounded-md shadow-sm px-2 py-1.5 ${className}`}>
+        <div className="flex items-center space-x-1.5">
+          <span className="text-sm">⚠️</span>
+          <span className="text-sm text-red-600">Weather unavailable</span>
           <button
             onClick={handleRefresh}
-            className="p-1 hover:bg-red-100 rounded-full transition-colors"
+            className="p-0.5 hover:bg-red-100 rounded-full transition-colors"
             title="Retry"
           >
             <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,12 +215,10 @@ export function WeatherDialog({ className = '', userLocation }: WeatherDialogPro
 
   if (isLoading || !weatherData) {
     return (
-      <div className={`bg-gradient-to-br ${theme.bg} backdrop-blur-sm border ${theme.border} rounded-lg shadow-lg p-2 max-w-xs ${className}`}>
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
-          <div className="text-xs text-gray-600">
-            {userLocation ? 'Getting weather for your location...' : 'Getting weather for Minneapolis...'}
-          </div>
+      <div className={`bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md shadow-sm px-2 py-1.5 ${className}`}>
+        <div className="flex items-center space-x-1.5">
+          <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-500"></div>
+          <span className="text-sm text-gray-600">Loading...</span>
         </div>
       </div>
     );
@@ -317,82 +226,32 @@ export function WeatherDialog({ className = '', userLocation }: WeatherDialogPro
 
   const { current_weather } = weatherData;
   const tempF = celsiusToFahrenheit(current_weather.temperature);
-  const windMph = kmhToMph(current_weather.windspeed);
-  const windDir = getWindDirection(current_weather.winddirection);
-  const weatherDesc = getWeatherDescription(current_weather.weathercode, current_weather.is_day);
 
   return (
-    <div className={`bg-gradient-to-br ${theme.bg} backdrop-blur-sm border ${theme.border} rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl ${className}`}>
-      {/* Compact View */}
-      <div 
-        className="p-2 cursor-pointer hover:bg-white/20 transition-colors rounded-lg"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className={`text-lg ${current_weather.weathercode >= 95 ? 'animate-bounce' : current_weather.weathercode >= 51 && current_weather.weathercode <= 67 ? 'animate-pulse' : ''}`}>{theme.icon}</span>
-            <div>
-              <div className={`text-sm font-bold ${theme.tempAccent} ${(tempF < 10 || tempF > 90) ? 'animate-pulse' : ''}`}>{tempF}°F</div>
-              <div className={`text-xs ${theme.text} opacity-70 flex items-center space-x-1`}>
-                <span>{formatLocation()}</span>
-                {userLocation && (
-                  <span className="text-green-500" title="Using your GPS location">📍</span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRefresh();
-              }}
-              className="p-1 hover:bg-white/30 rounded-full transition-colors"
-              title="Refresh weather"
-            >
-              <svg className={`w-3 h-3 ${theme.accent}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-            <svg 
-              className={`w-3 h-3 ${theme.text} opacity-60 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
+    <div className={`bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md shadow-sm px-2 py-1.5 ${className}`}>
+      <div className="flex items-center space-x-1.5">
+        {/* Weather Icon */}
+        <span className={`text-sm ${current_weather.weathercode >= 95 ? 'animate-bounce' : current_weather.weathercode >= 51 && current_weather.weathercode <= 67 ? 'animate-pulse' : ''}`}>{theme.icon}</span>
+        
+        {/* Temperature */}
+        <span className={`text-sm font-bold ${theme.tempAccent} ${(tempF < 10 || tempF > 90) ? 'animate-pulse' : ''}`}>{tempF}°F</span>
+        
+        {/* Location indicator */}
+        {userLocation && (
+          <span className="text-xs text-green-500" title="Using your GPS location">📍</span>
+        )}
+        
+        {/* Refresh button */}
+        <button
+          onClick={handleRefresh}
+          className="p-0.5 hover:bg-gray-100 rounded-full transition-colors"
+          title="Refresh weather"
+        >
+          <svg className={`w-3 h-3 text-gray-500`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
       </div>
-
-      {/* Expanded View */}
-      {isExpanded && (
-        <div className="px-2 pb-2 border-t border-white/20">
-          <div className="pt-2 space-y-1.5">
-            <div className="flex justify-between items-center">
-              <span className={`text-xs ${theme.text} opacity-70`}>Condition</span>
-              <span className={`text-xs font-medium ${theme.text}`}>{weatherDesc}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className={`text-xs ${theme.text} opacity-70`}>Wind</span>
-              <span className={`text-xs font-medium ${theme.text}`}>{windMph} mph {windDir}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className={`text-xs ${theme.text} opacity-70`}>Updated</span>
-              <span className={`text-xs font-medium ${theme.text}`}>{formatTime(current_weather.time)}</span>
-            </div>
-            {location && (
-              <div className="flex justify-between items-center">
-                <span className={`text-xs ${theme.text} opacity-70`}>Location</span>
-                <span className={`text-xs font-medium ${theme.text}`}>
-                  {location.latitude.toFixed(2)}, {location.longitude.toFixed(2)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
