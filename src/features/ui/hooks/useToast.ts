@@ -13,7 +13,7 @@ export function useToast() {
       type,
       title,
       message,
-      duration: type === 'loading' ? 0 : 4000,
+      duration: type === 'loading' ? 0 : 2000, // Shorter duration for faster dismissal
     });
   }, [addToast]);
 
@@ -63,7 +63,7 @@ export function useToast() {
         type: 'success',
         title: 'Success',
         message: options.successMessage || `${apiCall} completed successfully`,
-        duration: 3000,
+        duration: 1500, // Shorter success duration
       });
       
       return result;
@@ -73,7 +73,7 @@ export function useToast() {
         type: 'error',
         title: 'Error',
         message: options.errorMessage || `${apiCall} failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        duration: 5000,
+        duration: 3000, // Shorter error duration
       });
       
       throw error;

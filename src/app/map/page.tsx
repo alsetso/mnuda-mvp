@@ -3,21 +3,25 @@
 import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import AppHeader from '@/features/session/components/AppHeader';
-import PersonModal from '@/features/nodes/components/PersonModal';
-import NodeStack from '@/features/nodes/components/NodeStack';
+// import NodeStack from '@/features/nodes/components/NodeStack'; // Unused
+import SessionResultsPanel from '@/features/session/components/SessionResultsPanel';
 import { useMap } from '@/features/map/hooks/useMap';
 import { useAddressSync } from '@/features/map/hooks/useAddressSync';
 import { useUserLocationTracker } from '@/features/map/hooks/useUserLocationTracker';
 import { useSkipTracePins } from '@/features/map/hooks/useSkipTracePins';
-import { Address, MapboxFeature } from '@/features/map/types';
+import { usePropertyPanel } from '@/features/map/hooks/usePropertyPanel';
+import { PropertyPanel } from '@/features/map/components/PropertyPanel';
+import { FloatingSearchInput } from '@/features/map/components/FloatingSearchInput';
+import { Address, MapboxFeature, PropertyDetails, PropertyPerson } from '@/features/map/types';
 import { AddressParser as AddressParserService } from '@/features/map/services/addressParser';
+import { minnesotaBoundsService } from '@/features/map/services/minnesotaBoundsService';
 import { useSessionManager, SessionOverlay, useApiUsageContext } from '@/features/session';
-import CreditsExhaustedOverlay from '@/features/session/components/CreditsExhaustedOverlay';
 import { apiUsageService } from '@/features/session/services/apiUsageService';
 import { useToast } from '@/features/ui/hooks/useToast';
 import { NodeData, sessionStorageService } from '@/features/session/services/sessionStorage';
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 import { apiService, CreditsExhaustedError } from '@/features/api/services/apiService';
+import { WeatherDialog } from '@/features/weather';
 // import { GeocodingService } from '@/features/map/services/geocodingService';
 import { AddressService } from '@/features/api/services/addressService';
 import { personDetailParseService } from '@/features/api/services/personDetailParse';
@@ -39,11 +43,35 @@ function MapPageContent() {
   const router = useRouter();
 
   // --- UI state ---
-  const [selectedPersonNode, setSelectedPersonNode] = useState<NodeData | null>(null);
-  const [isPersonModalOpen, setIsPersonModalOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'map' | 'results'>('map'); // Mobile view toggle
   const { withApiToast } = useToast();
   const { showCreditsModal } = useApiUsageContext();
+
+  // --- Property panel ---
+  const {
+    property,
+    isVisible: isPropertyPanelVisible,
+    showProperty,
+    hideProperty
+    // onPersonClick: handlePropertyPersonClick // Unused
+  } = usePropertyPanel();
+
+  // Handle person clicks from property panel
+  const handlePropertyPersonClickWrapper = useCallback((person: PropertyPerson) => {
+    // For now, just log the person click
+    // In the future, this could open a person modal or trigger a trace
+    console.log('Property person clicked:', person);
+    
+    // You could also trigger a person trace here if needed
+    // handlePersonTrace(person.id, person, 'Property Panel', undefined, person.id, person);
+  }, []);
+
+  // Handle search completion
+  const handleSearchComplete = useCallback((address: Address) => {
+    console.log('Search completed:', address);
+    // The search input already handles creating the search history node
+    // and flying to the location, so we just need to log it here
+  }, []);
 
   // --- Session manager ---
   const {
@@ -75,16 +103,34 @@ function MapPageContent() {
     updateUserLocation,
     addMarker,
     removeMarker,
-    updateMarkerPopup,
+    updateMarkerPopup
+    // showPropertyDetails, // Unused
   } = useMap({
     mapContainer,
     onMapReady: (mapInstance) => console.log('Map ready:', mapInstance),
     onMapClick: async (coordinates) => {
+      // Check if coordinates are within Minnesota bounds for all clicks
+      if (!minnesotaBoundsService.isWithinMinnesota(coordinates)) {
+        await withApiToast('Minnesota Only', () => Promise.reject('This location is not in Minnesota. Please click within Minnesota state boundaries to perform skip tracing operations.'), {
+          errorMessage: 'Not in Minnesota',
+        });
+        return;
+      }
+      
       if (!currentSession) {
-        await onMapPinDropped(coordinates);
+        const result = await onMapPinDropped(coordinates);
+        // Handle any errors from address sync (like non-Minnesota addresses)
+        if (result && !result.success && result.error) {
+          await withApiToast('Minnesota Only', () => Promise.reject('This location is not in Minnesota. Please click within Minnesota state boundaries to perform skip tracing operations.'), {
+            errorMessage: 'Not in Minnesota',
+          });
+        }
       } else {
         await handleMapClickWithSession(coordinates);
       }
+    },
+    onPropertyClick: (property) => {
+      showProperty(property);
     },
   });
 
@@ -240,6 +286,9 @@ function MapPageContent() {
         showCreditsModal();
         return;
       }
+      
+      // First, get the address to check if it's in Minnesota
+      let address: Address;
       try {
         addAddressPin(coordinates);
         const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${coordinates.lng},${coordinates.lat}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}&types=address&limit=1`;
@@ -254,14 +303,36 @@ function MapPageContent() {
         const feature = data.features[0]; // Take the first (most relevant) result
         const { street, city, state, zip } = parseMapboxAddress(feature);
 
-        const address: Address = {
+        // Secondary check: Validate that the address state is actually Minnesota
+        if (!minnesotaBoundsService.isMinnesotaState(state)) {
+          // Handle Minnesota bounds check outside of try-catch to avoid console errors
+          await withApiToast('Minnesota Only', () => Promise.reject('This location is not in Minnesota. Please click within Minnesota state boundaries to perform skip tracing operations.'), {
+            errorMessage: 'Not in Minnesota',
+          });
+          return;
+        }
+
+        address = {
           street: street || 'Unknown',
           city: city || 'Unknown',
           state: state || 'Unknown',
           zip: zip || '',
           coordinates: { latitude: coordinates.lat, longitude: coordinates.lng },
         };
+      } catch (err) {
+        console.error('Map click error:', err);
+        if (err instanceof CreditsExhaustedError) {
+          showCreditsModal();
+          return;
+        }
+        await withApiToast('Error', () => Promise.reject(err as Error), {
+          errorMessage: 'Failed to resolve address',
+        });
+        return;
+      }
 
+      // Now proceed with the address service call
+      try {
         console.log('Map click - Calling AddressService with address:', address);
         const result = await AddressService.searchAddressWithToast(
           address,
@@ -272,6 +343,30 @@ function MapPageContent() {
         if (result.success && result.node) {
           console.log('Map click - Adding node:', result.node);
           addNode(result.node);
+          
+          // Show property details in the property panel
+          if (result.node.response && typeof result.node.response === 'object' && result.node.response !== null && 'people' in result.node.response && Array.isArray(result.node.response.people)) {
+            const people = result.node.response.people as Array<{
+              id?: string;
+              name?: string;
+              age?: number;
+              relationship?: string;
+            }>;
+            const propertyDetails: PropertyDetails = {
+              address: address.street,
+              city: address.city,
+              state: address.state,
+              zip: address.zip,
+              ownerCount: people.length,
+              people: people.map((person, index: number) => ({
+                id: person.id || `person-${index}`,
+                name: person.name || 'Unknown',
+                age: person.age,
+                relationship: person.relationship || 'Property Owner'
+              }))
+            };
+            showProperty(propertyDetails);
+          }
         } else {
           console.warn('Map click - AddressService failed or no node returned:', result);
         }
@@ -286,7 +381,7 @@ function MapPageContent() {
         });
       }
     },
-    [currentSession, addNode, addAddressPin, withApiToast, parseMapboxAddress, showCreditsModal]
+    [currentSession, addNode, addAddressPin, withApiToast, parseMapboxAddress, showCreditsModal, showProperty]
   );
 
   // ---------------------------------------------------------------------------
@@ -409,11 +504,8 @@ function MapPageContent() {
     };
 
     const handleChildResultClick = (event: CustomEvent) => {
-      const { childNode } = event.detail;
-      if (childNode) {
-        setSelectedPersonNode(childNode);
-        setIsPersonModalOpen(true);
-      }
+      // PersonModal functionality removed - child result clicks are now handled inline
+      console.log('Child result clicked:', event.detail);
     };
 
     document.addEventListener('personClick', handlePersonClick as EventListener);
@@ -467,13 +559,16 @@ function MapPageContent() {
     return null;
   };
 
+
+
+
   const TrackingFab = () => {
     const active = isTracking || userFoundState === 'active' || userFoundState === 'locating';
     return (
       <button
         onClick={active ? handleUserFoundStopTracking : handleUserFoundStartTracking}
-        className={`absolute bottom-4 right-4 z-20 rounded-full px-5 py-3 shadow-lg font-semibold flex items-center space-x-2 ${
-          active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
+        className={`absolute top-4 left-4 z-20 rounded-lg px-3 py-2 shadow-lg font-medium flex items-center space-x-2 text-sm ${
+          active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-[#014463] hover:bg-[#1dd1f5] text-white'
         }`}
       >
         <IconTarget />
@@ -481,6 +576,7 @@ function MapPageContent() {
       </button>
     );
   };
+
 
   const AddressCard = ({ title, address }: { title: string; address: Address }) => (
     <div className="absolute top-32 left-1/2 -translate-x-1/2 z-10 bg-white border border-gray-200 rounded-lg shadow-lg p-3 max-w-sm">
@@ -512,13 +608,22 @@ function MapPageContent() {
         {/* Map - 50% width on desktop, full width on mobile when selected */}
         <div className={`flex-1 min-w-0 relative ${mobileView === 'results' ? 'hidden md:block' : ''}`}>
           <div ref={mapContainer} className="w-full h-full" />
-          <CreditsExhaustedOverlay className="absolute inset-0" />
 
           <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10"><StatusBanner /></div>
           {selectedAddress && !currentSession && <AddressCard title="Selected" address={selectedAddress} />}
           
+          {/* Floating Search Input */}
+          <FloatingSearchInput 
+            onSearchComplete={handleSearchComplete} 
+            onFlyTo={flyTo}
+          />
           
           <TrackingFab />
+
+          {/* Weather Dialog - Bottom Left */}
+          <div className="absolute bottom-4 left-4 z-20">
+            <WeatherDialog userLocation={userLocation} />
+          </div>
 
           {/* Live location coordinates overlay - hidden for cleaner UI */}
           {false && userLocation && (isTracking || userFoundState === 'active') && (
@@ -530,42 +635,14 @@ function MapPageContent() {
           )}
         </div>
 
-        {/* Node Stack Panel - 50% width on desktop, full width on mobile when selected */}
-        <div className={`flex-1 min-w-0 bg-white border-l border-gray-200 overflow-y-auto ${mobileView === 'map' ? 'hidden md:block' : ''}`}>
-          <div className="p-4 md:p-6">
-            <div className="max-w-4xl mx-auto">
-              {/* Panel Header */}
-              <div className="mb-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Session Results</h3>
-                <p className="text-gray-600">
-                  {currentSession ? `${currentSession.nodes.length} result${currentSession.nodes.length !== 1 ? 's' : ''} found` : 'No session selected'}
-                </p>
-              </div>
-
-              {/* Node Stack */}
-              {currentSession && currentSession.nodes.length > 0 ? (
-                <NodeStack
-                  nodes={currentSession.nodes}
-                  onPersonTrace={handlePersonTrace}
-                  onDeleteNode={deleteNode}
-                  onAddNode={addNode}
-                />
-              ) : (
-                <div className="text-center py-12">
-                  <div className="text-gray-400 mb-4">
-                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">No Results Yet</h4>
-                  <p className="text-gray-500">
-                    Click on the map to search addresses or use the floating menu to switch sessions.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Session Results Panel - Two-state interface */}
+        <SessionResultsPanel
+          currentSession={currentSession}
+          onPersonTrace={handlePersonTrace}
+          onDeleteNode={deleteNode}
+          onAddNode={addNode}
+          mobileView={mobileView}
+        />
       </div>
 
       {/* Mobile Toggle Button - Only visible on mobile */}
@@ -576,7 +653,7 @@ function MapPageContent() {
               onClick={() => setMobileView('map')}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 mobileView === 'map'
-                  ? 'bg-[#1dd1f5] text-white'
+                  ? 'bg-[#014463] text-white'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -589,7 +666,7 @@ function MapPageContent() {
               onClick={() => setMobileView('results')}
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 mobileView === 'results'
-                  ? 'bg-[#1dd1f5] text-white'
+                  ? 'bg-[#014463] text-white'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -602,17 +679,14 @@ function MapPageContent() {
         </div>
       </div>
 
-      {/* Person Modal */}
-      {selectedPersonNode && (
-        <PersonModal
-          isOpen={isPersonModalOpen}
-          onClose={() => {
-            setIsPersonModalOpen(false);
-            setSelectedPersonNode(null);
-          }}
-          personNode={selectedPersonNode}
-        />
-      )}
+
+      {/* Property Panel */}
+      <PropertyPanel
+        property={property}
+        isVisible={isPropertyPanelVisible}
+        onClose={hideProperty}
+        onPersonClick={handlePropertyPersonClickWrapper}
+      />
 
       {/* Session Overlay */}
       <SessionOverlay
@@ -640,7 +714,7 @@ function Spinner({ small = false }: { small?: boolean }) {
 }
 function IconTarget() {
   return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 6v0m0 12v0m6-6v0M6 12v0m6-9a9 9 0 100 18 9 9 0 000-18z" />
     </svg>
   );

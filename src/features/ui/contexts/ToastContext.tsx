@@ -20,7 +20,11 @@ export function ToastProvider({ children }: ToastProviderProps) {
       timestamp: Date.now(),
     };
 
-    setToasts(prev => [...prev, newToast]);
+    setToasts(prev => {
+      const updated = [...prev, newToast];
+      // Keep only the last 3 toasts
+      return updated.slice(-3);
+    });
 
     // Auto-remove toast after duration (except loading toasts)
     if (toast.duration && toast.duration > 0) {

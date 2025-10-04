@@ -164,7 +164,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('firstName', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="John"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-600 focus:border-blue-600 outline-none bg-white touch-manipulation"
                 />
               </div>
 
@@ -180,7 +180,7 @@ export default function InputNode({
                   readOnly={hasCompleted}
                   placeholder="M"
                   maxLength={1}
-                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[#014463] outline-none bg-white touch-manipulation"
                 />
               </div>
               
@@ -195,7 +195,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('lastName', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="Doe"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[#014463] outline-none bg-white touch-manipulation"
                 />
               </div>
             </div>
@@ -215,7 +215,7 @@ export default function InputNode({
                 onChange={(e) => handleFieldChange('email', e.target.value)}
                 readOnly={hasCompleted}
                 placeholder="john.doe@example.com"
-                className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[#014463] outline-none bg-white touch-manipulation"
               />
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function InputNode({
                 onChange={(e) => handleFieldChange('phone', e.target.value)}
                 readOnly={hasCompleted}
                 placeholder="(555) 123-4567"
-                className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[#014463] outline-none bg-white touch-manipulation"
               />
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('city', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="New York"
-                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
+                  className="w-full px-3 py-3 sm:py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[#014463] outline-none bg-white touch-manipulation"
                 />
               </div>
 
@@ -286,7 +286,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('state', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="NY"
-                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[#014463] outline-none bg-white touch-manipulation"
                 />
               </div>
               
@@ -301,7 +301,7 @@ export default function InputNode({
                   onChange={(e) => handleFieldChange('zip', e.target.value)}
                   readOnly={hasCompleted}
                   placeholder="10001"
-                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#1dd1f5] focus:border-[#1dd1f5] outline-none bg-white touch-manipulation"
+                  className="w-full px-2 sm:px-3 py-3 sm:py-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-[#014463] outline-none bg-white touch-manipulation"
                 />
               </div>
             </div>
@@ -314,22 +314,22 @@ export default function InputNode({
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-transparent">
       {/* Header */}
-      <div className="px-3 sm:px-4 lg:px-6 py-2 border-b border-gray-100">
+      <div className="px-3 sm:px-4 lg:px-6 py-2 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold text-gray-800 truncate">{getNodeTitle()}</h3>
-            <p className="text-xs text-gray-400">{getNodeSubtitle()}</p>
+            <h3 className="text-sm font-semibold text-gray-900 truncate">{getNodeTitle()}</h3>
+            <p className="text-xs text-gray-500">{getNodeSubtitle()}</p>
           </div>
           <div className="flex items-center space-x-2 flex-shrink-0">
             <div className={`w-2 h-2 rounded-full ${
-              isSearching ? 'bg-yellow-400' : 
-              hasCompleted ? 'bg-green-400' : 
-              hasSearched ? 'bg-green-400' : 
-              'bg-[#1dd1f5]'
+              isSearching ? 'bg-yellow-600' : 
+              hasCompleted ? 'bg-green-600' : 
+              hasSearched ? 'bg-green-600' : 
+              'bg-blue-600'
             }`}></div>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-500">
               {isSearching ? 'Searching...' : 
                hasCompleted ? 'Completed' : 
                hasSearched ? 'Completed' : 
@@ -350,10 +350,10 @@ export default function InputNode({
             {searchError && (
               <div className="bg-red-50 border border-red-200 rounded p-3">
                 <div className="flex items-center space-x-2">
-                  <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="text-sm text-red-700">{searchError}</span>
+                  <span className="text-sm text-red-600">{searchError}</span>
                 </div>
               </div>
             )}
@@ -368,7 +368,7 @@ export default function InputNode({
               <button
                 onClick={handleSearch}
                 disabled={!canSearch() || isSearching || hasCompleted}
-                className="w-full sm:w-auto px-6 py-3 sm:py-2 text-sm font-medium text-white bg-[#1dd1f5] border border-transparent rounded hover:bg-[#1bc4e8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1dd1f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px]"
+                className={`w-full sm:w-auto px-6 py-3 sm:py-2 text-sm font-medium text-white bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px]`}
               >
                 {isSearching ? (
                   <>
@@ -401,7 +401,7 @@ export default function InputNode({
                 <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm font-medium text-green-700">Search Completed</span>
+                <span className="text-sm font-medium text-green-600">Search Completed</span>
               </div>
               <div className="text-sm text-gray-700 break-words">
                 {formatSearchQuery()}

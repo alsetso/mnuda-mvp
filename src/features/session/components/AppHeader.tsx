@@ -67,7 +67,7 @@ export default function AppHeader({
   return (
     <>
       {/* Header */}
-      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm">
+      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm backdrop-blur-sm">
         <div className="w-full px-3 sm:px-4 lg:px-8">
           <div className="flex items-center h-14 sm:h-16">
             {/* Left Section - Unified Navigation + Page-specific controls (1/3) */}
@@ -77,15 +77,15 @@ export default function AppHeader({
                 {(
                   <>
                     {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center space-x-1">
+                    <div className="hidden md:flex items-center space-x-2">
                       {navigationItems.map((item) => (
                         <Link
                           key={item.href}
                           href={item.href}
-                          className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                             pathname === item.href
-                              ? 'bg-[#1dd1f5] text-white'
-                              : 'text-gray-600 hover:text-[#1dd1f5] hover:bg-[#1dd1f5]/10'
+                              ? 'bg-[#014463] text-white shadow-sm'
+                              : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50 hover:scale-105'
                           }`}
                         >
                           {item.label}
@@ -97,7 +97,7 @@ export default function AppHeader({
                     <div className="md:hidden">
                       <button
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="p-2 text-gray-400 hover:text-[#1dd1f5] hover:bg-[#1dd1f5]/10 rounded-lg transition-colors"
+                        className="p-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 rounded-lg transition-colors"
                         title="Navigation Menu"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,18 +112,19 @@ export default function AppHeader({
             
             {/* Center Section - Logo (1/3) */}
             <div className="w-1/3 flex items-center justify-center">
-              <Link href="/" className="hover:opacity-80 transition-opacity">
-                <h1 className="text-base sm:text-lg font-semibold">
-                  <span className="text-[#014463]">MN</span>
-                  <span className="text-[#1dd1f5]">UDA</span>
+              <Link href="/" className="hover:scale-105 transition-all duration-200">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight">
+                  <span className="text-[#014463] drop-shadow-sm">MN</span>
+                  <span className="text-[#1dd1f5] drop-shadow-sm">UDA</span>
                 </h1>
               </Link>
             </div>
             
             {/* Right Section - Unified controls (1/3) */}
             <div className="w-1/3 flex items-center justify-end space-x-1 sm:space-x-2 pl-2 sm:pl-4">
-              {/* API Status Label */}
+              {/* API Status Label - Moved to far left */}
               <ApiStatusLabel />
+              
 
               {/* Map-specific controls */}
               {isMapPage && (
@@ -133,7 +134,9 @@ export default function AppHeader({
                     <div className="md:hidden">
                       <button
                         onClick={onMobileViewToggle}
-                        className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:ring-offset-2"
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#014463] focus:ring-offset-2 ${
+                          mobileView === 'results' ? 'bg-[#014463]' : 'bg-gray-200'
+                        }`}
                         title={`Switch to ${mobileView === 'map' ? 'Results' : 'Map'} view`}
                       >
                         <span
@@ -150,7 +153,7 @@ export default function AppHeader({
                     <div className="hidden md:block">
                       <button
                         onClick={onSidebarToggle}
-                        className="p-2 text-gray-400 hover:text-[#1dd1f5] hover:bg-[#1dd1f5]/10 rounded-lg transition-colors touch-manipulation"
+                        className="p-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors touch-manipulation"
                         title={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
                       >
                         {isSidebarOpen ? (
@@ -174,10 +177,10 @@ export default function AppHeader({
               {/* Profile Icon - Always show */}
               <Link
                 href={user ? "/account" : "/login"}
-                className="p-2 text-gray-400 hover:text-[#1dd1f5] hover:bg-[#1dd1f5]/10 rounded-lg transition-colors touch-manipulation"
+                className="px-2.5 py-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors touch-manipulation"
                 title={user ? "Account" : "Sign in"}
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </Link>
@@ -201,6 +204,7 @@ export default function AppHeader({
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 shadow-sm">
           <div className="px-4 py-2 space-y-1">
+            
             {navigationItems.map((item) => (
               <Link
                 key={item.href}
@@ -208,8 +212,8 @@ export default function AppHeader({
                 onClick={() => setIsMobileMenuOpen(false)}
                 className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                   pathname === item.href
-                    ? 'bg-[#1dd1f5] text-white'
-                    : 'text-gray-600 hover:text-[#1dd1f5] hover:bg-[#1dd1f5]/10'
+                    ? 'bg-[#014463] text-white'
+                    : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50'
                 }`}
               >
                 {item.label}

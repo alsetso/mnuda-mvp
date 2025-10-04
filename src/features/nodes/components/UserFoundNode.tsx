@@ -199,7 +199,7 @@ export default function UserFoundNode({
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-transparent">
       {/* Header */}
       <div className="px-3 sm:px-4 lg:px-6 py-2 border-b border-gray-100">
         <div className="flex items-center justify-between">
@@ -247,7 +247,7 @@ export default function UserFoundNode({
                 disabled={isTracking || isRequesting || !isOnline}
                 aria-label={isTracking ? "Finding your location" : "Find my current location"}
                 aria-describedby="location-help-text"
-                className="w-full sm:w-auto px-6 py-3 sm:py-2 text-sm font-medium text-white bg-[#1dd1f5] border border-transparent rounded hover:bg-[#014463] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1dd1f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px]"
+                className="w-full sm:w-auto px-6 py-3 sm:py-2 text-sm font-medium text-white bg-[#014463] border border-transparent rounded hover:bg-[#1dd1f5] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#014463] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 touch-manipulation min-h-[44px]"
               >
                 {(isTracking || isRequesting) ? (
                   <>
@@ -274,7 +274,7 @@ export default function UserFoundNode({
         ) : hasCompleted ? (
           /* Completed State - Tracking Finished */
           <div className="space-y-3">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div className="bg-white/20 border border-gray-200 rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <svg className="w-4 h-4 text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -444,7 +444,7 @@ export default function UserFoundNode({
                 const isLatest = index === (payload.locationHistory?.length || 0) - 1 && isTracking;
                 return (
                   <div key={index} className={`text-xs p-2 rounded border ${
-                    isLatest ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                    isLatest ? 'bg-green-50 border-green-200' : 'bg-white/20 border-gray-200'
                   }`}>
                     <div className="flex items-center justify-between">
                       <div className="font-mono text-gray-600">

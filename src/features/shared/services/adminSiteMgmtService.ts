@@ -16,8 +16,7 @@ export class AdminSiteMgmtService {
    */
   static async getSiteConfig(): Promise<AdminSiteMgmt | null> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('admin_public_site_mgmt')
         .select('*')
         .eq('id', this.SINGLE_RECORD_ID)
@@ -46,10 +45,9 @@ export class AdminSiteMgmtService {
         updated_at: new Date().toISOString(),
       };
       
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('admin_public_site_mgmt')
-        .update(updateData)
+        .update(updateData as never)
         .eq('id', this.SINGLE_RECORD_ID)
         .select()
         .single();
@@ -84,10 +82,9 @@ export class AdminSiteMgmtService {
         updated_at: new Date().toISOString(),
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('admin_public_site_mgmt')
-        .insert(defaultConfig as AdminSiteMgmtInsert)
+        .insert(defaultConfig as never)
         .select()
         .single();
 

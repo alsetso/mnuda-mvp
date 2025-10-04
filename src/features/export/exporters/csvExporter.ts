@@ -25,57 +25,131 @@ export class CsvExporter {
   private generateCsv(data: ExportData, options: ExportOptions): string {
     const lines: string[] = [];
     
-    // Session header
-    lines.push('Session Information');
+    // Export metadata
+    lines.push('MNUDA Session Export');
+    lines.push(`Generated,${new Date().toISOString()}`);
+    lines.push(`Format,CSV`);
+    lines.push(`Version,1.0`);
+    lines.push(''); // Empty line
+
+    // Session Information
+    lines.push('SESSION INFORMATION');
+    lines.push('Property,Value');
     lines.push(`Session Name,${this.escapeCsv(data.session.name)}`);
-    lines.push(`Created,${new Date(data.session.createdAt).toLocaleString()}`);
-    lines.push(`Last Accessed,${new Date(data.session.lastAccessed).toLocaleString()}`);
+    lines.push(`Session ID,${this.escapeCsv(data.session.id)}`);
+    lines.push(`Created,${new Date(data.session.createdAt).toISOString()}`);
+    lines.push(`Last Accessed,${new Date(data.session.lastAccessed).toISOString()}`);
     lines.push(`Total Nodes,${data.session.nodeCount}`);
     lines.push(`Total Entities,${data.session.entityCount}`);
     lines.push(`Location Tracking,${data.session.metadata.locationTrackingActive ? 'Active' : 'Inactive'}`);
     lines.push(''); // Empty line
 
-    // Entity summary
-    lines.push('Entity Summary');
-    lines.push('Type,Count');
-    lines.push(`Addresses,${data.summary.entityCounts.addresses}`);
-    lines.push(`Persons,${data.summary.entityCounts.persons}`);
-    lines.push(`Properties,${data.summary.entityCounts.properties}`);
-    lines.push(`Phones,${data.summary.entityCounts.phones}`);
-    lines.push(`Emails,${data.summary.entityCounts.emails}`);
-    lines.push(`Images,${data.summary.entityCounts.images}`);
-    lines.push(''); // Empty line
-
-    // Detailed breakdown
-    lines.push('Entity Breakdown by Type');
-    lines.push('Entity Type,Total Count,Traceable,Non-Traceable');
-    Object.entries(data.summary.breakdown.byEntityType).forEach(([type, breakdown]) => {
-      lines.push(`${type},${breakdown.count},${breakdown.traceable},${breakdown.nonTraceable}`);
+    // Entity Summary
+    lines.push('ENTITY SUMMARY');
+    lines.push('Entity Type,Count,Percentage');
+    const totalEntities = data.summary.totalEntities;
+    Object.entries(data.summary.entityCounts).forEach(([type, count]) => {
+      const percentage = totalEntities > 0 ? ((count / totalEntities) * 100).toFixed(1) : '0.0';
+      lines.push(`${type.charAt(0).toUpperCase() + type.slice(1)},${count},${percentage}%`);
     });
     lines.push(''); // Empty line
 
-    // All entities - using pre-structured data
-    lines.push('All Entities');
-    lines.push('Entity ID,Type,Category,Node ID,Node Title,Source,Is Traceable,Primary Value,Summary,Display Data');
+    // Source Breakdown
+    lines.push('SOURCE BREAKDOWN');
+    lines.push('Source,Count');
+    Object.entries(data.summary.breakdown.bySource).forEach(([source, count]) => {
+      lines.push(`${source},${count}`);
+    });
+    lines.push(''); // Empty line
+
+    // Traceability Breakdown
+    lines.push('TRACEABILITY BREAKDOWN');
+    lines.push('Type,Count');
+    lines.push(`Traceable,${data.summary.breakdown.byTraceability.traceable}`);
+    lines.push(`Non-Traceable,${data.summary.breakdown.byTraceability.nonTraceable}`);
+    lines.push(''); // Empty line
+
+    // Node Summary
+    lines.push('NODE SUMMARY');
+    lines.push('Node ID,Node Title,Node Type,Entity Count,API Name,Status,Has Completed,Created');
+    data.nodes.forEach(node => {
+      lines.push([
+        node.id,
+        this.escapeCsv(node.title),
+        node.type,
+        node.entityCount,
+        node.metadata.apiName || '',
+        node.metadata.status || '',
+        node.metadata.hasCompleted ? 'Yes' : 'No',
+        new Date(node.timestamp).toISOString()
+      ].join(','));
+    });
+    lines.push(''); // Empty line
+
+    // Detailed Entity Breakdown
+    lines.push('ENTITY BREAKDOWN BY TYPE');
+    lines.push('Entity Type,Total Count,Traceable,Non-Traceable,Categories,Sources');
+    Object.entries(data.summary.breakdown.byEntityType).forEach(([type, breakdown]) => {
+      const categories = Object.entries(breakdown.categories).map(([cat, count]) => `${cat}: ${count}`).join('; ');
+      const sources = Object.entries(breakdown.sources).map(([src, count]) => `${src}: ${count}`).join('; ');
+      lines.push([
+        type.charAt(0).toUpperCase() + type.slice(1),
+        breakdown.count,
+        breakdown.traceable,
+        breakdown.nonTraceable,
+        this.escapeCsv(categories),
+        this.escapeCsv(sources)
+      ].join(','));
+    });
+    lines.push(''); // Empty line
+
+    // All Entities - Comprehensive Data
+    const entityHeaders = [
+      'Entity ID',
+      'Type',
+      'Category',
+      'Node ID',
+      'Node Title',
+      'Source',
+      'Is Traceable',
+      'Primary Value',
+      'Summary',
+      'Timestamp',
+      'Display Data'
+    ];
+
+    if (options.includeRawData) {
+      entityHeaders.push('Raw Data');
+    }
+
+    lines.push('ALL ENTITIES');
+    lines.push(entityHeaders.join(','));
     
     data.nodes.forEach(node => {
       node.entities.forEach(entity => {
-        const displayDataStr = options.includeRawData && entity.rawData
-          ? JSON.stringify(entity.rawData).replace(/"/g, '""')
-          : Object.entries(entity.displayData).map(([key, value]) => `${key}: ${value}`).join('; ');
+        const displayDataStr = Object.entries(entity.displayData)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('; ');
         
-        lines.push([
-          entity.mnEntityId,
+        const row = [
+          entity.mnEntityId || '',
           entity.type,
-          entity.category,
+          entity.category || '',
           node.id,
           this.escapeCsv(node.title),
           entity.source,
           entity.isTraceable ? 'Yes' : 'No',
           this.escapeCsv(entity.primaryValue),
           this.escapeCsv(entity.summary),
+          new Date(entity.timestamp).toISOString(),
           this.escapeCsv(displayDataStr)
-        ].join(','));
+        ];
+
+        if (options.includeRawData) {
+          row.push(this.escapeCsv(entity.rawData ? JSON.stringify(entity.rawData) : ''));
+        }
+        
+        lines.push(row.join(','));
       });
     });
 

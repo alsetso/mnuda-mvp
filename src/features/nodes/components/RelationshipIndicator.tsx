@@ -19,14 +19,14 @@ export default function RelationshipIndicator({ node, allNodes }: RelationshipIn
     : [];
 
   return (
-    <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
-      <div className="font-semibold text-gray-700 mb-1">🔗 Relationships</div>
+    <div className="mt-2 p-2 bg-white/20 border border-gray-200 rounded text-xs">
+      <div className="font-semibold text-gray-900 mb-1">🔗 Relationships</div>
       
       {/* Parent Relationship */}
       {parentNode && (
         <div className="mb-1">
           <span className="text-gray-500">Parent:</span>
-          <span className="ml-1 text-[#1dd1f5]">
+          <span className="ml-1 text-[#014463]">
             {parentNode.mnNodeId}
           </span>
         </div>
@@ -36,7 +36,7 @@ export default function RelationshipIndicator({ node, allNodes }: RelationshipIn
       {childNodes.length > 0 && (
         <div className="mb-1">
           <span className="text-gray-500">Children:</span>
-          <span className="ml-1 text-green-600">
+          <span className="ml-1 text-green-400">
             {childNodes.length} node{childNodes.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -46,7 +46,7 @@ export default function RelationshipIndicator({ node, allNodes }: RelationshipIn
       {node.relationshipType && (
         <div className="mb-1">
           <span className="text-gray-500">Type:</span>
-          <span className="ml-1 text-purple-600 capitalize">
+          <span className="ml-1 text-purple-400 capitalize">
             {node.relationshipType}
           </span>
         </div>
@@ -56,7 +56,7 @@ export default function RelationshipIndicator({ node, allNodes }: RelationshipIn
       {node.entityCount && node.entityCount > 0 && (
         <div>
           <span className="text-gray-500">Entities:</span>
-          <span className="ml-1 text-orange-600">
+          <span className="ml-1 text-orange-400">
             {node.entityCount}
           </span>
         </div>

@@ -13,6 +13,7 @@ interface EntityCardProps {
   entity: EntityData;
   onPersonTrace?: (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => void;
   onAddressIntel?: (address: { street: string; city: string; state: string; zip: string }, entityId?: string) => void;
+  onEntityClick?: (entity: EntityData) => void;
   showTechnicalDetails?: boolean;
 }
 
@@ -20,6 +21,7 @@ export default function EntityCard({
   entity, 
   onPersonTrace, 
   onAddressIntel,
+  onEntityClick,
   // showTechnicalDetails: _showTechnicalDetails = false 
 }: EntityCardProps) {
   const { geocodeAddress, isLoading: isGeocoding } = useGeocoding();
@@ -54,13 +56,13 @@ export default function EntityCard({
   // Get type label color
   const getTypeLabelColor = (type: string) => {
     switch (type) {
-      case 'property': return 'bg-slate-100 text-slate-600';
-      case 'address': return 'bg-slate-100 text-slate-600';
-      case 'phone': return 'bg-slate-100 text-slate-600';
-      case 'email': return 'bg-slate-100 text-slate-600';
-      case 'person': return 'bg-blue-100 text-blue-800';
-      case 'image': return 'bg-slate-100 text-slate-600';
-      default: return 'bg-slate-100 text-slate-600';
+      case 'property': return 'bg-gray-50 text-gray-700';
+      case 'address': return 'bg-gray-50 text-gray-700';
+      case 'phone': return 'bg-gray-50 text-gray-700';
+      case 'email': return 'bg-gray-50 text-gray-700';
+      case 'person': return 'bg-[#014463] text-white';
+      case 'image': return 'bg-gray-50 text-gray-700';
+      default: return 'bg-gray-50 text-gray-700';
     }
   };
 
@@ -123,13 +125,59 @@ export default function EntityCard({
   //   return detailEntity.type === 'person' ? (typeof detailEntity.apiPersonId === 'string' ? detailEntity.apiPersonId : undefined) : undefined;
   // };
 
+  // Get additional context information for inline display
+  const getAdditionalInfo = (entity: EntityData): string[] => {
+    const info: string[] = [];
+    
+    if (isPersonRecord) {
+      const person = entity as PersonRecord;
+      if (person.age) info.push(`Age: ${person.age}`);
+      if (person.lives_in) info.push(`📍 ${person.lives_in}`);
+      // Note: PersonRecord doesn't have phone/email properties directly
+    } else {
+      const detailEntity = entity as PersonDetailEntity;
+      switch (detailEntity.type) {
+        case 'address':
+          const addr = detailEntity as AddressEntity;
+          if (addr.coordinates) info.push('📍 Geocoded');
+          if (addr.postal) info.push(`ZIP: ${addr.postal}`);
+          break;
+        case 'property':
+          if (detailEntity.value) info.push(`Value: $${detailEntity.value.toLocaleString()}`);
+          if (detailEntity.bedrooms) info.push(`${detailEntity.bedrooms} bed`);
+          if (detailEntity.bathrooms) info.push(`${detailEntity.bathrooms} bath`);
+          break;
+        case 'phone':
+          if (detailEntity.type === 'phone' && 'carrier' in detailEntity) {
+            info.push(`Carrier: ${(detailEntity as unknown as { carrier: string }).carrier}`);
+          }
+          break;
+        case 'email':
+          if (detailEntity.type === 'email' && 'domain' in detailEntity) {
+            info.push(`Domain: ${(detailEntity as unknown as { domain: string }).domain}`);
+          }
+          break;
+      }
+    }
+    
+    return info;
+  };
+
+  const additionalInfo = getAdditionalInfo(entity);
+
   return (
     <>
       <div 
-        className="group relative px-2 sm:px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors cursor-pointer"
-        onClick={() => setIsModalOpen(true)}
+         className="group relative px-2 sm:px-3 py-3 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors cursor-pointer"
+        onClick={() => {
+          if (onEntityClick) {
+            onEntityClick(entity);
+          } else {
+            setIsModalOpen(true);
+          }
+        }}
       >
-        {/* Horizontal single-row layout */}
+        {/* Single horizontal row layout */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
             {/* Type badge */}
@@ -142,13 +190,27 @@ export default function EntityCard({
             </span>
             
             {/* Primary value */}
-            <div className="text-xs sm:text-sm font-medium text-gray-800 truncate flex-1">
+            <div className="text-xs sm:text-sm font-medium text-gray-900 truncate flex-1">
               {getPrimaryValue(entity)}
             </div>
             
+            {/* Additional info inline */}
+            {additionalInfo.length > 0 && (
+              <div className="flex items-center gap-1 text-xs text-gray-600 flex-shrink-0">
+                {additionalInfo.slice(0, 2).map((info, index) => (
+                  <span key={index} className="bg-gray-100 px-1.5 py-0.5 rounded whitespace-nowrap">
+                    {info}
+                  </span>
+                ))}
+                {additionalInfo.length > 2 && (
+                  <span className="text-gray-500">+{additionalInfo.length - 2}</span>
+                )}
+              </div>
+            )}
+            
             {/* Entity ID for all entities */}
             {getEntityId() && (
-              <div className="text-xs text-purple-600 font-mono flex-shrink-0">
+              <div className="text-xs text-[#014463] font-mono flex-shrink-0">
                 {getEntityId()}
               </div>
             )}
@@ -162,7 +224,7 @@ export default function EntityCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="p-1 text-blue-600 hover:text-blue-700 transition-colors"
+                className="p-1 text-white bg-[#014463] transition-colors"
                 title="View person details"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,17 +236,19 @@ export default function EntityCard({
         </div>
       </div>
 
-      {/* Modal */}
-      <EntityModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        entity={entity}
-        entityType={entityType}
-        coordinates={coordinates}
-        isGeocoding={isGeocoding}
-        onPersonTrace={onPersonTrace}
-        onAddressIntel={onAddressIntel}
-      />
+      {/* Modal - only show if onEntityClick is not provided */}
+      {!onEntityClick && (
+        <EntityModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          entity={entity}
+          entityType={entityType}
+          coordinates={coordinates}
+          isGeocoding={isGeocoding}
+          onPersonTrace={onPersonTrace}
+          onAddressIntel={onAddressIntel}
+        />
+      )}
     </>
   );
 }

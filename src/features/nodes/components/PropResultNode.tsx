@@ -71,7 +71,7 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-transparent">
       {/* Header */}
       <div className="px-3 sm:px-4 lg:px-6 py-2 border-b border-gray-200">
         <div className="flex items-center justify-between">
@@ -80,7 +80,7 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
             <p className="text-xs text-gray-500">{apiName}</p>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <div className="w-2 h-2 bg-green-600 rounded-full"></div>
             <span className="text-xs text-gray-500">Success</span>
           </div>
         </div>
@@ -309,13 +309,13 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
                       href={image.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="opacity-0 group-hover:opacity-100 bg-white bg-opacity-90 text-gray-800 px-3 py-1 rounded-full text-sm font-medium transition-opacity duration-200"
+                      className={`opacity-0 group-hover:opacity-100 bg-white bg-opacity-90 text-gray-900 px-3 py-1 rounded-full text-sm font-medium transition-opacity duration-200`}
                     >
                       View Full Size
                     </a>
                   </div>
                   {image.caption && (
-                    <p className="mt-2 text-xs text-gray-600 text-center">{image.caption}</p>
+                    <p className="mt-2 text-xs text-gray-700 text-center">{image.caption}</p>
                   )}
                 </div>
               ))}
@@ -349,13 +349,13 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
           {expandedAccordions.priceHistory && (
             <div className="mt-4 space-y-3">
               {propertyDetails.priceHistory.map((entry: PriceHistoryEntry, index: number) => (
-                <div key={index} className="p-3 border-b border-gray-100">
+                <div key={index} className="p-3 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-gray-900">
                         {formatPrice(entry.price)}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-700">
                         {entry.event || 'Price Change'}
                       </div>
                     </div>
@@ -402,13 +402,13 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
           {expandedAccordions.taxHistory && (
             <div className="mt-4 space-y-3">
               {propertyDetails.taxHistory.map((entry: TaxHistoryEntry, index: number) => (
-                <div key={index} className="p-3 border-b border-gray-100">
+                <div key={index} className="p-3 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-gray-900">
                         Tax Year {entry.year}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-700">
                         Tax Paid: {formatPrice(entry.taxPaid)}
                       </div>
                     </div>
@@ -452,30 +452,30 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
               {/* Agent Information */}
               {(propertyDetails.attributionInfo.agentName || propertyDetails.attributionInfo.agentPhoneNumber || propertyDetails.attributionInfo.agentEmail) && (
                 <div>
-                  <h5 className="text-sm font-medium text-gray-800 mb-2">Agent Information</h5>
-                  <div className="border-l-4 border-blue-200 pl-3 space-y-2">
+                  <h5 className="text-sm font-medium text-gray-900 mb-2">Agent Information</h5>
+                  <div className="border-l-4 bg-blue-600 pl-3 space-y-2">
                     {propertyDetails.attributionInfo.agentName && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-blue-800 font-medium">Agent Name:</span>
-                        <span className="text-sm text-blue-700">{propertyDetails.attributionInfo.agentName}</span>
+                        <span className="text-sm text-[#014463] font-medium">Agent Name:</span>
+                        <span className="text-sm text-[#014463]">{propertyDetails.attributionInfo.agentName}</span>
                       </div>
                     )}
                     {propertyDetails.attributionInfo.agentPhoneNumber && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-blue-800 font-medium">Phone:</span>
-                        <span className="text-sm text-blue-700">{propertyDetails.attributionInfo.agentPhoneNumber}</span>
+                        <span className="text-sm text-[#014463] font-medium">Phone:</span>
+                        <span className="text-sm text-[#014463]">{propertyDetails.attributionInfo.agentPhoneNumber}</span>
                       </div>
                     )}
                     {propertyDetails.attributionInfo.agentEmail && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-blue-800 font-medium">Email:</span>
-                        <span className="text-sm text-blue-700">{propertyDetails.attributionInfo.agentEmail}</span>
+                        <span className="text-sm text-[#014463] font-medium">Email:</span>
+                        <span className="text-sm text-[#014463]">{propertyDetails.attributionInfo.agentEmail}</span>
                       </div>
                     )}
                     {propertyDetails.attributionInfo.agentLicenseNumber && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-blue-800 font-medium">License:</span>
-                        <span className="text-sm text-blue-700">{propertyDetails.attributionInfo.agentLicenseNumber}</span>
+                        <span className="text-sm text-[#014463] font-medium">License:</span>
+                        <span className="text-sm text-[#014463]">{propertyDetails.attributionInfo.agentLicenseNumber}</span>
                       </div>
                     )}
                   </div>
@@ -485,18 +485,18 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
               {/* Broker Information */}
               {(propertyDetails.attributionInfo.brokerName || propertyDetails.attributionInfo.brokerPhoneNumber) && (
                 <div>
-                  <h5 className="text-sm font-medium text-gray-800 mb-2">Broker Information</h5>
-                  <div className="border-l-4 border-green-200 pl-3 space-y-2">
+                  <h5 className="text-sm font-medium text-gray-900 mb-2">Broker Information</h5>
+                  <div className="border-l-4 border-green-600 pl-3 space-y-2">
                     {propertyDetails.attributionInfo.brokerName && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-green-800 font-medium">Broker Name:</span>
-                        <span className="text-sm text-green-700">{propertyDetails.attributionInfo.brokerName}</span>
+                        <span className="text-sm text-green-600 font-medium">Broker Name:</span>
+                        <span className="text-sm text-green-600">{propertyDetails.attributionInfo.brokerName}</span>
                       </div>
                     )}
                     {propertyDetails.attributionInfo.brokerPhoneNumber && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-green-800 font-medium">Phone:</span>
-                        <span className="text-sm text-green-700">{propertyDetails.attributionInfo.brokerPhoneNumber}</span>
+                        <span className="text-sm text-green-600 font-medium">Phone:</span>
+                        <span className="text-sm text-green-600">{propertyDetails.attributionInfo.brokerPhoneNumber}</span>
                       </div>
                     )}
                   </div>
@@ -506,24 +506,24 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
               {/* MLS Information */}
               {(propertyDetails.attributionInfo.mlsName || propertyDetails.attributionInfo.mlsId || propertyDetails.attributionInfo.mlsDisclaimer) && (
                 <div>
-                  <h5 className="text-sm font-medium text-gray-800 mb-2">MLS Information</h5>
-                  <div className="border-l-4 border-purple-200 pl-3 space-y-2">
+                  <h5 className="text-sm font-medium text-gray-900 mb-2">MLS Information</h5>
+                  <div className="border-l-4 bg-blue-600 pl-3 space-y-2">
                     {propertyDetails.attributionInfo.mlsName && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-purple-800 font-medium">MLS Name:</span>
-                        <span className="text-sm text-purple-700">{propertyDetails.attributionInfo.mlsName}</span>
+                        <span className="text-sm text-[#014463] font-medium">MLS Name:</span>
+                        <span className="text-sm text-[#014463]">{propertyDetails.attributionInfo.mlsName}</span>
                       </div>
                     )}
                     {propertyDetails.attributionInfo.mlsId && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-purple-800 font-medium">MLS ID:</span>
-                        <span className="text-sm text-purple-700">{propertyDetails.attributionInfo.mlsId}</span>
+                        <span className="text-sm text-[#014463] font-medium">MLS ID:</span>
+                        <span className="text-sm text-[#014463]">{propertyDetails.attributionInfo.mlsId}</span>
                       </div>
                     )}
                     {propertyDetails.attributionInfo.mlsDisclaimer && (
                       <div className="mt-2">
-                        <span className="text-sm text-purple-800 font-medium">Disclaimer:</span>
-                        <p className="text-xs text-purple-700 mt-1">{propertyDetails.attributionInfo.mlsDisclaimer}</p>
+                        <span className="text-sm text-[#014463] font-medium">Disclaimer:</span>
+                        <p className="text-xs text-[#014463] mt-1">{propertyDetails.attributionInfo.mlsDisclaimer}</p>
                       </div>
                     )}
                   </div>
@@ -533,23 +533,23 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
               {/* Additional Attribution Details */}
               {(propertyDetails.attributionInfo.attributionTitle || propertyDetails.attributionInfo.lastUpdated || propertyDetails.attributionInfo.trueStatus) && (
                 <div>
-                  <h5 className="text-sm font-medium text-gray-800 mb-2">Additional Details</h5>
+                  <h5 className="text-sm font-medium text-gray-900 mb-2">Additional Details</h5>
                   <div className="border-l-4 border-gray-200 pl-3 space-y-2">
                     {propertyDetails.attributionInfo.attributionTitle && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-800 font-medium">Attribution Title:</span>
+                        <span className="text-sm text-gray-900 font-medium">Attribution Title:</span>
                         <span className="text-sm text-gray-700">{propertyDetails.attributionInfo.attributionTitle}</span>
                       </div>
                     )}
                     {propertyDetails.attributionInfo.lastUpdated && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-800 font-medium">Last Updated:</span>
+                        <span className="text-sm text-gray-900 font-medium">Last Updated:</span>
                         <span className="text-sm text-gray-700">{propertyDetails.attributionInfo.lastUpdated}</span>
                       </div>
                     )}
                     {propertyDetails.attributionInfo.trueStatus && (
                       <div className="flex justify-between">
-                        <span className="text-sm text-gray-800 font-medium">True Status:</span>
+                        <span className="text-sm text-gray-900 font-medium">True Status:</span>
                         <span className="text-sm text-gray-700">{propertyDetails.attributionInfo.trueStatus}</span>
                       </div>
                     )}
@@ -588,9 +588,9 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
               {/* Listing Type */}
               {propertyDetails.listingType && (
                 <div>
-                  <h5 className="text-sm font-medium text-gray-800 mb-2">Listing Type</h5>
-                  <div className="border-l-4 border-indigo-200 pl-3 py-2">
-                    <span className="text-sm text-indigo-800 font-medium">{propertyDetails.listingType}</span>
+                  <h5 className="text-sm font-medium text-gray-900 mb-2">Listing Type</h5>
+                  <div className="border-l-4 bg-blue-600 pl-3 py-2">
+                    <span className="text-sm text-[#014463] font-medium">{propertyDetails.listingType}</span>
                   </div>
                 </div>
               )}
@@ -598,49 +598,49 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
               {/* Listing Sub-Type Flags */}
               {propertyDetails.listingSubType && Object.keys(propertyDetails.listingSubType).length > 0 && (
                 <div>
-                  <h5 className="text-sm font-medium text-gray-800 mb-2">Listing Characteristics</h5>
-                  <div className="border-l-4 border-yellow-200 pl-3 py-2">
+                  <h5 className="text-sm font-medium text-gray-900 mb-2">Listing Characteristics</h5>
+                  <div className="border-l-4 border-yellow-600 pl-3 py-2">
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {propertyDetails.listingSubType.is_FSBA && (
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          <span className="text-xs text-yellow-800">FSBA</span>
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full"></div>
+                          <span className="text-xs text-yellow-600">FSBA</span>
                         </div>
                       )}
                       {propertyDetails.listingSubType.is_FSBO && (
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          <span className="text-xs text-yellow-800">FSBO</span>
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full"></div>
+                          <span className="text-xs text-yellow-600">FSBO</span>
                         </div>
                       )}
                       {propertyDetails.listingSubType.is_bankOwned && (
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          <span className="text-xs text-yellow-800">Bank Owned</span>
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full"></div>
+                          <span className="text-xs text-yellow-600">Bank Owned</span>
                         </div>
                       )}
                       {propertyDetails.listingSubType.is_comingSoon && (
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          <span className="text-xs text-yellow-800">Coming Soon</span>
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full"></div>
+                          <span className="text-xs text-yellow-600">Coming Soon</span>
                         </div>
                       )}
                       {propertyDetails.listingSubType.is_forAuction && (
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          <span className="text-xs text-yellow-800">For Auction</span>
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full"></div>
+                          <span className="text-xs text-yellow-600">For Auction</span>
                         </div>
                       )}
                       {propertyDetails.listingSubType.is_foreclosure && (
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          <span className="text-xs text-yellow-800">Foreclosure</span>
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full"></div>
+                          <span className="text-xs text-yellow-600">Foreclosure</span>
                         </div>
                       )}
                       {propertyDetails.listingSubType.is_newHome && (
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          <span className="text-xs text-yellow-800">New Home</span>
+                          <div className="w-2 h-2 bg-yellow-600 rounded-full"></div>
+                          <span className="text-xs text-yellow-600">New Home</span>
                         </div>
                       )}
                     </div>
@@ -674,7 +674,7 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
       )}
 
       {/* Additional Details Accordion */}
-      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-t border-gray-100">
+      <div className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 border-t border-gray-200">
         <button
           onClick={() => toggleAccordion('additionalDetails')}
           className="flex items-center justify-between w-full text-left"
@@ -698,7 +698,7 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
           <div className="mt-4 space-y-4">
             {/* Raw Response Data */}
             <div>
-              <h5 className="text-sm font-medium text-gray-800 mb-2">Raw API Response</h5>
+              <h5 className="text-sm font-medium text-gray-900 mb-2">Raw API Response</h5>
               <div className="border border-gray-200 rounded p-3">
                 <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono overflow-x-auto max-h-64 overflow-y-auto">
                   {JSON.stringify(parsedData.rawResponse, null, 2)}
@@ -708,36 +708,36 @@ export default function PropResultNode({ address, propResponse, apiName }: PropR
 
             {/* Relationship Context */}
             <div>
-              <h5 className="text-sm font-medium text-gray-800 mb-2">🔗 Relationship Context</h5>
-              <div className="border-l-4 border-orange-200 pl-3 py-2">
+              <h5 className="text-sm font-medium text-gray-900 mb-2">🔗 Relationship Context</h5>
+              <div className="border-l-4 border-yellow-600 pl-3 py-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="font-semibold text-orange-800">API Source:</span>
-                    <div className="mt-1 text-orange-700 px-2 py-1">
+                    <span className="font-semibold text-yellow-600">API Source:</span>
+                    <div className="mt-1 text-yellow-600 px-2 py-1">
                       {apiName || 'N/A'}
                     </div>
                   </div>
                   <div>
-                    <span className="font-semibold text-orange-800">Property Address:</span>
-                    <div className="mt-1 text-orange-700 px-2 py-1">
+                    <span className="font-semibold text-yellow-600">Property Address:</span>
+                    <div className="mt-1 text-yellow-600 px-2 py-1">
                       {formatAddress()}
                     </div>
                   </div>
                   <div>
-                    <span className="font-semibold text-orange-800">Property Value:</span>
-                    <div className="mt-1 text-orange-700 px-2 py-1">
+                    <span className="font-semibold text-yellow-600">Property Value:</span>
+                    <div className="mt-1 text-yellow-600 px-2 py-1">
                       {propertyDetails.price ? `$${propertyDetails.price.toLocaleString()}` : 'N/A'}
                     </div>
                   </div>
                   <div>
-                    <span className="font-semibold text-orange-800">Response Type:</span>
-                    <div className="mt-1 text-orange-700 px-2 py-1">
+                    <span className="font-semibold text-yellow-600">Response Type:</span>
+                    <div className="mt-1 text-yellow-600 px-2 py-1">
                       Property Result
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-orange-200">
-                  <p className="text-xs text-orange-600">
+                <div className="mt-3 pt-3 border-t border-yellow-600">
+                  <p className="text-xs text-yellow-600">
                     <strong>Note:</strong> This property result provides detailed property information. 
                     Use the property address and details to make subsequent API calls for related property or owner information.
                   </p>

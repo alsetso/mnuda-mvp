@@ -7,11 +7,30 @@ export const MAP_CONFIG = {
   MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || 'your_mapbox_token_here',
   MAPBOX_STYLE: process.env.NEXT_PUBLIC_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12',
   
-  // Map defaults
-  DEFAULT_CENTER: [-98.5795, 39.8283] as [number, number], // Center of US
-  DEFAULT_ZOOM: 4,
+  // Strategic map styles for different use cases
+  STRATEGIC_STYLES: {
+    streets: 'mapbox://styles/mapbox/streets-v12',
+    satellite: 'mapbox://styles/mapbox/satellite-v9',
+    light: 'mapbox://styles/mapbox/light-v11',
+    dark: 'mapbox://styles/mapbox/dark-v11',
+    outdoors: 'mapbox://styles/mapbox/outdoors-v12',
+  },
+  
+  // Map defaults - Start with globe view, then fly to Minnesota
+  DEFAULT_CENTER: [0, 0] as [number, number], // Center of globe
+  DEFAULT_ZOOM: 0, // Start at zoom 0 for full globe view
+  GLOBE_ZOOM: 0, // Globe view zoom level
+  MAX_ZOOM: 22, // Maximum zoom level (Mapbox default)
   ADDRESS_ZOOM: 16,
   USER_LOCATION_ZOOM: 15,
+  
+  // Minnesota bounds for validation
+  MINNESOTA_BOUNDS: {
+    north: 49.5,
+    south: 43.5,
+    east: -89.5,
+    west: -97.5
+  },
   
   // User location tracking
   TRACKING_INTERVAL_MS: parseInt(process.env.NEXT_PUBLIC_TRACKING_INTERVAL_MS || '1000'),
@@ -33,12 +52,25 @@ export const MAP_CONFIG = {
     ADDRESS_SEARCH: '#3B82F6',
     ADDRESS_CURRENT: '#10B981',
     ADDRESS_PREVIOUS: '#F59E0B',
-    SKIP_TRACE: '#8B5CF6', // Purple for skip trace pins
+    SKIP_TRACE: '#014463', // Dark MNUDA blue for skip trace pins
   },
   
   // Animation settings
   FLY_TO_DURATION: 1000,
   PULSE_ANIMATION_DURATION: 2000,
+  
+  // Performance optimizations
+  PERFORMANCE: {
+    // Reduce tile cache for faster loading
+    MAX_TILE_CACHE_SIZE: 50,
+    // Disable unnecessary features
+    RENDER_WORLD_COPIES: false,
+    // Optimize rendering
+    PRESERVE_DRAWING_BUFFER: true,
+    ANTIALIAS: false,
+    // Faster text rendering
+    LOCAL_IDEOGRAPH_FONT_FAMILY: false,
+  },
 } as const;
 
 // Type for map configuration

@@ -8,12 +8,16 @@ interface RanOutOfCreditsModalProps {
   isOpen: boolean;
   onClose: () => void;
   creditsRemaining?: number;
+  totalCredits?: number;
+  creditsUsed?: number;
 }
 
 export default function RanOutOfCreditsModal({ 
   isOpen, 
   onClose, 
-  creditsRemaining = 0 
+  creditsRemaining = 0,
+  totalCredits = 10,
+  creditsUsed = 10
 }: RanOutOfCreditsModalProps) {
   const router = useRouter();
   const [isClosing, setIsClosing] = useState(false);
@@ -31,6 +35,7 @@ export default function RanOutOfCreditsModal({
     handleClose();
     router.push('/signup');
   };
+
 
 
   // Update countdown every 30 seconds
@@ -86,7 +91,7 @@ export default function RanOutOfCreditsModal({
           {/* Content */}
           <div className="px-6 py-4">
             <div className="text-sm text-gray-600 mb-4">
-              You&apos;ve used all {creditsRemaining === 0 ? '100' : 'your available'} free daily credits. 
+              You&apos;ve used all your free daily credits ({apiUsageService.formatCreditsWithDollar(totalCredits)}). 
               Your credits will reset at midnight, or you can purchase additional credits to continue.
             </div>
 
@@ -94,50 +99,45 @@ export default function RanOutOfCreditsModal({
             <div className="bg-gray-50 rounded-lg p-3 mb-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Free Daily Credits</span>
-                <span className="text-sm font-medium text-gray-900">0 / 100</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {apiUsageService.formatCreditsWithDollar(creditsUsed)} / {apiUsageService.formatCreditsWithDollar(totalCredits)}
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div className="bg-red-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                <div 
+                  className="bg-red-500 h-2 rounded-full" 
+                  style={{ width: '100%' }}
+                ></div>
               </div>
-            </div>
-
-            {/* Options */}
-            <div className="space-y-3">
-              <div className="text-sm text-gray-600">
-                <strong>What you can do:</strong>
-              </div>
-              <ul className="text-sm text-gray-600 space-y-1 ml-4">
-                <li>• Wait until midnight for free credits to reset</li>
-                <li>• Purchase additional credits to continue immediately</li>
-                <li>• Upgrade to a premium plan for higher limits</li>
-              </ul>
             </div>
 
             {/* Reset countdown */}
             {timeUntilReset && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mt-4 p-3 bg-[#1dd1f5]/10 border border-[#1dd1f5]/30 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-blue-700 font-medium">Credits reset in:</span>
-                  <span className="text-sm text-blue-800 font-mono font-semibold">{timeUntilReset}</span>
+                  <span className="text-sm text-[#014463] font-medium">Credits reset in:</span>
+                  <span className="text-sm text-[#014463] font-mono font-semibold">{timeUntilReset}</span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="bg-gray-50 px-6 py-4 flex space-x-3">
-            <button
-              onClick={handleClose}
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:ring-offset-2 transition-colors"
-            >
-              Wait for Reset
-            </button>
-            <button
-              onClick={handleBuyCredits}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#1dd1f5] border border-transparent rounded-md hover:bg-[#1dd1f5]/90 focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:ring-offset-2 transition-colors"
-            >
-              Buy Credits
-            </button>
+          <div className="bg-gray-50 px-6 py-4">
+            <div className="flex space-x-3">
+              <button
+                onClick={handleClose}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:ring-offset-2 transition-colors"
+              >
+                Wait for Reset
+              </button>
+              <button
+                onClick={handleBuyCredits}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#1dd1f5] border border-transparent rounded-md hover:bg-[#1dd1f5]/90 focus:outline-none focus:ring-2 focus:ring-[#1dd1f5] focus:ring-offset-2 transition-colors"
+              >
+                Buy Credits
+              </button>
+            </div>
           </div>
         </div>
       </div>

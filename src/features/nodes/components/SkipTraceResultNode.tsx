@@ -6,6 +6,8 @@ import PersonListSection from './PersonListSection';
 import { useGeocoding } from '@/features/map/hooks/useGeocoding';
 import RelationshipIndicator from './RelationshipIndicator';
 import { NodeData } from '@/features/session/services/sessionStorage';
+import { PersonRecord } from '@/features/api/services/peopleParse';
+import { PersonDetailEntity } from '@/features/api/services/personDetailParse';
 
 interface SkipTraceResultNodeProps {
   address: {
@@ -21,11 +23,12 @@ interface SkipTraceResultNodeProps {
   apiResponse: unknown;
   apiName: string;
   onPersonTrace?: (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => void;
+  onEntityClick?: (entity: PersonRecord | PersonDetailEntity) => void;
   node?: NodeData;
   allNodes?: NodeData[];
 }
 
-export default function SkipTraceResultNode({ address, apiResponse, apiName, onPersonTrace, node, allNodes }: SkipTraceResultNodeProps) {
+export default function SkipTraceResultNode({ address, apiResponse, apiName, onPersonTrace, onEntityClick, node, allNodes }: SkipTraceResultNodeProps) {
   const [isExpanded] = useState(false);
   const [isRelationshipExpanded, setIsRelationshipExpanded] = useState(false);
   const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -54,7 +57,7 @@ export default function SkipTraceResultNode({ address, apiResponse, apiName, onP
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-transparent">
       {/* Header - Compact */}
       <div className="px-3 py-2 border-b border-gray-100">
         <div className="flex items-center justify-between">
@@ -96,7 +99,7 @@ export default function SkipTraceResultNode({ address, apiResponse, apiName, onP
       {/* Person List - Always Visible */}
       {peopleData && peopleData.totalRecords > 0 && (
         <div className="px-3 py-2">
-          <PersonListSection records={peopleData.people} onPersonTrace={onPersonTrace} />
+          <PersonListSection records={peopleData.people} onPersonTrace={onPersonTrace} onEntityClick={onEntityClick} />
         </div>
       )}
 
@@ -104,7 +107,7 @@ export default function SkipTraceResultNode({ address, apiResponse, apiName, onP
       {isExpanded && (
         <div className="px-3 py-3 space-y-3">
           {/* Address Details */}
-          <div className="bg-gray-50 rounded-lg p-3">
+          <div className="bg-white/20 rounded-lg p-3">
             <div className="space-y-2 text-sm">
               <div>
                 <span className="text-gray-500 font-medium">Address:</span>
@@ -141,7 +144,7 @@ export default function SkipTraceResultNode({ address, apiResponse, apiName, onP
           <div className="border-t border-gray-200 pt-3">
             <button
               onClick={() => setIsRelationshipExpanded(!isRelationshipExpanded)}
-              className="flex items-center justify-between w-full text-left hover:bg-gray-50 -mx-3 px-3 py-2 rounded transition-colors"
+              className="flex items-center justify-between w-full text-left hover:bg-white/20 -mx-3 px-3 py-2 rounded transition-colors"
             >
               <span className="text-sm font-medium text-gray-700">Advanced Details</span>
               <svg 
@@ -162,7 +165,7 @@ export default function SkipTraceResultNode({ address, apiResponse, apiName, onP
                 )}
 
                 {/* Raw Response Data */}
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="bg-white/20 border border-gray-200 rounded-lg p-3">
                   <div className="flex items-center justify-between mb-2">
                     <h5 className="text-sm font-medium text-gray-900">Raw Response</h5>
                     <span className="text-xs text-gray-500">JSON</span>

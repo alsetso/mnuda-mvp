@@ -234,7 +234,7 @@ export default function TraceResults({ nodes, onNodeClick }: TraceResultsProps) 
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6">
+    <div className="bg-gray-50 rounded-2xl shadow-xl p-6">
       <div className="mb-6">
         <h3 className="text-xl font-bold text-gray-900 mb-2">Trace Results</h3>
         <p className="text-gray-600">{nodes.length} result{nodes.length !== 1 ? 's' : ''} found</p>

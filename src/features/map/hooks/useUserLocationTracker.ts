@@ -58,6 +58,28 @@ export function useUserLocationTracker(
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+  const getErrorMessage = useCallback((err: GeolocationPositionError): string => {
+    switch (err.code) {
+      case err.PERMISSION_DENIED:
+        return 'Location access denied. Please enable location permissions in your browser settings.';
+      case err.POSITION_UNAVAILABLE:
+        return 'Location information is unavailable. Please check your device settings and try again.';
+      case err.TIMEOUT:
+        return 'Location request timed out. Please try again.';
+      default:
+        return err.message || 'An unknown error occurred while accessing your location.';
+    }
+  }, []);
+
+  const checkGeolocationSupport = useCallback((): boolean => {
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by this browser.');
+      setStatus('error');
+      return false;
+    }
+    return true;
+  }, []);
+
   const pushToHistory = useCallback(
     (latitude: number, longitude: number) => {
       setLocationHistory((prev) => {
@@ -84,7 +106,7 @@ export function useUserLocationTracker(
   const getCurrentLocation = useCallback(
     (): Promise<Coordinates | null> => {
       return new Promise((resolve) => {
-        if (!navigator.geolocation) {
+        if (!checkGeolocationSupport()) {
           resolve(null);
           return;
         }
@@ -94,8 +116,14 @@ export function useUserLocationTracker(
             resolve({ latitude, longitude });
           },
           (err) => {
-            console.error('Error getting current location:', err);
-            setError(err.message);
+            console.error('Error getting current location:', {
+              code: err.code,
+              message: err.message,
+              PERMISSION_DENIED: err.PERMISSION_DENIED,
+              POSITION_UNAVAILABLE: err.POSITION_UNAVAILABLE,
+              TIMEOUT: err.TIMEOUT
+            });
+            setError(getErrorMessage(err));
             setStatus('error');
             resolve(null);
           },
@@ -103,7 +131,7 @@ export function useUserLocationTracker(
         );
       });
     },
-    []
+    [getErrorMessage, checkGeolocationSupport]
   );
 
   // ---------------------------------------------------------------------------
@@ -127,9 +155,7 @@ export function useUserLocationTracker(
   // ---------------------------------------------------------------------------
   const startTracking = useCallback(() => {
     if (status === 'tracking') return; // already tracking
-    if (!navigator.geolocation) {
-      setError('Geolocation not supported by this browser.');
-      setStatus('error');
+    if (!checkGeolocationSupport()) {
       return;
     }
 
@@ -143,8 +169,14 @@ export function useUserLocationTracker(
           updateLocation(latitude, longitude);
         },
         (err) => {
-          console.error('Error watching position:', err);
-          setError(err.message);
+          console.error('Error watching position:', {
+            code: err.code,
+            message: err.message,
+            PERMISSION_DENIED: err.PERMISSION_DENIED,
+            POSITION_UNAVAILABLE: err.POSITION_UNAVAILABLE,
+            TIMEOUT: err.TIMEOUT
+          });
+          setError(getErrorMessage(err));
           setStatus('error');
           stopTracking();
         },
@@ -160,7 +192,7 @@ export function useUserLocationTracker(
         if (loc) updateLocation(loc.latitude, loc.longitude);
       }, pollIntervalMs);
     }
-  }, [status, pollIntervalMs, updateLocation, getCurrentLocation, stopTracking]);
+  }, [status, pollIntervalMs, updateLocation, getCurrentLocation, stopTracking, getErrorMessage, checkGeolocationSupport]);
 
   // ---------------------------------------------------------------------------
   // Clear history

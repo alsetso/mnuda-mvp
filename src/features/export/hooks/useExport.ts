@@ -3,12 +3,13 @@
 import { useState, useCallback } from 'react';
 import { exportService } from '../services/exportService';
 import type { ExportFormat, ExportOptions } from '../types/exportTypes';
+import type { PdfColumnConfig } from '../types/columnConfig';
 
 export function useExport() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  const exportSession = useCallback(async (format: ExportFormat, options?: Partial<ExportOptions>) => {
+  const exportSession = useCallback(async (format: ExportFormat, options?: Partial<ExportOptions>, columnConfig?: PdfColumnConfig) => {
     setIsExporting(true);
     setExportError(null);
 
@@ -21,7 +22,7 @@ export function useExport() {
         ...options
       };
 
-      const result = await exportService.exportSession(exportOptions);
+      const result = await exportService.exportSession(exportOptions, columnConfig);
       
       if (result.success && result.data) {
         // Download the file
@@ -52,9 +53,14 @@ export function useExport() {
     return exportService.getAvailableFormats();
   }, []);
 
+  const getExportData = useCallback((options?: Partial<ExportOptions>) => {
+    return exportService.getExportData(options);
+  }, []);
+
   return {
     exportSession,
     getAvailableFormats,
+    getExportData,
     isExporting,
     exportError,
     clearError: () => setExportError(null)

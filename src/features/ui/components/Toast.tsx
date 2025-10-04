@@ -38,15 +38,15 @@ export function Toast({ toast }: ToastProps) {
   const getToastStyles = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-white text-emerald-700 shadow-emerald-100';
+        return 'bg-emerald-500 text-white border-emerald-400';
       case 'error':
-        return 'bg-white text-red-700 shadow-red-100';
+        return 'bg-red-500 text-white border-red-400';
       case 'loading':
-        return 'bg-white text-blue-700 shadow-blue-100';
+        return 'bg-blue-500 text-white border-blue-400';
       case 'info':
-        return 'bg-white text-slate-700 shadow-slate-100';
+        return 'bg-slate-500 text-white border-slate-400';
       default:
-        return 'bg-white text-slate-700 shadow-slate-100';
+        return 'bg-slate-500 text-white border-slate-400';
     }
   };
 
@@ -54,19 +54,25 @@ export function Toast({ toast }: ToastProps) {
     switch (toast.type) {
       case 'success':
         return (
-          <div className="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0"></div>
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
         );
       case 'error':
         return (
-          <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></div>
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
         );
       case 'loading':
         return (
-          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 animate-pulse"></div>
+          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
         );
       case 'info':
         return (
-          <div className="w-2 h-2 bg-slate-500 rounded-full flex-shrink-0"></div>
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
         );
     }
   };
@@ -74,12 +80,11 @@ export function Toast({ toast }: ToastProps) {
   return (
     <div
       className={`
-        relative flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg border border-gray-100
-        transition-all duration-300 ease-out transform
+        relative flex items-center space-x-2 px-3 py-2 rounded-md shadow-lg border
+        transition-all duration-200 ease-out transform
         ${getToastStyles()}
         ${isVisible && !isLeaving ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-8 scale-95'}
         ${isLeaving ? 'opacity-0 translate-x-8 scale-95' : ''}
-        backdrop-blur-sm
       `}
     >
       {/* Icon */}
@@ -87,32 +92,20 @@ export function Toast({ toast }: ToastProps) {
         {getIcon()}
       </div>
 
-      {/* Content */}
+      {/* Content - Only show the most relevant message */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-gray-900 truncate">
-          {toast.title}
+        <div className="text-xs font-medium truncate">
+          {toast.message || toast.title}
         </div>
-        
-        {toast.message && (
-          <div className="mt-0.5 text-xs text-gray-600 truncate">
-            {toast.message}
-          </div>
-        )}
-        
-        {toast.apiCall && (
-          <div className="mt-1 text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded">
-            {toast.apiCall}
-          </div>
-        )}
       </div>
 
       {/* Close Button */}
       <button
         onClick={handleClose}
-        className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+        className="flex-shrink-0 p-0.5 hover:bg-black hover:bg-opacity-10 rounded transition-colors"
       >
-        <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
         </svg>
       </button>
     </div>
@@ -125,9 +118,12 @@ export function ToastContainer() {
 
   if (toasts.length === 0) return null;
 
+  // Limit to 3 toasts maximum
+  const displayToasts = toasts.slice(-3);
+
   return (
-    <div className="fixed bottom-4 left-4 z-50 space-y-3 max-w-sm">
-      {toasts.map((toast) => (
+    <div className="fixed bottom-4 left-4 z-50 space-y-2 max-w-xs">
+      {displayToasts.map((toast) => (
         <Toast key={toast.id} toast={toast} />
       ))}
     </div>

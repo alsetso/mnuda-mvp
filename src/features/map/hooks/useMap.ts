@@ -1,8 +1,9 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { UseMapReturn, Coordinates } from '../types';
+import { UseMapReturn, Coordinates, PropertyDetails } from '../types';
 import { MAP_CONFIG } from '../config';
+import { mapPerformanceService } from '../services/mapPerformanceService';
 
 // Dynamic import for Mapbox GL JS to avoid chunk loading issues
 let mapboxgl: typeof import('mapbox-gl').default | null = null;
@@ -18,6 +19,7 @@ interface UseMapProps {
   mapContainer: React.RefObject<HTMLDivElement | null>;
   onMapReady?: (map: import('mapbox-gl').Map) => void;
   onMapClick?: (coordinates: { lat: number; lng: number }) => void;
+  onPropertyClick?: (property: PropertyDetails) => void;
 }
 
 /**
@@ -27,16 +29,113 @@ interface UseMapProps {
  * - Popup system baked in
  * - Interaction locks, cursor, flyTo helpers
  */
-export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): UseMapReturn {
+export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }: UseMapProps): UseMapReturn {
   const map = useRef<import('mapbox-gl').Map | null>(null);
 
   // Dedicated marker registry keyed by string IDs
   const markers = useRef<Map<string, import('mapbox-gl').Marker>>(new Map());
 
+  // Store callbacks in refs to prevent infinite re-renders
+  const onMapReadyRef = useRef(onMapReady);
+  const onMapClickRef = useRef(onMapClick);
+  const onPropertyClickRef = useRef(onPropertyClick);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onMapReadyRef.current = onMapReady;
+  }, [onMapReady]);
+
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
+
+  useEffect(() => {
+    onPropertyClickRef.current = onPropertyClick;
+  }, [onPropertyClick]);
+
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [isTracking] = useState(false);
   const [isInteractionsLocked, setIsInteractionsLocked] = useState(false);
+  const [mapInfo, setMapInfo] = useState({
+    zoom: 0,
+    center: { lat: 0, lng: 0 },
+    cursor: { lat: 0, lng: 0 },
+    bearing: 0,
+    pitch: 0
+  });
+
+  // Throttling refs to prevent excessive updates
+  const updateMapInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const handleMouseMoveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Track map movement and cursor position - moved to top level
+  const updateMapInfo = useCallback(() => {
+    if (!map.current) return;
+    
+    // Clear existing timeout
+    if (updateMapInfoTimeoutRef.current) {
+      clearTimeout(updateMapInfoTimeoutRef.current);
+    }
+    
+    // Throttle updates to prevent excessive re-renders
+    updateMapInfoTimeoutRef.current = setTimeout(() => {
+      if (!map.current) return;
+      
+      const center = map.current.getCenter();
+      const zoom = map.current.getZoom();
+      const bearing = map.current.getBearing();
+      const pitch = map.current.getPitch();
+      
+      // Use a more precise comparison to avoid unnecessary updates
+      setMapInfo(prev => {
+        const centerChanged = Math.abs(prev.center.lat - center.lat) > 0.000001 || 
+                             Math.abs(prev.center.lng - center.lng) > 0.000001;
+        const zoomChanged = Math.abs(prev.zoom - zoom) > 0.001;
+        const bearingChanged = Math.abs(prev.bearing - bearing) > 0.001;
+        const pitchChanged = Math.abs(prev.pitch - pitch) > 0.001;
+        
+        if (!centerChanged && !zoomChanged && !bearingChanged && !pitchChanged) {
+          return prev;
+        }
+        
+        return {
+          ...prev,
+          zoom,
+          center: { lat: center.lat, lng: center.lng },
+          bearing,
+          pitch
+        };
+      });
+    }, 16); // ~60fps throttling
+  }, []);
+
+  const handleMouseMove = useCallback((e: import('mapbox-gl').MapMouseEvent) => {
+    const { lng, lat } = e.lngLat;
+    
+    // Clear existing timeout
+    if (handleMouseMoveTimeoutRef.current) {
+      clearTimeout(handleMouseMoveTimeoutRef.current);
+    }
+    
+    // Throttle mouse move updates
+    handleMouseMoveTimeoutRef.current = setTimeout(() => {
+      // Use a more precise comparison for cursor position
+      setMapInfo(prev => {
+        const cursorChanged = Math.abs(prev.cursor.lat - lat) > 0.000001 || 
+                             Math.abs(prev.cursor.lng - lng) > 0.000001;
+        
+        if (!cursorChanged) {
+          return prev;
+        }
+        
+        return {
+          ...prev,
+          cursor: { lat, lng }
+        };
+      });
+    }, 16); // ~60fps throttling
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Init + teardown
@@ -64,25 +163,84 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
           style: MAP_CONFIG.MAPBOX_STYLE,
           center: MAP_CONFIG.DEFAULT_CENTER,
           zoom: MAP_CONFIG.DEFAULT_ZOOM,
+          maxZoom: MAP_CONFIG.MAX_ZOOM,
+          // Performance optimizations
+          renderWorldCopies: MAP_CONFIG.PERFORMANCE.RENDER_WORLD_COPIES,
+          maxTileCacheSize: MAP_CONFIG.PERFORMANCE.MAX_TILE_CACHE_SIZE,
+          preserveDrawingBuffer: MAP_CONFIG.PERFORMANCE.PRESERVE_DRAWING_BUFFER,
+          antialias: MAP_CONFIG.PERFORMANCE.ANTIALIAS,
+          // Strategic advantages
+          pitch: 0,
+          bearing: 0,
+          // Faster loading
+          localIdeographFontFamily: MAP_CONFIG.PERFORMANCE.LOCAL_IDEOGRAPH_FONT_FAMILY ? 'Arial Unicode MS' : undefined,
         });
 
-        map.current.on('load', () => {
+        map.current.on('load', async () => {
+          // Performance optimizations after map loads
+          if (map.current) {
+            // Apply performance optimizations
+            mapPerformanceService.optimizeMapRendering(map.current);
+            
+            // Preload Minnesota tiles for faster navigation
+            mapPerformanceService.preloadMinnesotaTiles(map.current).catch(console.warn);
+            
+            // Start with globe view, then smoothly fly to Minnesota bounds
+            setTimeout(() => {
+              if (map.current) {
+                map.current.flyTo({
+                  center: [-94.6859, 46.7296], // Center of Minnesota
+                  zoom: 5, // Appropriate zoom level to see Minnesota
+                  duration: 3000, // 3 second smooth transition
+                  essential: true,
+                });
+              }
+            }, 500); // Small delay to ensure map is fully loaded
+          }
+          
           setMapLoaded(true);
-          onMapReady?.(map.current!);
+          onMapReadyRef.current?.(map.current!);
         });
 
         const handleClick = (e: import('mapbox-gl').MapMouseEvent) => {
           const { lng, lat } = e.lngLat;
-          onMapClick?.({ lat, lng });
+          onMapClickRef.current?.({ lat, lng });
         };
         map.current.on('click', handleClick);
+
+        // Track map movement and cursor position
+
+        // Add event listeners for map changes
+        map.current.on('move', updateMapInfo);
+        map.current.on('zoom', updateMapInfo);
+        map.current.on('rotate', updateMapInfo);
+        map.current.on('pitch', updateMapInfo);
+        map.current.on('mousemove', handleMouseMove);
+
+        // Initial update
+        updateMapInfo();
 
         return () => {
           if (map.current) {
             map.current.off('click', handleClick);
+            map.current.off('move', updateMapInfo);
+            map.current.off('zoom', updateMapInfo);
+            map.current.off('rotate', updateMapInfo);
+            map.current.off('pitch', updateMapInfo);
+            map.current.off('mousemove', handleMouseMove);
             map.current.remove();
             map.current = null;
             markers.current.clear();
+          }
+          
+          // Clear any pending timeouts
+          if (updateMapInfoTimeoutRef.current) {
+            clearTimeout(updateMapInfoTimeoutRef.current);
+            updateMapInfoTimeoutRef.current = null;
+          }
+          if (handleMouseMoveTimeoutRef.current) {
+            clearTimeout(handleMouseMoveTimeoutRef.current);
+            handleMouseMoveTimeoutRef.current = null;
           }
         };
       } catch (err) {
@@ -91,7 +249,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     };
 
     initializeMap();
-  }, [mapContainer, onMapReady, onMapClick]);
+  }, [mapContainer, updateMapInfo, handleMouseMove]);
 
   // ---------------------------------------------------------------------------
   // Marker helpers
@@ -315,10 +473,12 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
 
   const flyTo = useCallback((coordinates: { lat: number; lng: number }, zoom?: number) => {
     if (!map.current) return;
+    
     map.current.flyTo({
       center: [coordinates.lng, coordinates.lat],
       zoom: zoom || MAP_CONFIG.ADDRESS_ZOOM,
       duration: MAP_CONFIG.FLY_TO_DURATION,
+      essential: true, // Performance optimization
     });
   }, []);
 
@@ -330,11 +490,137 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
           center: [userLocation.longitude, userLocation.latitude],
           zoom: MAP_CONFIG.USER_LOCATION_ZOOM,
           duration: MAP_CONFIG.FLY_TO_DURATION,
+          essential: true,
         });
       }
     },
     [userLocation]
   );
+
+  // Strategic zoom controls
+  const zoomToMinnesota = useCallback(() => {
+    if (!map.current) return;
+    map.current.fitBounds([
+      [-97.5, 43.5], // Southwest corner
+      [-89.5, 49.5]  // Northeast corner
+    ], {
+      padding: 50,
+      duration: MAP_CONFIG.FLY_TO_DURATION,
+    });
+  }, []);
+
+  // Globe to Minnesota animation
+  const flyFromGlobeToMinnesota = useCallback(() => {
+    if (!map.current) return;
+    
+    // First go to globe view
+    map.current.flyTo({
+      center: [0, 0], // Center of globe
+      zoom: 0, // Globe view
+      duration: 1000,
+      essential: true,
+    });
+    
+    // Then fly to Minnesota after a brief pause
+    setTimeout(() => {
+      if (map.current) {
+        map.current.flyTo({
+          center: [-94.6859, 46.7296], // Center of Minnesota
+          zoom: 5, // Appropriate zoom level to see Minnesota
+          duration: 3000, // 3 second smooth transition
+          essential: true,
+        });
+      }
+    }, 1200);
+  }, []);
+
+  const zoomToStrategic = useCallback((level: 'state' | 'region' | 'local') => {
+    if (!map.current) return;
+    
+    switch (level) {
+      case 'state':
+        map.current.flyTo({
+          center: MAP_CONFIG.DEFAULT_CENTER,
+          zoom: 6,
+          duration: MAP_CONFIG.FLY_TO_DURATION,
+          essential: true,
+        });
+        break;
+      case 'region':
+        map.current.flyTo({
+          center: MAP_CONFIG.DEFAULT_CENTER,
+          zoom: 8,
+          duration: MAP_CONFIG.FLY_TO_DURATION,
+          essential: true,
+        });
+        break;
+      case 'local':
+        map.current.flyTo({
+          center: MAP_CONFIG.DEFAULT_CENTER,
+          zoom: 10,
+          duration: MAP_CONFIG.FLY_TO_DURATION,
+          essential: true,
+        });
+        break;
+    }
+  }, []);
+
+  // Strategic style controls
+  const changeMapStyle = useCallback((styleKey: keyof typeof MAP_CONFIG.STRATEGIC_STYLES): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!map.current) {
+        reject(new Error('Map not initialized'));
+        return;
+      }
+      
+      const styleUrl = MAP_CONFIG.STRATEGIC_STYLES[styleKey];
+      
+      // Store current view state before style change
+      const currentCenter = map.current.getCenter();
+      const currentZoom = map.current.getZoom();
+      
+      try {
+        map.current.setStyle(styleUrl);
+        
+        // Reapply performance optimizations and restore view after style change
+        map.current.once('styledata', () => {
+          if (map.current) {
+            // Restore the view state
+            map.current.setCenter(currentCenter);
+            map.current.setZoom(currentZoom);
+            
+            // Reapply performance optimizations
+            mapPerformanceService.optimizeMapRendering(map.current);
+            
+            // Re-add any existing markers that might have been lost during style change
+            markers.current.forEach((marker, id) => {
+              const coordinates = marker.getLngLat();
+              const popup = marker.getPopup();
+              const popupContent = popup && popup.isOpen() ? popup.getElement()?.innerHTML : undefined;
+              
+              // Remove and re-add marker to ensure it's properly rendered with new style
+              marker.remove();
+              markers.current.delete(id);
+              
+              // Re-add marker with same properties
+              addMarker(id, { lat: coordinates.lat, lng: coordinates.lng }, { 
+                popupContent: popupContent || undefined 
+              });
+            });
+            
+            resolve();
+          }
+        });
+        
+        // Handle style loading errors
+        map.current.once('error', (e) => {
+          reject(new Error(`Failed to load style: ${e.error?.message || 'Unknown error'}`));
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }, [addMarker]);
 
   // ---------------------------------------------------------------------------
   // User location updates
@@ -370,6 +656,13 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     }
   }, []);
 
+  // Show property details in the property panel
+  const showPropertyDetails = useCallback((property: PropertyDetails) => {
+    if (onPropertyClickRef.current) {
+      onPropertyClickRef.current(property);
+    }
+  }, []);
+
   // ---------------------------------------------------------------------------
   return {
     // State
@@ -377,6 +670,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     userLocation,
     isTracking,
     isInteractionsLocked,
+    mapInfo,
 
     // Actions
     findUserLocation,
@@ -394,6 +688,15 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     removeMarker,
     clearMarkers,
     updateMarkerPopup,
+
+    // Strategic controls
+    zoomToMinnesota,
+    flyFromGlobeToMinnesota,
+    zoomToStrategic,
+    changeMapStyle,
+
+    // Property panel
+    showPropertyDetails,
 
     // Map instance
     map: map.current,

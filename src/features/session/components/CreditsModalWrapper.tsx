@@ -7,14 +7,16 @@ export default function CreditsModalWrapper() {
   const { 
     isCreditsModalOpen, 
     hideCreditsModal, 
-    creditsRemaining 
+    apiUsage
   } = useApiUsageContext();
 
   return (
     <RanOutOfCreditsModal
       isOpen={isCreditsModalOpen}
       onClose={hideCreditsModal}
-      creditsRemaining={creditsRemaining}
+      creditsRemaining={apiUsage?.creditsRemaining || 0}
+      totalCredits={apiUsage?.totalCredits || 10}
+      creditsUsed={apiUsage?.creditsUsed || 10}
     />
   );
 }

@@ -1,24 +1,45 @@
 // API Usage tracking service for daily credits management
 
+// API pricing configuration
+export const API_PRICING = {
+  'address': 0.25,
+  'name': 0.50,
+  'email': 0.50,
+  'phone': 0.50,
+  'zillow': 1.00,
+  'person-id': 2.00
+} as const;
+
+export type ApiType = keyof typeof API_PRICING;
+
 export interface ApiUsageData {
   date: string; // YYYY-MM-DD format
-  creditsUsed: number;
+  creditsUsed: number; // Total credits used (decimal)
   lastReset: number; // timestamp
+  apiUsageHistory: ApiUsageRecord[]; // Track individual API calls
+}
+
+export interface ApiUsageRecord {
+  timestamp: number;
+  apiType: ApiType;
+  cost: number;
+  success: boolean;
 }
 
 export interface ApiUsageState {
-  creditsRemaining: number;
-  creditsUsed: number;
-  totalCredits: number;
+  creditsRemaining: number; // Decimal credits remaining
+  creditsUsed: number; // Decimal credits used
+  totalCredits: number; // Decimal total credits
   resetDate: string;
   isLimitReached: boolean;
   isAuthenticated: boolean;
   hasUnlimitedCredits: boolean;
+  apiUsageHistory: ApiUsageRecord[]; // Individual API call history
 }
 
 class ApiUsageService {
   private readonly STORAGE_KEY = 'freemap_api_usage';
-  private readonly DAILY_CREDITS = 100;
+  private readonly DAILY_CREDITS = 10;
   private isUserAuthenticated = false;
 
   /**
@@ -51,10 +72,11 @@ class ApiUsageService {
         isLimitReached: false,
         isAuthenticated: true,
         hasUnlimitedCredits: true,
+        apiUsageHistory: usageData.apiUsageHistory || [],
       };
     }
 
-    // For anonymous users, use the existing logic
+    // For anonymous users, use the existing logic with decimal support
     const creditsRemaining = Math.max(0, this.DAILY_CREDITS - usageData.creditsUsed);
     const isLimitReached = usageData.creditsUsed >= this.DAILY_CREDITS;
 
@@ -66,6 +88,7 @@ class ApiUsageService {
       isLimitReached,
       isAuthenticated: false,
       hasUnlimitedCredits: false,
+      apiUsageHistory: usageData.apiUsageHistory || [],
     };
   }
 
@@ -83,16 +106,41 @@ class ApiUsageService {
   }
 
   /**
-   * Record an API request (consume 1 credit)
+   * Check if a specific API request can be made (has enough credits for the cost)
    */
-  recordApiRequest(): boolean {
+  canMakeApiRequest(apiType: ApiType): boolean {
+    // Authenticated users always can make requests
+    if (this.isUserAuthenticated) {
+      return true;
+    }
+    
+    const state = this.getUsageState();
+    const cost = API_PRICING[apiType];
+    return state.creditsRemaining >= cost;
+  }
+
+  /**
+   * Record an API request with specific API type and cost
+   */
+  recordApiRequest(apiType: ApiType, success: boolean = true): boolean {
+    const cost = API_PRICING[apiType];
+    
     // For authenticated users, always allow the request but still track usage
     if (this.isUserAuthenticated) {
       const usageData = this.getUsageData();
       const updatedUsage: ApiUsageData = {
         ...usageData,
-        creditsUsed: usageData.creditsUsed + 1,
+        creditsUsed: usageData.creditsUsed + cost,
         lastReset: Date.now(),
+        apiUsageHistory: [
+          ...(usageData.apiUsageHistory || []),
+          {
+            timestamp: Date.now(),
+            apiType,
+            cost,
+            success,
+          }
+        ],
       };
       this.saveUsageData(updatedUsage);
       return true;
@@ -106,15 +154,37 @@ class ApiUsageService {
       return false;
     }
 
+    // Check if this specific request would exceed the limit
+    if (state.creditsRemaining < cost) {
+      console.warn(`Insufficient credits for ${apiType} API call (cost: ${cost}, remaining: ${state.creditsRemaining})`);
+      return false;
+    }
+
     const usageData = this.getUsageData();
     const updatedUsage: ApiUsageData = {
       ...usageData,
-      creditsUsed: usageData.creditsUsed + 1,
+      creditsUsed: usageData.creditsUsed + cost,
       lastReset: Date.now(),
+      apiUsageHistory: [
+        ...(usageData.apiUsageHistory || []),
+        {
+          timestamp: Date.now(),
+          apiType,
+          cost,
+          success,
+        }
+      ],
     };
 
     this.saveUsageData(updatedUsage);
     return true;
+  }
+
+  /**
+   * Legacy method for backward compatibility (defaults to address API cost)
+   */
+  recordApiRequestLegacy(): boolean {
+    return this.recordApiRequest('address');
   }
 
   /**
@@ -171,6 +241,7 @@ class ApiUsageService {
       date: today,
       creditsUsed: 0,
       lastReset: Date.now(),
+      apiUsageHistory: [],
     };
     
     this.saveUsageData(resetData);
@@ -190,7 +261,12 @@ class ApiUsageService {
     try {
       const stored = localStorage.getItem(this.STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        // Ensure backward compatibility by adding missing fields
+        return {
+          ...parsed,
+          apiUsageHistory: parsed.apiUsageHistory || [],
+        };
       }
     } catch (error) {
       console.warn('Failed to parse API usage data:', error);
@@ -201,6 +277,7 @@ class ApiUsageService {
       date: this.getTodayString(),
       creditsUsed: 0,
       lastReset: Date.now(),
+      apiUsageHistory: [],
     };
   }
 
@@ -229,6 +306,20 @@ class ApiUsageService {
    */
   clearUsageData(): void {
     localStorage.removeItem(this.STORAGE_KEY);
+  }
+
+  /**
+   * Format credit amount consistently across the app
+   */
+  formatCredits(amount: number): string {
+    return amount % 1 === 0 ? `${amount}.00` : amount.toFixed(2);
+  }
+
+  /**
+   * Format credit amount with dollar sign
+   */
+  formatCreditsWithDollar(amount: number): string {
+    return `$${this.formatCredits(amount)}`;
   }
 }
 

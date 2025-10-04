@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { NodeData } from '@/features/session/services/sessionStorage';
 import { SkipTraceAddressExtractor, SkipTraceAddress } from '../services/skipTraceAddressExtractor';
 import { useGeocoding } from './useGeocoding';
@@ -39,6 +39,24 @@ export function useSkipTracePins({
   const [skipTraceAddresses, setSkipTraceAddresses] = useState<SkipTraceAddress[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { geocodeAddress } = useGeocoding();
+
+  // Store callback functions in refs to prevent infinite re-renders
+  const addMarkerRef = useRef(addMarker);
+  const removeMarkerRef = useRef(removeMarker);
+  const geocodeAddressRef = useRef(geocodeAddress);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    addMarkerRef.current = addMarker;
+  }, [addMarker]);
+
+  useEffect(() => {
+    removeMarkerRef.current = removeMarker;
+  }, [removeMarker]);
+
+  useEffect(() => {
+    geocodeAddressRef.current = geocodeAddress;
+  }, [geocodeAddress]);
 
   // Parse skip trace response to extract people data
   const parseSkipTraceResponse = useCallback((rawResponse: unknown, nodeId: string): { people: PersonRecord[]; totalRecords: number } => {
@@ -344,11 +362,11 @@ export function useSkipTracePins({
     markerElement.appendChild(circle);
     markerElement.appendChild(countText);
 
-    addMarker(address.id, coordinates, {
+    addMarkerRef.current(address.id, coordinates, {
       element: markerElement,
       popupContent,
     });
-  }, [addMarker, createSkipTracePopup, parseSkipTraceResponse]);
+  }, [createSkipTracePopup, parseSkipTraceResponse]);
 
 
   /**
@@ -365,7 +383,7 @@ export function useSkipTracePins({
 
       // Clear existing skip trace markers
       addresses.forEach(address => {
-        removeMarker(address.id);
+        removeMarkerRef.current(address.id);
       });
 
       // Process addresses with coordinates first
@@ -378,7 +396,7 @@ export function useSkipTracePins({
       const addressesNeedingGeocoding = addresses.filter(addr => !addr.coordinates);
       for (const address of addressesNeedingGeocoding) {
         try {
-          const geocodeResult = await geocodeAddress({
+          const geocodeResult = await geocodeAddressRef.current({
             street: address.street,
             city: address.city,
             state: address.state,
@@ -408,7 +426,7 @@ export function useSkipTracePins({
     } finally {
       setIsLoading(false);
     }
-  }, [nodes, mapLoaded, removeMarker, geocodeAddress, addSkipTracePin]);
+  }, [nodes, mapLoaded, addSkipTracePin]);
 
   /**
    * Clear all skip trace pins
@@ -416,26 +434,177 @@ export function useSkipTracePins({
   const clearSkipTracePins = useCallback(() => {
     // Remove all markers first
     skipTraceAddresses.forEach(address => {
-      removeMarker(address.id);
+      removeMarkerRef.current(address.id);
     });
     // Then clear the state
     setSkipTraceAddresses([]);
-  }, [removeMarker, skipTraceAddresses]);
+  }, [skipTraceAddresses]);
 
   // Auto-restore pins when nodes change or when session changes
   useEffect(() => {
     if (!mapLoaded) return;
 
-    // Always restore pins when nodes change (this handles session switching)
-    // Clear existing pins first to ensure clean state
-    skipTraceAddresses.forEach(address => {
-      removeMarker(address.id);
-    });
-    
-    // Then restore with new session data
-    restoreSkipTracePins();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, mapLoaded, sessionId]); // Added sessionId to ensure it updates on session switch
+    const restorePins = async () => {
+      setIsLoading(true);
+      try {
+        // Extract skip trace addresses from nodes
+        const addresses = SkipTraceAddressExtractor.extractSkipTraceAddresses(nodes);
+        setSkipTraceAddresses(addresses);
+
+        // Clear existing skip trace markers
+        addresses.forEach(address => {
+          removeMarkerRef.current(address.id);
+        });
+
+        // Process addresses with coordinates first
+        const addressesWithCoords = addresses.filter(addr => addr.coordinates);
+        addressesWithCoords.forEach(address => {
+          // Inline the addSkipTracePin logic to avoid dependency issues
+          if (!address.coordinates) return;
+
+          const coordinates = {
+            lat: address.coordinates.latitude,
+            lng: address.coordinates.longitude,
+          };
+
+          // Parse the response data the same way the node does
+          const peopleData = parseSkipTraceResponse(address.rawResponse, address.nodeId);
+
+          // Create popup content with clickable person items
+          const popupContent = createSkipTracePopup(address, peopleData);
+
+          // Create custom marker element - small purple circle with person count
+          const markerElement = document.createElement('div');
+          markerElement.className = 'skip-trace-marker';
+          markerElement.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+          `;
+
+          // Create the purple circle
+          const circle = document.createElement('div');
+          circle.style.cssText = `
+            width: 16px;
+            height: 16px;
+            background-color: ${MAP_CONFIG.MARKER_COLORS.SKIP_TRACE};
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2px;
+          `;
+
+          // Create the person count text
+          const countText = document.createElement('div');
+          countText.textContent = peopleData.people.length.toString();
+          countText.style.cssText = `
+            font-size: 10px;
+            font-weight: 600;
+            color: ${MAP_CONFIG.MARKER_COLORS.SKIP_TRACE};
+            text-align: center;
+            line-height: 1;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+            min-width: 8px;
+          `;
+
+          markerElement.appendChild(circle);
+          markerElement.appendChild(countText);
+
+          addMarkerRef.current(address.id, coordinates, {
+            element: markerElement,
+            popupContent,
+          });
+        });
+
+        // Geocode addresses without coordinates
+        const addressesNeedingGeocoding = addresses.filter(addr => !addr.coordinates);
+        for (const address of addressesNeedingGeocoding) {
+          try {
+            const geocodeResult = await geocodeAddressRef.current({
+              street: address.street,
+              city: address.city,
+              state: address.state,
+              zip: address.zip,
+            });
+
+            if (geocodeResult.success && geocodeResult.coordinates) {
+              const addressWithCoords = {
+                ...address,
+                coordinates: geocodeResult.coordinates,
+              };
+              
+              // Inline the addSkipTracePin logic for geocoded addresses too
+              const coordinates = {
+                lat: addressWithCoords.coordinates.latitude,
+                lng: addressWithCoords.coordinates.longitude,
+              };
+
+              const peopleData = parseSkipTraceResponse(addressWithCoords.rawResponse, addressWithCoords.nodeId);
+              const popupContent = createSkipTracePopup(addressWithCoords, peopleData);
+
+              const markerElement = document.createElement('div');
+              markerElement.className = 'skip-trace-marker';
+              markerElement.style.cssText = `
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                cursor: pointer;
+                transform: translate(-50%, -50%);
+              `;
+
+              const circle = document.createElement('div');
+              circle.style.cssText = `
+                width: 16px;
+                height: 16px;
+                background-color: ${MAP_CONFIG.MARKER_COLORS.SKIP_TRACE};
+                border: 2px solid white;
+                border-radius: 50%;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                margin-bottom: 2px;
+              `;
+
+              const countText = document.createElement('div');
+              countText.textContent = peopleData.people.length.toString();
+              countText.style.cssText = `
+                font-size: 10px;
+                font-weight: 600;
+                color: ${MAP_CONFIG.MARKER_COLORS.SKIP_TRACE};
+                text-align: center;
+                line-height: 1;
+                text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+                min-width: 8px;
+              `;
+
+              markerElement.appendChild(circle);
+              markerElement.appendChild(countText);
+
+              addMarkerRef.current(addressWithCoords.id, coordinates, {
+                element: markerElement,
+                popupContent,
+              });
+              
+              // Update the address in state
+              setSkipTraceAddresses(prev => 
+                prev.map(addr => 
+                  addr.id === address.id ? addressWithCoords : addr
+                )
+              );
+            }
+          } catch (error) {
+            console.warn(`Failed to geocode skip trace address: ${address.street}`, error);
+          }
+        }
+      } catch (error) {
+        console.error('Error restoring skip trace pins:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    restorePins();
+  }, [nodes, mapLoaded, sessionId, parseSkipTraceResponse, createSkipTracePopup]); // Include all dependencies
 
   // Note: Cleanup is handled by the component using this hook
   // No need for useEffect cleanup here as it causes infinite loops

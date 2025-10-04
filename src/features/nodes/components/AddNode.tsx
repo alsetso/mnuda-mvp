@@ -163,10 +163,10 @@ export default function AddNode({ onAddNode, onNodeCreated, disabled = false }: 
           transition-all duration-200
           ${isShaking ? 'credit-shake' : ''}
           ${disabled 
-            ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+            ? `bg-gray-50 text-gray-500 cursor-not-allowed` 
             : isCreditsExhausted
-              ? 'bg-red-500 hover:bg-red-600 text-white shadow-md ring-2 ring-red-300'
-              : 'bg-[#1dd1f5] hover:bg-[#014463] text-white shadow-md'
+              ? `bg-red-600 hover:bg-red-600 text-white shadow-md ring-2 ring-red-300`
+              : `bg-[#014463] hover:bg-[#1dd1f5] text-white shadow-md`
           }
         `}
         title={isCreditsExhausted ? "Credits exhausted - click to view options" : "Add new search node"}
@@ -185,10 +185,10 @@ export default function AddNode({ onAddNode, onNodeCreated, disabled = false }: 
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute top-14 left-0 w-72 bg-white rounded-md shadow-lg border border-gray-100 z-50"
+          className="absolute top-14 left-0 w-72 bg-white rounded-md shadow-lg border border-gray-200 z-50"
         >
           <div className="py-2">
-            <div className="px-3 py-2 border-b border-gray-100">
+            <div className="px-3 py-2 border-b border-gray-200">
               <h3 className="text-sm font-medium text-gray-700">Add Search Node</h3>
             </div>
             <div className="py-1">

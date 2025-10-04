@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Address, UseAddressSyncReturn } from '../types';
 import { GeocodingService } from '../services/geocodingService';
 import { MAP_CONFIG } from '../config';
+import { minnesotaBoundsService } from '../services/minnesotaBoundsService';
 
 interface UseAddressSyncProps {
   onTemporaryAddressChange?: (address: Address | null) => void;
@@ -58,6 +59,14 @@ export function useAddressSync({
         const state = addressComponents.find((c: Record<string, unknown>) => (c.id as string).startsWith('region'))?.text || '';
         const zip = addressComponents.find((c: Record<string, unknown>) => (c.id as string).startsWith('postcode'))?.text || '';
 
+        // Validate that the address state is actually Minnesota
+        if (!minnesotaBoundsService.isMinnesotaState(state)) {
+          return {
+            success: false,
+            error: 'This location is not in Minnesota. Please click within Minnesota state boundaries to perform skip tracing operations.'
+          };
+        }
+
         const addressData: Address = {
           street,
           city,
@@ -87,7 +96,7 @@ export function useAddressSync({
 
   // Handle map pin dropped - set temporary address and prefill Start Node
   const onMapPinDropped = useCallback(async (coordinates: { lat: number; lng: number }) => {
-    if (isSyncing) return;
+    if (isSyncing) return { success: false, error: 'Already syncing' };
     
     setIsSyncing(true);
     try {
@@ -99,9 +108,13 @@ export function useAddressSync({
         
         // Update map pin
         onAddressPinUpdate?.(coordinates);
+        return { success: true };
+      } else {
+        return { success: false, error: result.error || 'Failed to geocode address' };
       }
     } catch (error) {
       console.error('Error handling map pin drop:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     } finally {
       setIsSyncing(false);
     }

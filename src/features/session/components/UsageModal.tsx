@@ -81,7 +81,7 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
   const getProgressBarColor = (percentage: number) => {
     if (percentage >= 80) return 'from-red-400 to-red-600';
     if (percentage >= 60) return 'from-amber-400 to-amber-600';
-    return 'from-cyan-400 to-blue-500';
+    return 'from-[#1dd1f5] to-[#014463]';
   };
 
 
@@ -99,7 +99,7 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
           <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200/60">
             <div className="flex items-center justify-between p-6 sm:p-8">
               <div className="flex items-center space-x-4 min-w-0 flex-1">
-                <div className="p-3 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl shadow-lg">
+                <div className="p-3 bg-gradient-to-br from-[#1dd1f5] to-[#014463] rounded-xl shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                   </svg>
@@ -153,7 +153,7 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                      <div className="text-2xl font-bold bg-gradient-to-r from-[#014463] to-[#1dd1f5] bg-clip-text text-transparent">
                         {formatBytes(storageUsage.total)}
                       </div>
                       {quota && quota.quota > 0 && (
@@ -200,7 +200,7 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
                           <tr key={sessionUsage.session.id} className="hover:bg-gradient-to-r hover:from-slate-50/50 hover:to-cyan-50/30 transition-all duration-200">
                             <td className="px-6 py-4 w-2/5">
                               <div className="flex items-center space-x-3">
-                                <div className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex-shrink-0 shadow-sm"></div>
+                                <div className="w-2 h-2 bg-gradient-to-r from-[#1dd1f5] to-[#014463] rounded-full flex-shrink-0 shadow-sm"></div>
                                 {onSessionSwitch ? (
                                   <button
                                     onClick={() => handleSessionClick(sessionUsage.session.id)}
@@ -302,7 +302,7 @@ export default function UsageModal({ isOpen, onClose, onSessionSwitch }: UsageMo
                       </button>
                       <button
                         onClick={onClose}
-                        className="w-full sm:w-auto px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 border-2 border-transparent rounded-xl hover:from-cyan-600 hover:to-blue-700 focus:outline-none focus:ring-4 focus:ring-cyan-200 transition-all duration-200 touch-manipulation min-h-[48px] shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        className="w-full sm:w-auto px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-[#014463] to-[#1dd1f5] border-2 border-transparent rounded-xl hover:from-[#1dd1f5] hover:to-[#014463] focus:outline-none focus:ring-4 focus:ring-[#1dd1f5]/20 transition-all duration-200 touch-manipulation min-h-[48px] shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                       >
                         Close
                       </button>

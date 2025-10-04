@@ -3,6 +3,7 @@
 import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 import { peopleParseService } from '@/features/api/services/peopleParse';
 import { personDetailParseService, ParsedPersonDetailData } from '@/features/api/services/personDetailParse';
+import { generateNodeTitle, shouldAutoUpdateTitle } from '@/features/nodes/utils/nodeTitleUtils';
 
 export interface SessionData {
   id: string;
@@ -195,7 +196,14 @@ class SessionStorageService {
       mnNodeId: node.mnNodeId || MnudaIdService.generateTypedId('node')
     };
 
-    session.nodes.push(nodeWithId);
+    // For search history nodes, add to the beginning (top of the list)
+    // For other nodes, add to the end (bottom of the list)
+    if (node.type === 'start' && node.apiName === 'Search History') {
+      session.nodes.unshift(nodeWithId);
+    } else {
+      session.nodes.push(nodeWithId);
+    }
+    
     session.lastAccessed = Date.now();
     
     const sessions = this.getSessions();
@@ -203,6 +211,9 @@ class SessionStorageService {
     if (sessionIndex !== -1) {
       sessions[sessionIndex] = session;
       this.saveSessions(sessions);
+      
+      // Auto-update title for the newly added node
+      this.autoUpdateNodeTitle(nodeWithId.id);
     }
   }
 
@@ -278,6 +289,63 @@ class SessionStorageService {
     }
   }
 
+  // Auto-update node title based on primary data
+  autoUpdateNodeTitle(nodeId: string): void {
+    const session = this.getCurrentSession();
+    if (!session) return;
+
+    const nodeIndex = session.nodes.findIndex(node => node.id === nodeId);
+    if (nodeIndex !== -1) {
+      const node = session.nodes[nodeIndex];
+      
+      // Only auto-update if conditions are met
+      if (shouldAutoUpdateTitle(node)) {
+        const autoTitle = generateNodeTitle(node);
+        if (autoTitle && autoTitle !== node.customTitle) {
+          // Only update if we don't have a custom title or if the auto title is different
+          if (!node.customTitle) {
+            node.customTitle = autoTitle;
+            session.lastAccessed = Date.now();
+            
+            const sessions = this.getSessions();
+            const sessionIndex = sessions.findIndex(s => s.id === session.id);
+            if (sessionIndex !== -1) {
+              sessions[sessionIndex] = session;
+              this.saveSessions(sessions);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Update node data and auto-update title if needed
+  updateNodeData(nodeId: string, updates: Partial<NodeData>): void {
+    const session = this.getCurrentSession();
+    if (!session) return;
+
+    const nodeIndex = session.nodes.findIndex(node => node.id === nodeId);
+    if (nodeIndex !== -1) {
+      // Update the node with new data
+      session.nodes[nodeIndex] = {
+        ...session.nodes[nodeIndex],
+        ...updates
+      };
+      
+      session.lastAccessed = Date.now();
+      
+      const sessions = this.getSessions();
+      const sessionIndex = sessions.findIndex(s => s.id === session.id);
+      if (sessionIndex !== -1) {
+        sessions[sessionIndex] = session;
+        this.saveSessions(sessions);
+        
+        // Auto-update title after data update
+        this.autoUpdateNodeTitle(nodeId);
+      }
+    }
+  }
+
   // Update UserFoundNode with location data
   updateUserFoundNode(nodeId: string, coords: { lat: number; lng: number }, address?: { street: string; city: string; state: string; zip: string; coordinates?: { latitude: number; longitude: number } }): void {
     const session = this.getCurrentSession();
@@ -332,6 +400,9 @@ class SessionStorageService {
       if (sessionIndex !== -1) {
         sessions[sessionIndex] = session;
         this.saveSessions(sessions);
+        
+        // Auto-update title now that we have location data
+        this.autoUpdateNodeTitle(nodeId);
         
         // Trigger a custom event to notify React components of the update
         window.dispatchEvent(new CustomEvent('sessionUpdated', { 

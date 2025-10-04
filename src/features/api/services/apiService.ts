@@ -1,5 +1,5 @@
 // API service for property data calls
-import { apiUsageService } from '../../session/services/apiUsageService';
+import { apiUsageService, ApiType, API_PRICING } from '../../session/services/apiUsageService';
 
 // Global callback for API usage updates - will be set by the context provider
 let onApiUsageUpdate: (() => void) | null = null;
@@ -56,18 +56,17 @@ export class CreditsExhaustedError extends Error {
   }
 }
 
-// Helper function to check and record API usage
-const checkAndRecordApiUsage = (): boolean => {
-  // Get current state
-  const currentState = apiUsageService.getUsageState();
-  
-  // Check if we can make the request
-  if (currentState.isLimitReached && !currentState.hasUnlimitedCredits) {
-    throw new CreditsExhaustedError('Daily API limit reached. Please try again tomorrow.');
+// Helper function to check and record API usage with specific API type
+const checkAndRecordApiUsage = (apiType: ApiType): boolean => {
+  // Check if we can make the specific API request
+  if (!apiUsageService.canMakeApiRequest(apiType)) {
+    const cost = API_PRICING[apiType];
+    const remaining = apiUsageService.getRemainingCredits();
+    throw new CreditsExhaustedError(`Insufficient credits for ${apiType} API call. Cost: $${cost.toFixed(2)}, Remaining: $${remaining.toFixed(2)}`);
   }
   
   // Record the usage (this will always succeed for authenticated users)
-  const recorded = apiUsageService.recordApiRequest();
+  const recorded = apiUsageService.recordApiRequest(apiType, true);
   if (!recorded) {
     throw new CreditsExhaustedError('Failed to record API usage. Please try again.');
   }
@@ -83,7 +82,7 @@ const checkAndRecordApiUsage = (): boolean => {
 export const apiService = {
   async callZillowAPI(address: { street: string; city: string; state: string; zip: string }): Promise<unknown> {
     // Check and record API usage
-    checkAndRecordApiUsage();
+    checkAndRecordApiUsage('zillow');
     console.log('Zillow API - Input address:', address);
     const fullAddress = `${address.street} ${address.city} ${address.state} ${address.zip}`;
     const encodedAddress = encodeURIComponent(fullAddress);
@@ -110,7 +109,7 @@ export const apiService = {
 
   async callSkipTraceAPI(address: { street: string; city: string; state: string; zip: string }): Promise<unknown> {
     // Check and record API usage
-    checkAndRecordApiUsage();
+    checkAndRecordApiUsage('address');
     console.log('Skip Trace API - Input address:', address);
     const cityStateZip = `${address.city}, ${address.state} ${address.zip}`;
     const encodedStreet = encodeURIComponent(address.street);
@@ -140,7 +139,7 @@ export const apiService = {
   async callPersonAPI(personId: string, retryCount = 0): Promise<unknown> {
     // Check and record API usage (only on first attempt, not retries)
     if (retryCount === 0) {
-      checkAndRecordApiUsage();
+      checkAndRecordApiUsage('person-id');
     }
     console.log('Person API - Input person ID:', personId);
     const url = `https://skip-tracing-working-api.p.rapidapi.com/search/detailsbyID?peo_id=${personId}`;
@@ -173,7 +172,7 @@ export const apiService = {
 
   async callNameSearchAPI(name: { firstName: string; middleInitial?: string; lastName: string }): Promise<unknown> {
     // Check and record API usage
-    checkAndRecordApiUsage();
+    checkAndRecordApiUsage('name');
     console.log('Name Search API - Input name:', name);
     
     // Format name as "FirstName MiddleInitial LastName" or "FirstName LastName"
@@ -205,7 +204,7 @@ export const apiService = {
 
   async callEmailSearchAPI(email: string): Promise<unknown> {
     // Check and record API usage
-    checkAndRecordApiUsage();
+    checkAndRecordApiUsage('email');
     console.log('Email Search API - Input email:', email);
     
     const encodedEmail = encodeURIComponent(email);
@@ -231,7 +230,7 @@ export const apiService = {
 
   async callPhoneSearchAPI(phone: string): Promise<unknown> {
     // Check and record API usage
-    checkAndRecordApiUsage();
+    checkAndRecordApiUsage('phone');
     console.log('Phone Search API - Input phone:', phone);
     
     const encodedPhone = encodeURIComponent(phone);

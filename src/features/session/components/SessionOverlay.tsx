@@ -90,7 +90,7 @@ export default function SessionOverlay({
                 placeholder="Search sessions..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl text-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="block w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl text-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#014463] focus:border-transparent"
               />
             </div>
           </div>
@@ -99,7 +99,7 @@ export default function SessionOverlay({
           <div className="flex-shrink-0 mb-8">
             <button
               onClick={handleCreateNew}
-              className="w-full max-w-md mx-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-150 flex items-center justify-center space-x-3 shadow-lg"
+              className="w-full max-w-md mx-auto bg-[#014463] hover:bg-[#1dd1f5] text-white font-semibold py-4 px-6 rounded-xl transition-colors duration-150 flex items-center justify-center space-x-3 shadow-lg"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -137,16 +137,16 @@ export default function SessionOverlay({
                     <button
                       key={session.id}
                       onClick={() => handleSessionClick(session.id)}
-                      className="text-left p-6 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-150 group shadow-sm hover:shadow-md"
+                      className="text-left p-6 rounded-xl border border-gray-200 hover:border-[#1dd1f5]/50 hover:bg-[#1dd1f5]/10 transition-all duration-150 group shadow-sm hover:shadow-md"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 truncate group-hover:text-blue-900 text-lg">
+                          <h3 className="font-semibold text-gray-900 truncate group-hover:text-[#014463] text-lg">
                             {session.name}
                           </h3>
                         </div>
                         <div className="flex-shrink-0 ml-3">
-                          <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-gray-400 group-hover:text-[#014463] transition-colors duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>

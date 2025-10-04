@@ -2,9 +2,11 @@
 
 import jsPDF from 'jspdf';
 import type { ExportData, ExportResult } from '../types/exportTypes';
+import type { PdfColumnConfig, ColumnConfig } from '../types/columnConfig';
+import { DEFAULT_COLUMN_CONFIG, getEnabledColumns, getColumnWidths, getColumnHeaders } from '../types/columnConfig';
 
 export class PdfExporter {
-  async export(data: ExportData): Promise<ExportResult> {
+  async export(data: ExportData, columnConfig: PdfColumnConfig = DEFAULT_COLUMN_CONFIG): Promise<ExportResult> {
     try {
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -78,12 +80,10 @@ export class PdfExporter {
       // All Entities Table
       yPosition = this.addSection(pdf, 'All Entities', yPosition, pageWidth, margin, lineHeight);
       
-      // Create table header
-      const tableHeaders = ['Entity ID', 'Type', 'Node', 'Value'];
-      const availableWidth = pageWidth - (margin * 2);
-      const fixedColWidths = [35, 20, 25]; // Condensed Entity ID, Type, and Node columns
-      const valueColWidth = availableWidth - fixedColWidths[0] - fixedColWidths[1] - fixedColWidths[2]; // More space for Value
-      const colWidths = [fixedColWidths[0], fixedColWidths[1], fixedColWidths[2], valueColWidth];
+      // Get configured columns
+      const enabledColumns = getEnabledColumns(columnConfig);
+      const tableHeaders = getColumnHeaders(columnConfig);
+      const colWidths = getColumnWidths(columnConfig);
       const tableStartX = margin;
       
       // Draw table header
@@ -144,30 +144,14 @@ export class PdfExporter {
         
         // Entity row
         currentX = tableStartX;
-        const rowData = [
-          entity.mnEntityId || 'N/A',
-          entity.type,
-          entity.nodeTitle,
-          this.getEntityDisplayValue(entity)
-        ];
+        const rowData = this.getEntityRowData(entity, enabledColumns);
         
         for (let i = 0; i < rowData.length; i++) {
           // Truncate text if too long
           let text = String(rowData[i]);
-          if (i === 3) { // Value column - use most of the available space
-            // Calculate approximate characters that fit in the column width
-            const maxChars = Math.floor(valueColWidth / 2.2); // Slightly more generous: 2.2 units per character
-            if (text.length > maxChars) {
-              text = text.substring(0, maxChars - 3) + '...';
-            }
-          } else if (i === 0) { // Entity ID column - condense more aggressively
-            if (text.length > 12) {
-              text = text.substring(0, 9) + '...';
-            }
-          } else if (text.length > 12 && i === 1) { // Type column
-            text = text.substring(0, 9) + '...';
-          } else if (text.length > 12 && i === 2) { // Node column
-            text = text.substring(0, 9) + '...';
+          const maxLength = Math.floor(colWidths[i] / 2); // Rough character limit based on width
+          if (text.length > maxLength) {
+            text = text.substring(0, maxLength - 3) + '...';
           }
           
           pdf.text(text, currentX, yPosition);
@@ -214,6 +198,33 @@ export class PdfExporter {
     yPosition += lineHeight * 2;
 
     return yPosition;
+  }
+
+  private getEntityRowData(entity: Record<string, unknown>, enabledColumns: ColumnConfig[]): string[] {
+    return enabledColumns.map(column => {
+      switch (column.id) {
+        case 'entityId':
+          return String(entity.mnEntityId || 'N/A');
+        case 'type':
+          return String(entity.type || 'N/A');
+        case 'nodeTitle':
+          return String(entity.nodeTitle || 'N/A');
+        case 'primaryValue':
+          return this.getEntityDisplayValue(entity);
+        case 'summary':
+          return String(entity.summary || 'N/A');
+        case 'timestamp':
+          return entity.timestamp ? new Date(entity.timestamp as number).toLocaleDateString() : 'N/A';
+        case 'source':
+          return String(entity.source || 'N/A');
+        case 'isTraceable':
+          return entity.isTraceable ? 'Yes' : 'No';
+        case 'rawData':
+          return entity.rawData ? JSON.stringify(entity.rawData) : 'N/A';
+        default:
+          return 'N/A';
+      }
+    });
   }
 
   private getEntityDisplayValue(entity: Record<string, unknown>): string {

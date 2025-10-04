@@ -34,7 +34,7 @@ export const createToast = (
   title,
   message: options.message,
   apiCall: options.apiCall,
-  duration: options.duration || (type === 'loading' ? 0 : 5000), // Loading toasts don't auto-dismiss, others auto-dismiss after 5s
+  duration: options.duration || (type === 'loading' ? 0 : 2500), // Loading toasts don't auto-dismiss, others auto-dismiss after 2.5s
 });
 
 // API call toast helpers

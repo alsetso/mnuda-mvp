@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { apiUsageService, ApiUsageState } from '../services/apiUsageService';
+import { apiUsageService, ApiUsageState, ApiType } from '../services/apiUsageService';
 import { useAuth } from '@/features/auth';
 
 export function useApiUsage() {
@@ -32,9 +32,15 @@ export function useApiUsage() {
     return apiUsageService.canMakeRequest();
   }, []);
 
-  const recordApiRequest = useCallback(() => {
+  const canMakeApiRequest = useCallback((apiType: ApiType) => {
+    return apiUsageService.canMakeApiRequest(apiType);
+  }, []);
+
+  const recordApiRequest = useCallback((apiType?: ApiType) => {
     setIsConsuming(true);
-    const recorded = apiUsageService.recordApiRequest();
+    const recorded = apiType 
+      ? apiUsageService.recordApiRequest(apiType)
+      : apiUsageService.recordApiRequestLegacy();
     if (recorded) {
       // Immediately refresh the usage data to reflect the change
       loadApiUsageData();
@@ -66,6 +72,7 @@ export function useApiUsage() {
     isConsuming,
     refreshApiUsage,
     canMakeRequest,
+    canMakeApiRequest,
     recordApiRequest,
   };
 }

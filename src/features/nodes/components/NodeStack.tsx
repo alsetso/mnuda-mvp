@@ -11,6 +11,9 @@ import RelationshipIndicator from './RelationshipIndicator';
 import TitleEdit from './TitleEdit';
 import AddNode from './AddNode';
 import { sessionStorageService, NodeData } from '@/features/session/services/sessionStorage';
+import { PersonRecord } from '@/features/api/services/peopleParse';
+import { PersonDetailEntity } from '@/features/api/services/personDetailParse';
+import { generateNodeTitle } from '@/features/nodes/utils/nodeTitleUtils';
 
 interface NodeStackProps {
   nodes: NodeData[];
@@ -30,6 +33,8 @@ interface NodeStackProps {
   onUserFoundStopTracking?: () => void;
   onCreateNewLocationSession?: () => void;
   onContinueToAddressSearch?: () => void;
+  onRecordClick?: (node: NodeData) => void;
+  onEntityClick?: (entity: PersonRecord | PersonDetailEntity) => void;
   isTracking?: boolean;
   userLocation?: { lat: number; lng: number } | null;
 }
@@ -52,6 +57,8 @@ export default function NodeStack({
   onUserFoundStopTracking,
   onCreateNewLocationSession,
   onContinueToAddressSearch,
+  onRecordClick,
+  onEntityClick,
   isTracking,
   userLocation
 }: NodeStackProps) {
@@ -68,22 +75,24 @@ export default function NodeStack({
     // Auto-expand the new node
     setExpandedNodes(prev => new Set([...prev, nodeId]));
     
-    // Scroll to the node after a short delay to ensure it's rendered
+    // Scroll to the top of the container to show the newest node (which is now at the top)
     setTimeout(() => {
-      const nodeElement = nodeRefs.current.get(nodeId);
-      if (nodeElement) {
-        nodeElement.scrollIntoView({ 
+      const container = document.querySelector('.space-y-0');
+      if (container) {
+        container.scrollIntoView({ 
           behavior: 'smooth', 
-          block: 'center' 
+          block: 'start' 
         });
       }
     }, 100);
   };
 
-  // Auto-expand the first node when nodes are added (only if no nodes are currently expanded)
+  // Auto-expand the most recent node when nodes are added (only if no nodes are currently expanded)
   useEffect(() => {
     if (nodes.length > 0 && expandedNodes.size === 0) {
-      setExpandedNodes(new Set([nodes[0].id]));
+      // Get the most recent node (last in the array, which will be first in the reversed display)
+      const mostRecentNode = nodes[nodes.length - 1];
+      setExpandedNodes(new Set([mostRecentNode.id]));
     }
   }, [nodes, expandedNodes.size]);
 
@@ -158,53 +167,104 @@ export default function NodeStack({
         />
       );
     } else if (nodeData.type === 'start') {
-      // Check if this is a new input node type based on customTitle
-      const customTitle = nodeData.customTitle;
-      if (customTitle && customTitle !== 'Address Search') {
-        // This is a new input node type
-        const nodeTypeMap: Record<string, 'name' | 'email' | 'phone' | 'address' | 'zillow'> = {
-          'Name Search': 'name',
-          'Email Search': 'email',
-          'Phone Search': 'phone',
-          'Address Search': 'address',
-          'Zillow Search': 'zillow'
-        };
+      // Check if this is a search history node
+      if (nodeData.apiName === 'Search History') {
+        defaultTitle = nodeData.customTitle || 'Search History';
+        subtitle = nodeData.address ? `${nodeData.address.street}, ${nodeData.address.city}, ${nodeData.address.state} ${nodeData.address.zip}` : 'Search History';
         
-        const nodeType = nodeTypeMap[customTitle];
-        if (nodeType) {
-          defaultTitle = customTitle;
-          subtitle = nodeType === 'zillow' ? 'Zillow API' : 'Skip Trace API';
+        // Create a simple display component for search history
+        component = (
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-[#1dd1f5]/20 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-[#014463]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">Search Completed</p>
+                <p className="text-sm text-gray-500">
+                  {nodeData.address ? `${nodeData.address.street}, ${nodeData.address.city}, ${nodeData.address.state} ${nodeData.address.zip}` : 'Location searched'}
+                </p>
+                {nodeData.address?.coordinates && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Coordinates: {nodeData.address.coordinates.latitude.toFixed(6)}, {nodeData.address.coordinates.longitude.toFixed(6)}
+                  </p>
+                )}
+              </div>
+              <div className="flex-shrink-0">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Completed
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      } else {
+        // Check if this is a new input node type based on customTitle
+        const customTitle = nodeData.customTitle;
+        if (customTitle && customTitle !== 'Address Search') {
+          // This is a new input node type
+          const nodeTypeMap: Record<string, 'name' | 'email' | 'phone' | 'address' | 'zillow'> = {
+            'Name Search': 'name',
+            'Email Search': 'email',
+            'Phone Search': 'phone',
+            'Address Search': 'address',
+            'Zillow Search': 'zillow'
+          };
           
-          component = (
-            <InputNode
-              nodeType={nodeType}
-              onSearch={(searchData) => {
-                // Handle the search based on node type using the proper handlers
-                switch (nodeType) {
-                  case 'name':
-                    onNameSearch?.(searchData as { firstName: string; middleInitial?: string; lastName: string });
-                    break;
-                  case 'email':
-                    onEmailSearch?.(searchData as { email: string });
-                    break;
-                  case 'phone':
-                    onPhoneSearch?.(searchData as { phone: string });
-                    break;
-                  case 'address':
-                    onAddressSearch?.(searchData as { street: string; city: string; state: string; zip: string });
-                    break;
-                  case 'zillow':
-                    onZillowSearch?.(searchData as { street: string; city: string; state: string; zip: string });
-                    break;
-                }
-              }}
-              isSearching={false}
-              hasCompleted={nodeData.hasCompleted || false}
-              initialData={{}}
-            />
-          );
+          const nodeType = nodeTypeMap[customTitle];
+          if (nodeType) {
+            defaultTitle = customTitle;
+            subtitle = nodeType === 'zillow' ? 'Zillow API' : 'Skip Trace API';
+            
+            component = (
+              <InputNode
+                nodeType={nodeType}
+                onSearch={(searchData) => {
+                  // Handle the search based on node type using the proper handlers
+                  switch (nodeType) {
+                    case 'name':
+                      onNameSearch?.(searchData as { firstName: string; middleInitial?: string; lastName: string });
+                      break;
+                    case 'email':
+                      onEmailSearch?.(searchData as { email: string });
+                      break;
+                    case 'phone':
+                      onPhoneSearch?.(searchData as { phone: string });
+                      break;
+                    case 'address':
+                      onAddressSearch?.(searchData as { street: string; city: string; state: string; zip: string });
+                      break;
+                    case 'zillow':
+                      onZillowSearch?.(searchData as { street: string; city: string; state: string; zip: string });
+                      break;
+                  }
+                }}
+                isSearching={false}
+                hasCompleted={nodeData.hasCompleted || false}
+                initialData={{}}
+              />
+            );
+          } else {
+            // Fallback to original address search node
+            defaultTitle = 'Address Search';
+            subtitle = 'Skip Trace API';
+            
+            component = (
+              <StartNode 
+                onAddressSearch={onAddressSearch || (() => {})}
+                isSearching={false}
+                hasCompleted={nodeData.hasCompleted || false}
+                initialAddress={nodeData.address}
+                onAddressChanged={onStartNodeAddressChanged}
+              />
+            );
+          }
         } else {
-          // Fallback to original address search node
+          // This is the original address search node
           defaultTitle = 'Address Search';
           subtitle = 'Skip Trace API';
           
@@ -218,20 +278,6 @@ export default function NodeStack({
             />
           );
         }
-      } else {
-        // This is the original address search node
-        defaultTitle = 'Address Search';
-        subtitle = 'Skip Trace API';
-        
-        component = (
-          <StartNode 
-            onAddressSearch={onAddressSearch || (() => {})}
-            isSearching={false}
-            hasCompleted={nodeData.hasCompleted || false}
-            initialAddress={nodeData.address}
-            onAddressChanged={onStartNodeAddressChanged}
-          />
-        );
       }
     } else if (nodeData.type === 'api-result') {
       defaultTitle = nodeData.apiName || 'API Result';
@@ -249,6 +295,7 @@ export default function NodeStack({
           apiResponse={nodeData.response}
           apiName={nodeData.apiName || 'API Result'}
           onPersonTrace={(personId, personData, apiName, parentNodeId, entityId, entityData) => onPersonTrace?.(personId, personData, apiName, parentNodeId, entityId, entityData)}
+          onEntityClick={onEntityClick}
           node={nodeData}
           allNodes={nodes}
         />
@@ -267,12 +314,13 @@ export default function NodeStack({
           clickedEntityData={nodeData.clickedEntityData}
           onAddressIntel={onAddressIntel}
           onPersonTrace={(personId, personData, apiName, parentNodeId, entityId, entityData) => onPersonTrace?.(personId, personData, apiName, parentNodeId, entityId, entityData)}
+          onEntityClick={onEntityClick}
         />
       );
     }
 
-    // Use custom title if available, otherwise use default title
-    const title = nodeData.customTitle || defaultTitle;
+    // Use custom title if available, otherwise generate automatic title, fallback to default
+    const title = nodeData.customTitle || generateNodeTitle(nodeData) || defaultTitle;
 
     return {
       id: nodeData.id,
@@ -297,9 +345,9 @@ export default function NodeStack({
     return null;
   }
 
-  // Simple blue status indicator for all nodes
+  // Default status indicator for all nodes
   const getNodeStatusColor = (): string => {
-    return 'bg-[#1dd1f5]';
+    return 'bg-[#014463]';
   };
 
   return (
@@ -311,7 +359,7 @@ export default function NodeStack({
         </div>
       )}
       
-      {validDisplayNodes.map((node, index) => {
+      {validDisplayNodes.slice().reverse().map((node, index) => {
         const isExpanded = expandedNodes.has(node.id);
         const isLast = index === validDisplayNodes.length - 1;
         
@@ -332,17 +380,20 @@ export default function NodeStack({
           >
             {/* Connection Line */}
             {!isLast && (
-              <div className="absolute left-6 top-12 w-0.5 h-6 bg-gray-300 border-l-2 border-dashed border-gray-400 z-0"></div>
+              <div className="absolute left-6 top-12 w-0.5 h-6 bg-gray-300 border-l-2 border-dashed border-gray-200 z-0"></div>
             )}
             
             {/* Node Header */}
             <div className="relative z-10">
-              <div className="flex items-center bg-white border-b border-gray-100">
-                <div className="flex items-center space-x-3 flex-1 p-3">
+              <div className="flex items-center bg-transparent border-b border-gray-200">
+                <div 
+                  className={`flex items-center space-x-3 flex-1 p-3 ${onRecordClick ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                  onClick={onRecordClick ? () => onRecordClick(nodes.find(n => n.id === node.id)!) : undefined}
+                >
                   <div className="flex-shrink-0">
                     <div className={`w-3 h-3 rounded-full ${getNodeStatusColor()}`}></div>
                   </div>
-                  <div className="text-left min-w-0 flex-1">
+                  <div className="text-left min-w-0 flex-1 max-w-[200px]">
                     <TitleEdit
                       title={node.title}
                       onSave={(newTitle) => handleTitleUpdate(node.id, newTitle)}
@@ -350,7 +401,7 @@ export default function NodeStack({
                       placeholder="Enter node title..."
                     />
                     {node.mnudaId && (
-                      <p className="text-xs text-[#1dd1f5] font-mono">ID: {node.mnudaId}</p>
+                      <p className="text-xs text-[#014463] font-mono">ID: {node.mnudaId}</p>
                     )}
                   </div>
                 </div>
@@ -358,7 +409,7 @@ export default function NodeStack({
                   {/* Expand/Collapse Button */}
                   <button
                     onClick={() => toggleNode(node.id)}
-                    className="p-2 text-gray-400 hover:text-[#1dd1f5] transition-colors"
+                    className="p-2 text-gray-500 hover:text-[#014463] transition-colors"
                     title={isExpanded ? 'Collapse' : 'Expand'}
                   >
                     <svg 
@@ -382,7 +433,7 @@ export default function NodeStack({
                           onDeleteNode(node.id);
                         }
                       }}
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
                       title="Delete node"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -397,7 +448,7 @@ export default function NodeStack({
             {/* Node Content */}
             {isExpanded && (
               <div className="ml-6 border-l border-gray-200 pl-3 w-full max-w-full overflow-hidden">
-                <div className="bg-white w-full max-w-full overflow-hidden">
+                <div className="bg-transparent w-full max-w-full overflow-hidden">
                   <div className="w-full max-w-full overflow-hidden">
                     {node.component}
                   </div>

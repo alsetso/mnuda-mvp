@@ -140,7 +140,7 @@ export default function TracePage() {
 
               {/* Trace Results */}
               {currentSession && currentSession.nodes.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-xl p-6">
+                <div className="bg-gray-50 rounded-2xl shadow-xl p-6">
                   <div className="mb-6">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">Trace Results</h3>
                     <p className="text-gray-600">{currentSession.nodes.length} result{currentSession.nodes.length !== 1 ? 's' : ''} found</p>

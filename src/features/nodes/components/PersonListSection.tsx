@@ -2,13 +2,15 @@
 
 import { PersonRecord } from '@/features/api/services/peopleParse';
 import EntityCard from './EntityCard';
+import { PersonDetailEntity } from '@/features/api/services/personDetailParse';
 
 interface PersonListSectionProps {
   records: PersonRecord[];
   onPersonTrace?: (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => void;
+  onEntityClick?: (entity: PersonRecord | PersonDetailEntity) => void;
 }
 
-export default function PersonListSection({ records, onPersonTrace }: PersonListSectionProps) {
+export default function PersonListSection({ records, onPersonTrace, onEntityClick }: PersonListSectionProps) {
   if (!records || records.length === 0) {
     return (
       <div className="px-6 py-4 border-b border-gray-200">
@@ -27,22 +29,15 @@ export default function PersonListSection({ records, onPersonTrace }: PersonList
   return (
       <div className="px-3 sm:px-4 lg:px-6 py-2 border-b border-gray-100">
         <div className="flex items-center justify-between mb-1.5">
-          <h4 className="text-sm font-semibold text-gray-800">Person List</h4>
-          <div className="text-xs text-gray-400">
+          <h4 className="text-sm font-semibold text-gray-900">Person List</h4>
+          <div className="text-xs text-gray-500">
             {records.length} record{records.length !== 1 ? 's' : ''}
           </div>
         </div>
 
         <div className="space-y-1.5">
         {records.map((person, index) => (
-          <div key={`person-${index}`} className="flex items-center space-x-2">
-            <div className="flex-1">
-              <EntityCard entity={person} onPersonTrace={onPersonTrace} />
-            </div>
-            <div className="text-xs text-gray-400 font-mono bg-gray-50 px-2 py-1 rounded">
-              {person.mnEntityId}
-            </div>
-          </div>
+          <EntityCard key={`person-${index}`} entity={person} onPersonTrace={onPersonTrace} onEntityClick={onEntityClick} />
         ))}
       </div>
     </div>

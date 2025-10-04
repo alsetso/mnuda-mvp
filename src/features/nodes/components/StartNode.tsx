@@ -145,7 +145,7 @@ export default function StartNode({ onAddressSearch, isSearching = false, hasCom
   }, []);
 
   return (
-    <div className="bg-white">
+    <div className="bg-transparent">
       {/* Header */}
       <div className="px-3 sm:px-4 lg:px-6 py-2 border-b border-gray-100">
         <div className="flex items-center justify-between">

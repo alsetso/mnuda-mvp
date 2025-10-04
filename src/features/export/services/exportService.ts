@@ -6,6 +6,8 @@ import { jsonExporter } from '../exporters/jsonExporter';
 import { xlsxExporter } from '../exporters/xlsxExporter';
 import { pdfExporter } from '../exporters/pdfExporter';
 import type { ExportOptions, ExportData, ExportResult, ExportFormat } from '../types/exportTypes';
+import type { PdfColumnConfig } from '../types/columnConfig';
+import { DEFAULT_COLUMN_CONFIG } from '../types/columnConfig';
 
 interface StructuredEntity {
   mnEntityId: string;
@@ -23,9 +25,34 @@ interface StructuredEntity {
 
 export class ExportService {
   /**
+   * Get prepared export data for preview purposes
+   */
+  getExportData(options?: Partial<ExportOptions>): ExportData | null {
+    try {
+      const currentSession = sessionStorageService.getCurrentSession();
+      if (!currentSession) {
+        return null;
+      }
+
+      const exportOptions: ExportOptions = {
+        format: 'pdf', // Default format for preview
+        includeRawData: false,
+        includeMetadata: true,
+        groupByNode: true,
+        ...options
+      };
+
+      return this.prepareExportData(currentSession, exportOptions);
+    } catch (error) {
+      console.error('Failed to get export data:', error);
+      return null;
+    }
+  }
+
+  /**
    * Export current session data in the specified format
    */
-  async exportSession(options: ExportOptions): Promise<ExportResult> {
+  async exportSession(options: ExportOptions, columnConfig?: PdfColumnConfig): Promise<ExportResult> {
     try {
       // Get current session data
       const currentSession = sessionStorageService.getCurrentSession();
@@ -56,7 +83,7 @@ export class ExportService {
           result = await xlsxExporter.export(exportData, options);
           break;
         case 'pdf':
-          result = await pdfExporter.export(exportData);
+          result = await pdfExporter.export(exportData, columnConfig || DEFAULT_COLUMN_CONFIG);
           break;
         default:
           throw new Error(`Unsupported export format: ${options.format}`);

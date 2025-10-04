@@ -3,6 +3,7 @@
 import React, { createContext, useContext, ReactNode, useEffect, useState, useCallback } from 'react';
 import { useApiUsage } from '../hooks/useApiUsage';
 import { setApiUsageUpdateCallback } from '../../api/services/apiService';
+import { ApiType } from '../services/apiUsageService';
 
 interface ApiUsageContextType {
   apiUsage: ReturnType<typeof useApiUsage>['apiUsage'];
@@ -10,7 +11,8 @@ interface ApiUsageContextType {
   isConsuming: boolean;
   refreshApiUsage: () => void;
   canMakeRequest: () => boolean;
-  recordApiRequest: () => boolean;
+  canMakeApiRequest: (apiType: ApiType) => boolean;
+  recordApiRequest: (apiType?: ApiType) => boolean;
   // Modal functionality
   isCreditsModalOpen: boolean;
   showCreditsModal: () => void;
