@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ProfileService } from '@/features/auth';
 import { Profile } from '@/types/supabase';
 
@@ -29,7 +29,7 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
   const [success, setSuccess] = useState('');
 
   // Load customer data when profile has stripe_customer_id
-  const loadCustomerData = async () => {
+  const loadCustomerData = useCallback(async () => {
     if (profile.stripe_customer_id) {
       setCustomerLoading(true);
       setError('');
@@ -46,7 +46,7 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
         } else {
           setError('Failed to load customer data');
         }
-      } catch (_err) {
+      } catch {
         setError('Failed to load customer data');
       } finally {
         setCustomerLoading(false);
@@ -54,11 +54,11 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
     } else {
       setCustomer(null);
     }
-  };
+  }, [profile.stripe_customer_id]);
 
   useEffect(() => {
     loadCustomerData();
-  }, [profile.stripe_customer_id]);
+  }, [profile.stripe_customer_id, loadCustomerData]);
 
   // Auto-clear success messages after 5 seconds
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
       } else {
         throw new Error('Failed to create customer');
       }
-    } catch (_err) {
+    } catch {
       setError('Failed to set up billing. Please try again.');
     } finally {
       setIsLoading(false);
@@ -124,7 +124,7 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
       } else {
         throw new Error('Failed to open billing portal');
       }
-    } catch (_err) {
+    } catch {
       setError('Failed to open billing portal. Please try again.');
     } finally {
       setIsLoading(false);
@@ -152,7 +152,7 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
       } else {
         throw new Error('Failed to create checkout session');
       }
-    } catch (_err) {
+    } catch {
       setError('Failed to start subscription. Please try again.');
     } finally {
       setIsLoading(false);

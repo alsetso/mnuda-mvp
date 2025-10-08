@@ -82,7 +82,7 @@ export class EntityActionFramework {
         label: 'Zillow',
         icon: '',
         variant: 'primary',
-        onClick: () => this.handleZillowSearch(entity, config),
+        onClick: () => this.handleZillowSearch(entity),
         disabled: isCreditsExhausted,
         tooltip: isCreditsExhausted ? 'Credits exhausted' : 'Get detailed property information'
       });
@@ -92,7 +92,7 @@ export class EntityActionFramework {
         label: 'Owner',
         icon: '',
         variant: 'secondary',
-        onClick: () => this.handleFindOwner(entity, config),
+        onClick: () => this.handleFindOwner(entity),
         disabled: isCreditsExhausted,
         tooltip: isCreditsExhausted ? 'Credits exhausted' : 'Search for property owner information'
       });
@@ -104,7 +104,7 @@ export class EntityActionFramework {
         label: 'Reverse',
         icon: '',
         variant: 'primary',
-        onClick: () => this.handleReverseLookup(entity, config),
+        onClick: () => this.handleReverseLookup(entity),
         disabled: isCreditsExhausted,
         tooltip: isCreditsExhausted ? 'Credits exhausted' : 'Perform reverse phone number lookup'
       });
@@ -116,7 +116,7 @@ export class EntityActionFramework {
         label: 'Verify',
         icon: '',
         variant: 'primary',
-        onClick: () => this.handleEmailVerify(entity, config),
+        onClick: () => this.handleEmailVerify(entity),
         disabled: isCreditsExhausted,
         tooltip: isCreditsExhausted ? 'Credits exhausted' : 'Verify email address validity'
       });
@@ -210,28 +210,23 @@ export class EntityActionFramework {
     }
   }
   
-  private static handleViewOnMap(entity: PersonRecord | PersonDetailEntity) {
+  private static handleViewOnMap(_entity: PersonRecord | PersonDetailEntity) {
     // TODO: Implement map view functionality
-    console.log('View on map:', entity);
   }
   
-  private static handleZillowSearch(entity: PersonRecord | PersonDetailEntity, _config: ActionFrameworkConfig) {
+  private static handleZillowSearch(_entity: PersonRecord | PersonDetailEntity) {
     // TODO: Implement Zillow search functionality
-    console.log('Zillow search:', entity);
   }
   
-  private static handleFindOwner(entity: PersonRecord | PersonDetailEntity, _config: ActionFrameworkConfig) {
+  private static handleFindOwner(_entity: PersonRecord | PersonDetailEntity) {
     // TODO: Implement owner search functionality
-    console.log('Find owner:', entity);
   }
   
-  private static handleReverseLookup(entity: PersonRecord | PersonDetailEntity, _config: ActionFrameworkConfig) {
+  private static handleReverseLookup(_entity: PersonRecord | PersonDetailEntity) {
     // TODO: Implement reverse lookup functionality
-    console.log('Reverse lookup:', entity);
   }
   
-  private static handleEmailVerify(entity: PersonRecord | PersonDetailEntity, _config: ActionFrameworkConfig) {
+  private static handleEmailVerify(_entity: PersonRecord | PersonDetailEntity) {
     // TODO: Implement email verification functionality
-    console.log('Email verify:', entity);
   }
 }

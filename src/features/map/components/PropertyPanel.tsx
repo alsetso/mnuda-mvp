@@ -114,7 +114,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             </div>
             
             <div className="space-y-2">
-              {property.people.slice(0, isFull ? property.people.length : 3).map((person, _index) => (
+              {property.people.slice(0, isFull ? property.people.length : 3).map((person) => (
                 <div
                   key={person.id}
                   onClick={() => handlePersonClick(person)}

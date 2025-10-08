@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { NodeData } from '../services/sessionStorage';
 import { NodeStack } from '@/features/nodes';
 import { PersonRecord } from '@/features/api/services/peopleParse';
@@ -94,9 +94,8 @@ export default function SessionResultsPanel({
   };
 
   // Handle rerun search
-  const handleRerunSearch = (node: NodeData) => {
+  const handleRerunSearch = (_node: NodeData) => {
     // TODO: Implement rerun search functionality
-    console.log('Rerun search for node:', node);
   };
 
 
@@ -248,30 +247,6 @@ export default function SessionResultsPanel({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [currentView, handleBackToList]);
 
-  // Handle person trace from entity detail view
-  const _handleEntityPersonTrace = async () => {
-    if (!selectedEntity || !onPersonTrace) return;
-    
-    const personRecord = selectedEntity as PersonRecord;
-    if (!personRecord.apiPersonId) return;
-
-    try {
-      // Call the person trace handler
-      await onPersonTrace(
-        personRecord.apiPersonId,
-        personRecord,
-        'Skip Trace',
-        undefined, // parentNodeId
-        personRecord.mnEntityId,
-        personRecord
-      );
-      
-      // Go back to list view to show the new node
-      handleBackToList();
-    } catch (error) {
-      console.error('Person trace error:', error);
-    }
-  };
 
   // Render list view
   const renderListView = () => (

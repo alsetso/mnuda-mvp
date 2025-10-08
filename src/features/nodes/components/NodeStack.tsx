@@ -371,10 +371,10 @@ export default function NodeStack({
       {(() => {
         // Separate search history nodes from other nodes
         const searchHistoryNodes = validDisplayNodes.filter(node => 
-          node.type === 'start' && node.apiName === 'Search History'
+          node.type === 'start' && (node as Record<string, unknown>).apiName === 'Search History'
         );
         const otherNodes = validDisplayNodes.filter(node => 
-          !(node.type === 'start' && node.apiName === 'Search History')
+          !(node.type === 'start' && (node as Record<string, unknown>).apiName === 'Search History')
         );
         
         // Search history nodes stay at top, other nodes are reversed

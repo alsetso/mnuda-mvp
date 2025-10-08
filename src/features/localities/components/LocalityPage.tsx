@@ -4,7 +4,7 @@
  */
 
 import { Suspense } from 'react';
-import { LocalityDetail, City } from '../services/localityService';
+import { LocalityDetail } from '../services/localityService';
 import { PropertySearchLayout } from '@/components/for-sale';
 import CompactCitiesList from './CompactCitiesList';
 import SmartAddressSearch from './SmartAddressSearch';
@@ -39,24 +39,6 @@ interface LocalityPageProps {
   fallbackMessage?: string;
 }
 
-function generateTitle(locality: LocalityDetail, status: string): string {
-  const action = status === 'for-sale' ? 'For Sale' : 'For Rent';
-  
-  if (locality.type === 'city' && locality.city) {
-    return locality.city.seo?.seo_title || 
-      `${locality.city.name}, MN Homes ${action} | Mnuda`;
-  }
-  
-  if (locality.type === 'county' && locality.county) {
-    return `${locality.county.name} County, MN Real Estate ${action} | Mnuda`;
-  }
-  
-  if (locality.type === 'zip' && locality.zip) {
-    return `${locality.zip.zip_code} ZIP Code Real Estate ${action} | Mnuda`;
-  }
-  
-  return `Minnesota Real Estate ${action}`;
-}
 
 function generateDescription(locality: LocalityDetail, status: string): string {
   const action = status === 'for-sale' ? 'for sale' : 'for rent';
@@ -96,23 +78,6 @@ function generateH1(locality: LocalityDetail, status: string): string {
   return `Minnesota Real Estate ${action}`;
 }
 
-function generateCanonicalUrl(locality: LocalityDetail, status: string): string {
-  const base = 'https://mnuda.com';
-  
-  if (locality.type === 'city' && locality.city) {
-    return `${base}/mn/${locality.city.slug}?status=${status}`;
-  }
-  
-  if (locality.type === 'county' && locality.county) {
-    return `${base}/mn/county/${locality.county.slug}?status=${status}`;
-  }
-  
-  if (locality.type === 'zip' && locality.zip) {
-    return `${base}/mn/zip/${locality.zip.zip_code}?status=${status}`;
-  }
-  
-  return `${base}/mn?status=${status}`;
-}
 
 function generateBreadcrumbSchema(locality: LocalityDetail, status: string) {
   const base = 'https://mnuda.com';
@@ -202,10 +167,8 @@ function generateFAQSchema(faq: Array<{ question: string; answer: string }>) {
 
 export default function LocalityPage({ locality, status, searchCity, fallbackMessage }: LocalityPageProps) {
   const vertical = status;
-  const _title = generateTitle(locality, status);
   const description = generateDescription(locality, status);
   const h1 = generateH1(locality, status);
-  const _canonicalUrl = generateCanonicalUrl(locality, status);
   const breadcrumbSchema = generateBreadcrumbSchema(locality, status);
 
   // Generate FAQ schema if available
@@ -305,7 +268,10 @@ export default function LocalityPage({ locality, status, searchCity, fallbackMes
       {/* County Cities List */}
       {(locality.type === 'county' && locality.county?.cities && locality.county.cities.length > 0) && (
         <CompactCitiesList
-          cities={locality.county.cities as any}
+          cities={locality.county.cities.map(city => ({
+            ...city,
+            population: city.population ?? undefined
+          }))}
           title={`Cities in ${locality.county.name} County`}
           vertical={vertical}
           maxVisible={12}
@@ -323,7 +289,10 @@ export default function LocalityPage({ locality, status, searchCity, fallbackMes
       {/* ZIP Cities List */}
       {(locality.type === 'zip' && locality.zip?.cities && locality.zip.cities.length > 0) && (
         <CompactCitiesList
-          cities={locality.zip.cities}
+          cities={locality.zip.cities.map(city => ({
+            ...city,
+            population: city.population ?? undefined
+          }))}
           title={`Cities in ZIP ${locality.zip.zip_code}`}
           vertical={vertical}
           maxVisible={8}

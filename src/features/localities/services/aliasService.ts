@@ -22,8 +22,8 @@ export async function resolveAlias(slug: string): Promise<string | null> {
     .limit(1)
     .single();
 
-  if (data && data.slug !== slug) {
-    return data.slug;
+  if (data && (data as Record<string, unknown>).slug !== slug) {
+    return (data as Record<string, unknown>).slug as string;
   }
 
   return null;

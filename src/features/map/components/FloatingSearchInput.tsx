@@ -97,8 +97,8 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, currentSession:
       });
 
       // Final safety check - ensure no non-Minnesota results slip through
-      const finalSuggestions = filteredSuggestions.filter(suggestion => {
-        const coordinates = { lat: suggestion.center[1], lng: suggestion.center[0] };
+      const finalSuggestions = filteredSuggestions.filter((suggestion: Record<string, unknown>) => {
+        const coordinates = { lat: (suggestion.center as number[])[1], lng: (suggestion.center as number[])[0] };
         return minnesotaBoundsService.isWithinMinnesota(coordinates);
       });
 

@@ -63,23 +63,7 @@ export interface LocalityDetail {
 }
 
 // Tag helpers
-function cityTag(slug: string) {
-  return `mn-city-${slug}`;
-}
 
-function countyTag(slug: string) {
-  return `mn-county-${slug}`;
-}
-
-function zipTag(zip: string) {
-  return `mn-zip-${zip}`;
-}
-
-function _indexTag(type: 'cities' | 'counties' | 'zips', vertical?: string) {
-  return vertical
-    ? `mn-${type}-index-${vertical}`
-    : `mn-${type}-index`;
-}
 
 /**
  * Get city by slug with optional SEO data
@@ -111,9 +95,9 @@ export const getCityBySlug = unstable_cache(
     if (error || !city) return null;
 
     const result: City & { seo?: CitySeo } = {
-      ...city,
-      county_name: (city.counties as { name: string; slug: string })?.name,
-      county_slug: (city.counties as { name: string; slug: string })?.slug,
+      ...(city as City),
+      county_name: ((city as Record<string, unknown>).counties as { name: string; slug: string })?.name,
+      county_slug: ((city as Record<string, unknown>).counties as { name: string; slug: string })?.slug,
     };
 
     if (includeSeo) {
@@ -124,16 +108,17 @@ export const getCityBySlug = unstable_cache(
         .single();
 
       if (seo) {
+        const seoData = seo as Record<string, unknown>;
         result.seo = {
-          city_slug: seo.city_slug,
-          seo_title: seo.seo_title,
-          seo_description: seo.seo_description,
-          hero_h1: seo.hero_h1,
-          intro_md: seo.intro_md,
-          faq: seo.faq || [],
-          market_stats: seo.market_stats || {},
-          nearby_city_slugs: seo.nearby_city_slugs || [],
-          is_indexable: seo.is_indexable,
+          city_slug: seoData.city_slug as string,
+          seo_title: seoData.seo_title as string,
+          seo_description: seoData.seo_description as string,
+          hero_h1: seoData.hero_h1 as string,
+          intro_md: seoData.intro_md as string,
+          faq: (seoData.faq as Array<{ question: string; answer: string }>) || [],
+          market_stats: (seoData.market_stats as Record<string, unknown>) || {},
+          nearby_city_slugs: (seoData.nearby_city_slugs as string[]) || [],
+          is_indexable: seoData.is_indexable as boolean,
         };
       }
     }
@@ -142,7 +127,7 @@ export const getCityBySlug = unstable_cache(
   },
   ['city-detail'],
   {
-    tags: (slug: string) => [cityTag(slug)],
+    tags: ['city-detail'],
     revalidate: 3600,
   }
 );
@@ -184,7 +169,7 @@ export const getCountyBySlug = unstable_cache(
           status,
           priority
         `)
-        .eq('county_id', county.id)
+        .eq('county_id', (county as Record<string, unknown>).id as string)
         .eq('status', 'active')
         .order('priority', { ascending: false })
         .order('name');
@@ -193,14 +178,14 @@ export const getCountyBySlug = unstable_cache(
     }
 
     return {
-      ...county,
+      ...(county as Record<string, unknown>),
       city_count: cities.length,
       cities,
-    };
+    } as County & { city_count: number; cities: City[] };
   },
   ['county-detail'],
   {
-    tags: (slug: string) => [countyTag(slug)],
+    tags: ['county-detail'],
     revalidate: 3600,
   }
 );
@@ -243,7 +228,7 @@ export const getZipByCode = unstable_cache(
             priority
           )
         `)
-        .eq('zip_id', zipData.id);
+        .eq('zip_id', (zipData as Record<string, unknown>).id as string);
 
       if (citiesData) {
         cities = citiesData
@@ -257,14 +242,14 @@ export const getZipByCode = unstable_cache(
     }
 
     return {
-      ...zipData,
+      ...(zipData as Record<string, unknown>),
       city_count: cities.length,
       cities,
-    };
+    } as Zip & { city_count: number; cities: City[] };
   },
   ['zip-detail'],
   {
-    tags: (zip: string) => [zipTag(zip)],
+    tags: ['zip-detail'],
     revalidate: 3600,
   }
 );
@@ -287,7 +272,6 @@ export const listCities = unstable_cache(
       offset = 0,
       search,
       letter,
-      includeSeo: _includeSeo = false,
     } = params;
 
     const supabase = createServerClient();
@@ -329,12 +313,12 @@ export const listCities = unstable_cache(
     }
 
     const cities = data.map(city => ({
-      ...city,
-      county_name: (city.counties as { name: string; slug: string })?.name,
-      county_slug: (city.counties as { name: string; slug: string })?.slug,
+      ...(city as Record<string, unknown>),
+      county_name: ((city as Record<string, unknown>).counties as { name: string; slug: string })?.name,
+      county_slug: ((city as Record<string, unknown>).counties as { name: string; slug: string })?.slug,
     }));
 
-    return { cities, total: count || 0 };
+    return { cities: cities as City[], total: count || 0 };
   },
   ['cities-list'],
   {
@@ -386,17 +370,17 @@ export const listCounties = unstable_cache(
         const { count: cityCount } = await supabase
           .from('cities')
           .select('id', { count: 'exact', head: true })
-          .eq('county_id', county.id)
+          .eq('county_id', (county as Record<string, unknown>).id as string)
           .eq('status', 'active');
         
         return {
-          ...county,
+          ...(county as Record<string, unknown>),
           city_count: cityCount || 0,
         };
       })
     );
 
-    return { counties: countiesWithCounts, total: count || 0 };
+    return { counties: countiesWithCounts as County[], total: count || 0 };
   },
   ['counties-list'],
   {
@@ -447,16 +431,16 @@ export const listZips = unstable_cache(
         const { count: cityCount } = await supabase
           .from('city_zips')
           .select('id', { count: 'exact', head: true })
-          .eq('zip_id', zip.id);
+          .eq('zip_id', (zip as Record<string, unknown>).id as string);
         
         return {
-          ...zip,
+          ...(zip as Record<string, unknown>),
           city_count: cityCount || 0,
         };
       })
     );
 
-    return { zips: zipsWithCounts, total: count || 0 };
+    return { zips: zipsWithCounts as Zip[], total: count || 0 };
   },
   ['zips-list'],
   {
@@ -539,7 +523,7 @@ export async function getLargestCityInCounty(countyId: number): Promise<string |
       return null;
     }
 
-    return data?.name || null;
+    return (data as Record<string, unknown>)?.name as string || null;
   } catch (error) {
     console.error('Error fetching largest city in county:', error);
     return null;
@@ -574,7 +558,7 @@ export async function getPrimaryCityForZip(zipCode: string): Promise<string | nu
           population
         )
       `)
-      .eq('zip_id', zipData.id)
+      .eq('zip_id', (zipData as Record<string, unknown>).id as string)
       .order('cities(population)', { ascending: false })
       .limit(1)
       .single();
@@ -584,7 +568,7 @@ export async function getPrimaryCityForZip(zipCode: string): Promise<string | nu
       return null;
     }
 
-    return (cityData.cities as { name: string; population: number })?.name || null;
+    return ((cityData as Record<string, unknown>).cities as { name: string; population: number })?.name || null;
   } catch (error) {
     console.error('Error fetching primary city for ZIP:', error);
     return null;

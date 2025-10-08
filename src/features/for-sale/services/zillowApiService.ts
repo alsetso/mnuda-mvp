@@ -370,26 +370,19 @@ export class ZillowApiService {
    */
   private static validateImageUrl(url: string): string | undefined {
     if (!url || typeof url !== 'string') {
-      console.log('Rejecting: not a string or empty:', url);
       return undefined;
     }
     
     const trimmedUrl = url.trim();
     if (!trimmedUrl) {
-      console.log('Rejecting: empty after trim:', url);
       return undefined;
     }
-    
-    // TEMPORARILY DISABLE ALL VALIDATION TO DEBUG
-    console.log('ACCEPTING ALL URLS FOR DEBUGGING:', trimmedUrl);
-    return trimmedUrl;
     
     // Only reject specific Google Maps URLs that are clearly not images
     if (trimmedUrl.includes('maps.googleapis.com/maps/api/streetview') ||
         trimmedUrl.includes('maps.googleapis.com/maps/api/staticmap') ||
         trimmedUrl.includes('google.com/maps/embed') ||
         trimmedUrl.includes('google.com/maps/place')) {
-      console.log('Rejecting Google Maps URL:', trimmedUrl);
       return undefined;
     }
     

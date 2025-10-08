@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { pdfPreviewService } from '../services/pdfPreviewService';
 import type { ExportData } from '../types/exportTypes';
 import type { PdfColumnConfig } from '../types/columnConfig';
@@ -38,9 +38,10 @@ export default function PdfPreviewModal({ isOpen, onClose, exportData, onExport 
         URL.revokeObjectURL(previewUrl);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, exportData]);
 
-  const generatePreview = async () => {
+  const generatePreview = useCallback(async () => {
     if (!exportData) return;
 
     setIsGenerating(true);
@@ -54,7 +55,7 @@ export default function PdfPreviewModal({ isOpen, onClose, exportData, onExport 
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [exportData, columnConfig]);
 
   const handleExport = () => {
     onExport(columnConfig);

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-// import { useToast } from '@/features/ui/hooks/useToast'; // TODO: Implement toast notifications
 
 interface UserFoundNodeProps {
   onLocationFound: (coords: { lat: number; lng: number }, address?: { street: string; city: string; state: string; zip: string; coordinates?: { latitude: number; longitude: number } }) => void;
@@ -44,7 +43,6 @@ export default function UserFoundNode({
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationFound, setLocationFound] = useState(false);
   const [, setForceUpdate] = useState(0);
-  // const { withApiToast } = useToast(); // TODO: Implement toast notifications
 
   // Simple retry utility
   const withRetry = async (fn: () => Promise<unknown>, retries = 2) => {

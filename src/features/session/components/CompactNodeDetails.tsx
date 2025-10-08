@@ -77,7 +77,6 @@ export default function CompactNodeDetails({ node }: CompactNodeDetailsProps) {
     id, 
     title, 
     children, 
-    defaultExpanded: _defaultExpanded = false 
   }: { 
     id: string; 
     title: string; 
@@ -156,7 +155,7 @@ export default function CompactNodeDetails({ node }: CompactNodeDetailsProps) {
                   );
                 }
                 return <div className="text-sm text-gray-500">No structured person data available</div>;
-              } catch (_error) {
+              } catch {
                 return <div className="text-sm text-red-500">Error parsing person data</div>;
               }
             })()}

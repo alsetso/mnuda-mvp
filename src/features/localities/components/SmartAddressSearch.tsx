@@ -33,10 +33,10 @@ function transformZillowResponse(data: Record<string, unknown>) {
   
   return {
     zpid: safeString(data.zpid),
-    address: safeString(addressObj.streetAddress || data.streetAddress),
-    city: safeString(addressObj.city || data.city),
-    state: safeString(addressObj.state || data.state),
-    zipcode: safeString(addressObj.zipcode || data.zipcode),
+    address: safeString((addressObj as Record<string, unknown>).streetAddress as string || data.streetAddress),
+    city: safeString((addressObj as Record<string, unknown>).city as string || data.city),
+    state: safeString((addressObj as Record<string, unknown>).state as string || data.state),
+    zipcode: safeString((addressObj as Record<string, unknown>).zipcode as string || data.zipcode),
     price: safeNumber(data.price),
     bedrooms: safeNumber(data.bedrooms),
     bathrooms: safeNumber(data.bathrooms),
@@ -175,15 +175,11 @@ export default function SmartAddressSearch({
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Autocomplete response:', data);
         setSuggestions(data.suggestions || []);
         setShowSuggestions((data.suggestions || []).length > 0);
         setSelectedSuggestionIndex(-1);
-      } else {
-        console.error('Autocomplete API error:', response.status, response.statusText);
       }
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
+    } catch {
       setSuggestions([]);
       setShowSuggestions(false);
     } finally {
@@ -247,12 +243,9 @@ export default function SmartAddressSearch({
 
       const data = await response.json();
       
-      console.log('Address search response:', data);
-      
       if (data && (data.zpid || data.address)) {
         // Transform the Zillow API response to match PropertyModal expectations
         const transformedData = transformZillowResponse(data);
-        console.log('Transformed data:', transformedData);
         setSearchResults(transformedData);
         setShowPropertyModal(true);
         setIsExpanded(false);
@@ -260,8 +253,7 @@ export default function SmartAddressSearch({
       } else {
         setError('No property found for this address');
       }
-    } catch (err) {
-      console.error('Address search error:', err);
+    } catch {
       setError('Failed to search address. Please try again.');
     } finally {
       setIsLoading(false);
@@ -419,7 +411,7 @@ export default function SmartAddressSearch({
                   )}
                 </div>
                 <button
-                  onClick={handleSearch}
+                  onClick={() => handleSearch()}
                   disabled={isLoading || !searchQuery.trim()}
                   className="px-6 py-3 bg-[#014463] text-white rounded-lg font-medium hover:bg-[#0a5a7a] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
@@ -500,7 +492,7 @@ export default function SmartAddressSearch({
       {showPropertyModal && searchResults && (
         <PropertyModal
           zpid={searchResults.zpid}
-          propertyData={searchResults}
+          propertyData={searchResults as unknown as Record<string, unknown>}
           isOpen={showPropertyModal}
           onClose={() => {
             setShowPropertyModal(false);

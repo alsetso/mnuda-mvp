@@ -137,7 +137,6 @@ export function useWeather(options: UseWeatherOptions = {}) {
       
       // Retry reverse geocoding after a short delay
       const retryTimer = setTimeout(() => {
-        console.log(`Retrying reverse geocoding for better location data... (attempt ${retryCount.current}/3)`);
         fetchWeather();
       }, 2000);
       

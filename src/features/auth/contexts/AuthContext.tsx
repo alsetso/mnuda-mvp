@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useEmailNotifications } from '@/features/email/hooks/useEmailNotifications';
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const welcomeEmailSent = useRef<Set<string>>(new Set());
 
   // Handle welcome email without causing re-renders
-  const handleWelcomeEmail = async (user: User) => {
+  const handleWelcomeEmail = useCallback(async (user: User) => {
     // Prevent sending multiple welcome emails to the same user
     if (user.email_confirmed_at && !welcomeEmailSent.current.has(user.id)) {
       welcomeEmailSent.current.add(user.id);
@@ -44,7 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         welcomeEmailSent.current.delete(user.id);
       }
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Remove emailNotifications dependency to prevent infinite loop
 
   useEffect(() => {
     // Get initial session
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array to prevent infinite re-renders
 
   const signIn = async (email: string, password: string) => {

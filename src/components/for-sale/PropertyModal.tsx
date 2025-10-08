@@ -110,7 +110,6 @@ export function PropertyModal({ zpid, propertyData, isOpen, onClose }: PropertyM
       // Add exponential backoff delay for retries
       if (retryCount > 0) {
         const delay = baseDelay * Math.pow(2, retryCount - 1);
-        console.log(`Retrying photos API call for ZPID ${zpid}, attempt ${retryCount + 1}, waiting ${delay}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
       
@@ -130,21 +129,12 @@ export function PropertyModal({ zpid, propertyData, isOpen, onClose }: PropertyM
           }
           return prevProperty;
         });
-        console.log(`Successfully loaded ${additionalPhotos.length} additional photos for ZPID:`, zpid);
-      } else {
-        console.log('No additional photos found for ZPID:', zpid);
       }
-    } catch (err) {
-      console.error(`Error loading additional photos for ZPID ${zpid}, attempt ${retryCount + 1}:`, err);
-      
+    } catch {
       // Retry logic with exponential backoff
       if (retryCount < maxRetries) {
-        console.log(`Retrying photos API call for ZPID ${zpid}, attempt ${retryCount + 2}`);
         setPhotosRetryCount(retryCount + 1);
         return loadAdditionalPhotos(zpid, retryCount + 1);
-      } else {
-        console.error(`Failed to load photos after ${maxRetries + 1} attempts for ZPID:`, zpid);
-        // Don't show error to user for photos, just log it
       }
     } finally {
       setLoadingPhotos(false);

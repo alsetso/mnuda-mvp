@@ -8,6 +8,7 @@ import { ApiUsageProvider } from '@/features/session/contexts/ApiUsageContext'
 import CreditsModalWrapper from '@/features/session/components/CreditsModalWrapper'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://mnuda.com'),
   title: 'Minnesota Skip Trace Tool - Free People & Property Search | MNUDA',
   description: 'Free Minnesota skip tracing tool to find people, properties, and data instantly. No sign-up required. Professional skip tracing capabilities for everyone. Search Minneapolis, Saint Paul, Rochester, Duluth and all Minnesota cities.',
   keywords: 'Minnesota skip trace, find people Minnesota, property search Minnesota, skip tracing free, Minnesota people search, property records Minnesota, address lookup Minnesota, phone number search Minnesota',

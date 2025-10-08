@@ -6,7 +6,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchZillowListings, type ZillowSearchParams } from '@/lib/zillow';
 
-export const runtime = 'edge'; // Optional: deploy to edge for lower latency
 export const revalidate = 3600; // Cache responses for 1 hour
 
 export async function GET(request: NextRequest) {

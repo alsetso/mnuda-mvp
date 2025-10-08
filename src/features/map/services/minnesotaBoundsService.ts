@@ -39,7 +39,7 @@ export class MinnesotaBoundsService {
   /**
    * Get a user-friendly error message for out-of-bounds clicks
    */
-  static getOutOfBoundsMessage(_coordinates: Coordinates): string {
+  static getOutOfBoundsMessage(): string {
     return 'This location is not in Minnesota. Please click within Minnesota state boundaries to perform skip tracing operations.';
   }
 
