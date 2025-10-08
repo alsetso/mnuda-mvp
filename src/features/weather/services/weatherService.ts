@@ -1,4 +1,4 @@
-import { WeatherData, WeatherLocation, WeatherError } from '../types';
+import { WeatherData, WeatherLocation } from '../types';
 import { MAP_CONFIG } from '../../map/config';
 
 const OPEN_METEO_BASE_URL = 'https://api.open-meteo.com/v1';

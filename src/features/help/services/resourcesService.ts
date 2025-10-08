@@ -210,7 +210,7 @@ export class ResourcesService {
         return [];
       }
 
-      const categories = [...new Set(data?.map(item => item.category) || [])];
+      const categories = [...new Set((data as Array<{ category: string }>)?.map(item => item.category) || [])];
       return categories.sort();
     } catch (error) {
       console.error('Unexpected error fetching categories:', error);
@@ -233,7 +233,7 @@ export class ResourcesService {
         return [];
       }
 
-      const allTags = data?.flatMap(item => item.tags || []) || [];
+      const allTags = (data as Array<{ tags: string[] }>)?.flatMap(item => item.tags || []) || [];
       const uniqueTags = [...new Set(allTags)];
       return uniqueTags.sort();
     } catch (error) {
@@ -248,7 +248,7 @@ export class ResourcesService {
   static async incrementViewCount(slug: string): Promise<number> {
     try {
       const { data, error } = await supabase
-        .rpc('increment_resource_view_count', { resource_slug: slug });
+        .rpc('increment_resource_view_count', { resource_slug: slug } as any);
 
       if (error) {
         console.error('Error incrementing view count:', error);

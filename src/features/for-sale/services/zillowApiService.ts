@@ -617,9 +617,10 @@ export class ZillowApiService {
 
     // Handle the actual Zillow API response structure with mixedSources
     if (photo.mixedSources) {
+      const mixedSources = photo.mixedSources as Record<string, unknown>;
       // Prefer JPEG over WebP for better compatibility
-      const jpegSources = photo.mixedSources.jpeg || [];
-      const webpSources = photo.mixedSources.webp || [];
+      const jpegSources = (mixedSources.jpeg as Array<{ url: string; width?: number }>) || [];
+      const webpSources = (mixedSources.webp as Array<{ url: string; width?: number }>) || [];
       
       // Try to get the highest resolution JPEG first
       const sortedJpeg = jpegSources.sort((a: { width?: number }, b: { width?: number }) => (b.width || 0) - (a.width || 0));
@@ -632,7 +633,7 @@ export class ZillowApiService {
       }
       
       // If no JPEG found, try WebP
-      if (photoUrls.length === 0 || !photoUrls.some(url => url.includes(photo.mixedSources.jpeg?.[0]?.url || ''))) {
+      if (photoUrls.length === 0 || !photoUrls.some(url => url.includes(jpegSources[0]?.url || ''))) {
         const sortedWebp = webpSources.sort((a: { width?: number }, b: { width?: number }) => (b.width || 0) - (a.width || 0));
         for (const source of sortedWebp) {
           const validatedUrl = this.validateImageUrl(source.url);
@@ -646,10 +647,13 @@ export class ZillowApiService {
       // Fallback to simple URL fields for other response structures
       const urlFields = ['url', 'src', 'imageUrl', 'photoUrl', 'href'];
       for (const field of urlFields) {
-        const validatedUrl = this.validateImageUrl(photo[field]);
-        if (validatedUrl && !photoUrls.includes(validatedUrl)) {
-          photoUrls.push(validatedUrl);
-          break; // Use first valid URL from this photo object
+        const urlValue = photo[field];
+        if (typeof urlValue === 'string') {
+          const validatedUrl = this.validateImageUrl(urlValue);
+          if (validatedUrl && !photoUrls.includes(validatedUrl)) {
+            photoUrls.push(validatedUrl);
+            break; // Use first valid URL from this photo object
+          }
         }
       }
     }
@@ -661,50 +665,50 @@ export class ZillowApiService {
    */
   private static parseAddressResponse(apiResponse: Record<string, unknown>): Record<string, unknown> {
     // Normalize root vs nested structure
-    const property = apiResponse.property || apiResponse;
-    const meta = property.listingMetadata || {};
+    const property = (apiResponse.property || apiResponse) as Record<string, unknown>;
+    const meta = (property.listingMetadata as Record<string, unknown>) || {};
 
     // ------------------------------
     // 1️⃣ Basic Property Information
     // ------------------------------
-    const propertyData = {
-      zpid: property.zpid || null,
-      address: property.address?.streetAddress ||
-               property.abbreviatedAddress ||
-               property.displayAddress ||
+    const propertyData: Record<string, unknown> = {
+      zpid: (property.zpid as string) || null,
+      address: ((property.address as Record<string, unknown>)?.streetAddress as string) ||
+               (property.abbreviatedAddress as string) ||
+               (property.displayAddress as string) ||
                "",
-      city: property.address?.city || property.city || "",
-      state: property.address?.state || property.state || "",
-      zipcode: property.address?.zipcode || property.zipcode || "",
-      county: property.county || property.address?.county || null,
-      latitude: property.latitude || null,
-      longitude: property.longitude || null,
-      bedrooms: property.bedrooms || null,
-      bathrooms: property.bathrooms || null,
-      livingArea: property.livingAreaValue || property.livingArea || null,
-      livingAreaUnits: property.livingAreaUnitsShort ||
-                       property.livingAreaUnits ||
+      city: ((property.address as Record<string, unknown>)?.city as string) || (property.city as string) || "",
+      state: ((property.address as Record<string, unknown>)?.state as string) || (property.state as string) || "",
+      zipcode: ((property.address as Record<string, unknown>)?.zipcode as string) || (property.zipcode as string) || "",
+      county: (property.county as string) || ((property.address as Record<string, unknown>)?.county as string) || null,
+      latitude: (property.latitude as number) || null,
+      longitude: (property.longitude as number) || null,
+      bedrooms: (property.bedrooms as number) || null,
+      bathrooms: (property.bathrooms as number) || null,
+      livingArea: (property.livingAreaValue as number) || (property.livingArea as number) || null,
+      livingAreaUnits: (property.livingAreaUnitsShort as string) ||
+                       (property.livingAreaUnits as string) ||
                        "sqft",
-      lotSize: property.lotAreaValue || property.lotSize || null,
-      lotSizeUnits: property.lotAreaUnits || "sqft",
-      yearBuilt: property.yearBuilt || null,
-      homeType: property.homeType ||
-                property.propertyTypeDimension ||
-                property.listingTypeDimension ||
+      lotSize: (property.lotAreaValue as number) || (property.lotSize as number) || null,
+      lotSizeUnits: (property.lotAreaUnits as string) || "sqft",
+      yearBuilt: (property.yearBuilt as number) || null,
+      homeType: (property.homeType as string) ||
+                (property.propertyTypeDimension as string) ||
+                (property.listingTypeDimension as string) ||
                 null,
-      homeStatus: property.homeStatus ||
-                  property.keystoneHomeStatus ||
-                  property.homeStatusDimension ||
+      homeStatus: (property.homeStatus as string) ||
+                  (property.keystoneHomeStatus as string) ||
+                  (property.homeStatusDimension as string) ||
                   null,
-      price: property.price ||
-             property.listPriceLow ||
-             property.listPrice ||
-             property.lastSoldPrice ||
+      price: (property.price as number) ||
+             (property.listPriceLow as number) ||
+             (property.listPrice as number) ||
+             (property.lastSoldPrice as number) ||
              null,
-      currency: property.currency || "USD",
-      description: property.description || null,
-      url: property.hdpUrl
-        ? `https://www.zillow.com${property.hdpUrl}`
+      currency: (property.currency as string) || "USD",
+      description: (property.description as string) || null,
+      url: (property.hdpUrl as string)
+        ? `https://www.zillow.com${property.hdpUrl as string}`
         : null,
     };
 
@@ -712,11 +716,11 @@ export class ZillowApiService {
     // 2️⃣ Listing Type and Sub-Type
     // ---------------------------------
     propertyData.listingType =
-      property.listingTypeDimension ||
-      property.homeType ||
+      (property.listingTypeDimension as string) ||
+      (property.homeType as string) ||
       null;
 
-    propertyData.listingSubType = property.listing_sub_type || {
+    propertyData.listingSubType = (property.listing_sub_type as Record<string, unknown>) || {
       is_FSBA: false,
       is_FSBO: false,
       is_bankOwned: false,
@@ -729,29 +733,29 @@ export class ZillowApiService {
     // ------------------------------
     // 3️⃣ Attribution / Agent Info
     // ------------------------------
-    const att = property.attributionInfo || {};
+    const att = (property.attributionInfo as Record<string, unknown>) || {};
     propertyData.attributionInfo = {
-      agentName: att.agentName || null,
-      agentPhoneNumber: att.agentPhoneNumber || null,
-      agentEmail: att.agentEmail || null,
-      agentLicenseNumber: att.agentLicenseNumber || null,
-      brokerName: att.brokerName || null,
-      brokerPhoneNumber: att.brokerPhoneNumber || null,
-      buyerAgentName: att.buyerAgentName || null,
-      buyerBrokerageName: att.buyerBrokerageName || null,
-      coAgentName: att.coAgentName || null,
-      coAgentNumber: att.coAgentNumber || null,
-      lastChecked: att.lastChecked || null,
-      lastUpdated: att.lastUpdated || null,
-      mlsId: att.mlsId || null,
-      mlsName: att.mlsName || null,
-      mlsDisclaimer: att.mlsDisclaimer || "",
-      listingAgreement: att.listingAgreement || null,
-      listingAgents: att.listingAgents || [],
-      listingOffices: att.listingOffices || [],
-      providerLogo: att.providerLogo || null,
-      attributionTitle: att.attributionTitle || null,
-      trueStatus: att.trueStatus || null,
+      agentName: (att.agentName as string) || null,
+      agentPhoneNumber: (att.agentPhoneNumber as string) || null,
+      agentEmail: (att.agentEmail as string) || null,
+      agentLicenseNumber: (att.agentLicenseNumber as string) || null,
+      brokerName: (att.brokerName as string) || null,
+      brokerPhoneNumber: (att.brokerPhoneNumber as string) || null,
+      buyerAgentName: (att.buyerAgentName as string) || null,
+      buyerBrokerageName: (att.buyerBrokerageName as string) || null,
+      coAgentName: (att.coAgentName as string) || null,
+      coAgentNumber: (att.coAgentNumber as string) || null,
+      lastChecked: (att.lastChecked as string) || null,
+      lastUpdated: (att.lastUpdated as string) || null,
+      mlsId: (att.mlsId as string) || null,
+      mlsName: (att.mlsName as string) || null,
+      mlsDisclaimer: (att.mlsDisclaimer as string) || "",
+      listingAgreement: (att.listingAgreement as string) || null,
+      listingAgents: (att.listingAgents as unknown[]) || [],
+      listingOffices: (att.listingOffices as unknown[]) || [],
+      providerLogo: (att.providerLogo as string) || null,
+      attributionTitle: (att.attributionTitle as string) || null,
+      trueStatus: (att.trueStatus as string) || null,
     };
 
     // ---------------------------------
@@ -762,34 +766,35 @@ export class ZillowApiService {
     if (property.hiResImageLink) {
       images.push({
         type: "hero",
-        url: property.hiResImageLink,
+        url: property.hiResImageLink as string,
         caption: "Main Photo",
       });
     } else if (property.desktopWebHdpImageLink) {
       images.push({
         type: "hero",
-        url: property.desktopWebHdpImageLink,
+        url: property.desktopWebHdpImageLink as string,
         caption: "Main Photo",
       });
     }
 
     // Add gallery / thumbnails
-    (property.miniCardPhotos || property.photos || []).forEach((p: Record<string, unknown>, i: number) => {
-      if (p.url) {
+    ((property.miniCardPhotos as unknown[]) || (property.photos as unknown[]) || []).forEach((p: unknown, i: number) => {
+      const photo = p as Record<string, unknown>;
+      if (photo.url) {
         images.push({
           type: "gallery",
-          url: p.url,
-          caption: p.caption || `Photo ${i + 1}`,
+          url: photo.url as string,
+          caption: (photo.caption as string) || `Photo ${i + 1}`,
         });
       }
     });
 
     // Street View fallback
-    if (property.address?.streetAddress) {
+    if ((property.address as Record<string, unknown>)?.streetAddress) {
       images.push({
         type: "street_view",
         url: `https://maps.googleapis.com/maps/api/streetview?size=640x400&location=${encodeURIComponent(
-          property.address.streetAddress
+          ((property.address as Record<string, unknown>).streetAddress as string)
         )}`,
         caption: "Street View",
       });
@@ -800,28 +805,34 @@ export class ZillowApiService {
     // ---------------------------------
     // 5️⃣ Price & Tax History
     // ---------------------------------
-    propertyData.priceHistory = (property.priceHistory || []).map((ph: Record<string, unknown>) => ({
-      date: ph.date || ph.time || "",
-      event: ph.event || ph.priceChangeReason || "",
-      price: ph.price || ph.value || null,
-      source: ph.source || "Zillow",
-    }));
+    propertyData.priceHistory = ((property.priceHistory as unknown[]) || []).map((ph: unknown) => {
+      const priceHistory = ph as Record<string, unknown>;
+      return {
+        date: (priceHistory.date as string) || (priceHistory.time as string) || "",
+        event: (priceHistory.event as string) || (priceHistory.priceChangeReason as string) || "",
+        price: (priceHistory.price as number) || (priceHistory.value as number) || null,
+        source: (priceHistory.source as string) || "Zillow",
+      };
+    });
 
-    propertyData.taxHistory = (property.taxHistory || []).map((tx: Record<string, unknown>) => ({
-      year: tx.taxYear || null,
-      taxPaid: tx.taxPaid || null,
-      assessment: tx.assessedValue || null,
-    }));
+    propertyData.taxHistory = ((property.taxHistory as unknown[]) || []).map((tx: unknown) => {
+      const taxHistory = tx as Record<string, unknown>;
+      return {
+        year: (taxHistory.taxYear as number) || null,
+        taxPaid: (taxHistory.taxPaid as number) || null,
+        assessment: (taxHistory.assessedValue as number) || null,
+      };
+    });
 
     // ---------------------------------
     // 6️⃣ Metadata Flags
     // ---------------------------------
     propertyData.metadata = {
-      canShowPriceHistory: meta.canShowPriceHistory ?? true,
-      canShowTaxHistory: meta.canShowTaxHistory ?? true,
-      listingStatus: meta.listingStatus || property.statusType || null,
-      propertyStatus: property.homeStatus || null,
-      isZillowOwned: meta.isZillowOwned || false,
+      canShowPriceHistory: (meta.canShowPriceHistory as boolean) ?? true,
+      canShowTaxHistory: (meta.canShowTaxHistory as boolean) ?? true,
+      listingStatus: (meta.listingStatus as string) || (property.statusType as string) || null,
+      propertyStatus: (property.homeStatus as string) || null,
+      isZillowOwned: (meta.isZillowOwned as boolean) || false,
     };
 
     // ---------------------------------
