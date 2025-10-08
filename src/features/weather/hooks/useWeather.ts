@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { WeatherState, WeatherData, WeatherLocation } from '../types';
+import { WeatherState } from '../types';
 import { WeatherService } from '../services/weatherService';
 
 interface UseWeatherOptions {

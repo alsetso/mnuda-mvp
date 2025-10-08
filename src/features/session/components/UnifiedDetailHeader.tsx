@@ -1,7 +1,5 @@
 'use client';
 
-import { PersonRecord } from '@/features/api/services/peopleParse';
-import { PersonDetailEntity } from '@/features/api/services/personDetailParse';
 
 interface UnifiedDetailHeaderProps {
   title: string;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { AdminSiteMgmt, AdminSiteMgmtUpdate, AdminSiteMgmtInsert } from '@/types/supabase';
+import { AdminSiteMgmt, AdminSiteMgmtUpdate } from '@/types/supabase';
 
 /**
  * Service for managing site-wide admin configuration

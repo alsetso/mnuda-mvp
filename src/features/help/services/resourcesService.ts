@@ -247,8 +247,8 @@ export class ResourcesService {
    */
   static async incrementViewCount(slug: string): Promise<number> {
     try {
-      const { data, error } = await supabase
-        .rpc('increment_resource_view_count', { resource_slug: slug } as any);
+      const { data, error } = await (supabase as any)
+        .rpc('increment_resource_view_count', { resource_slug: slug });
 
       if (error) {
         console.error('Error incrementing view count:', error);

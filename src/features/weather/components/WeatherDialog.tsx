@@ -9,17 +9,6 @@ interface WeatherDialogProps {
   userLocation?: { latitude: number; longitude: number } | null;
 }
 
-// Weather code to icon mapping
-const getWeatherIcon = (code: number, isDay: number): string => {
-  if (code === 0) return isDay ? '☀️' : '🌙';
-  if (code <= 3) return isDay ? '⛅' : '☁️';
-  if (code === 45 || code === 48) return '🌫️';
-  if (code >= 51 && code <= 67) return '🌧️';
-  if (code >= 71 && code <= 77) return '❄️';
-  if (code >= 80 && code <= 86) return isDay ? '🌦️' : '🌧️';
-  if (code >= 95) return '⛈️';
-  return '🌤️';
-};
 
 // Convert temperature from Celsius to Fahrenheit
 const celsiusToFahrenheit = (celsius: number): number => {
@@ -156,7 +145,7 @@ const getWeatherTheme = (weatherData: WeatherData) => {
 };
 
 export function WeatherDialog({ className = '', userLocation }: WeatherDialogProps) {
-  const { weatherState, refreshWeather, isLoading, isError, weatherData, location } = useWeather({
+  const { refreshWeather, isLoading, isError, weatherData } = useWeather({
     autoFetch: true,
     refreshInterval: 300000, // 5 minutes
     userLocation,
