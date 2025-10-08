@@ -15,7 +15,7 @@ interface RanOutOfCreditsModalProps {
 export default function RanOutOfCreditsModal({ 
   isOpen, 
   onClose, 
-  creditsRemaining = 0,
+  creditsRemaining: _creditsRemaining = 0,
   totalCredits = 10,
   creditsUsed = 10
 }: RanOutOfCreditsModalProps) {

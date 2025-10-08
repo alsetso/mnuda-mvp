@@ -18,7 +18,15 @@ export default function IndexPageWrapper({ children }: IndexPageWrapperProps) {
           currentSession={null}
           sessions={[]}
           onNewSession={() => {
-            return { id: '', name: '', createdAt: Date.now(), pins: [] };
+            return { 
+              id: '', 
+              name: '', 
+              createdAt: Date.now(), 
+              pins: [],
+              lastAccessed: Date.now(),
+              nodes: [],
+              locationTrackingActive: false
+            };
           }}
           onSessionSwitch={() => {}}
           updateUrl={false}

@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { PersonRecord } from '@/features/api/services/peopleParse';
 import { PersonDetailEntity } from '@/features/api/services/personDetailParse';
 
@@ -266,7 +265,6 @@ export class EntityDataFormatter {
   static formatContactInfo(entity: PersonDetailEntity): SectionData {
     const contact = entity as PersonDetailEntity & { number?: string; email?: string; carrier?: string; domain?: string };
     const isPhone = entity.type === 'phone';
-    const isEmail = entity.type === 'email';
     
     return {
       summary: isPhone ? `Phone: ${contact.number || 'N/A'}` : `Email: ${contact.email || 'N/A'}`,

@@ -247,7 +247,7 @@ export class ResourcesService {
    */
   static async incrementViewCount(slug: string): Promise<number> {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown as { rpc: (name: string, params: Record<string, unknown>) => Promise<{ data: number; error: unknown }> })
         .rpc('increment_resource_view_count', { resource_slug: slug });
 
       if (error) {
@@ -267,7 +267,15 @@ export class ResourcesService {
    */
   static async createResource(resourceData: CreateResourceData): Promise<HelpArticle | null> {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as unknown as { 
+        from: (table: string) => { 
+          insert: (data: unknown[]) => { 
+            select: () => { 
+              single: () => Promise<{ data: unknown; error: unknown }> 
+            } 
+          } 
+        } 
+      })
         .from(this.TABLE_NAME)
         .insert([resourceData])
         .select()
@@ -278,7 +286,7 @@ export class ResourcesService {
         return null;
       }
 
-      return data;
+      return data as HelpArticle;
     } catch (error) {
       console.error('Unexpected error creating resource:', error);
       return null;
@@ -292,7 +300,17 @@ export class ResourcesService {
     try {
       const { id, ...updateData } = resourceData;
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as unknown as { 
+        from: (table: string) => { 
+          update: (data: unknown) => { 
+            eq: (column: string, value: string) => { 
+              select: () => { 
+                single: () => Promise<{ data: unknown; error: unknown }> 
+              } 
+            } 
+          } 
+        } 
+      })
         .from(this.TABLE_NAME)
         .update(updateData)
         .eq('id', id)
@@ -304,7 +322,7 @@ export class ResourcesService {
         return null;
       }
 
-      return data;
+      return data as HelpArticle;
     } catch (error) {
       console.error('Unexpected error updating resource:', error);
       return null;

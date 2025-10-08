@@ -215,22 +215,22 @@ export class EntityActionFramework {
     console.log('View on map:', entity);
   }
   
-  private static handleZillowSearch(entity: PersonRecord | PersonDetailEntity, config: ActionFrameworkConfig) {
+  private static handleZillowSearch(entity: PersonRecord | PersonDetailEntity, _config: ActionFrameworkConfig) {
     // TODO: Implement Zillow search functionality
     console.log('Zillow search:', entity);
   }
   
-  private static handleFindOwner(entity: PersonRecord | PersonDetailEntity, config: ActionFrameworkConfig) {
+  private static handleFindOwner(entity: PersonRecord | PersonDetailEntity, _config: ActionFrameworkConfig) {
     // TODO: Implement owner search functionality
     console.log('Find owner:', entity);
   }
   
-  private static handleReverseLookup(entity: PersonRecord | PersonDetailEntity, config: ActionFrameworkConfig) {
+  private static handleReverseLookup(entity: PersonRecord | PersonDetailEntity, _config: ActionFrameworkConfig) {
     // TODO: Implement reverse lookup functionality
     console.log('Reverse lookup:', entity);
   }
   
-  private static handleEmailVerify(entity: PersonRecord | PersonDetailEntity, config: ActionFrameworkConfig) {
+  private static handleEmailVerify(entity: PersonRecord | PersonDetailEntity, _config: ActionFrameworkConfig) {
     // TODO: Implement email verification functionality
     console.log('Email verify:', entity);
   }

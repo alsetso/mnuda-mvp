@@ -75,7 +75,7 @@ function zipTag(zip: string) {
   return `mn-zip-${zip}`;
 }
 
-function indexTag(type: 'cities' | 'counties' | 'zips', vertical?: string) {
+function _indexTag(type: 'cities' | 'counties' | 'zips', vertical?: string) {
   return vertical
     ? `mn-${type}-index-${vertical}`
     : `mn-${type}-index`;
@@ -287,7 +287,7 @@ export const listCities = unstable_cache(
       offset = 0,
       search,
       letter,
-      includeSeo = false,
+      includeSeo: _includeSeo = false,
     } = params;
 
     const supabase = createServerClient();

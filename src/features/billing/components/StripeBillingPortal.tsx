@@ -46,7 +46,7 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
         } else {
           setError('Failed to load customer data');
         }
-      } catch (err) {
+      } catch (_err) {
         setError('Failed to load customer data');
       } finally {
         setCustomerLoading(false);
@@ -96,7 +96,7 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
       } else {
         throw new Error('Failed to create customer');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to set up billing. Please try again.');
     } finally {
       setIsLoading(false);
@@ -124,7 +124,7 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
       } else {
         throw new Error('Failed to open billing portal');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to open billing portal. Please try again.');
     } finally {
       setIsLoading(false);
@@ -152,7 +152,7 @@ export default function StripeBillingPortal({ profile, onProfileUpdate }: Stripe
       } else {
         throw new Error('Failed to create checkout session');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to start subscription. Please try again.');
     } finally {
       setIsLoading(false);

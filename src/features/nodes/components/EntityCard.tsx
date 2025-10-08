@@ -54,7 +54,7 @@ export default function EntityCard({
   }, [entity, geocodeAddress, entityType]);
 
   // Get type label color
-  const getTypeLabelColor = (type: string) => {
+  const _getTypeLabelColor = (type: string) => {
     switch (type) {
       case 'property': return 'bg-gray-50 text-gray-700';
       case 'address': return 'bg-gray-50 text-gray-700';
@@ -93,7 +93,7 @@ export default function EntityCard({
   };
 
   // Get entity ID for display
-  const getEntityId = (): string | undefined => {
+  const _getEntityId = (): string | undefined => {
     if (isPersonRecord) {
       return (entity as PersonRecord).mnEntityId;
     }

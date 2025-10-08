@@ -47,7 +47,7 @@ export default function ColumnConfigPanel({ config, onChange, onPreview }: Colum
     const otherColumns = Object.entries(localConfig).filter(([id]) => id !== columnId);
     
     // Adjust other columns' order
-    const updatedColumns = otherColumns.map(([id, col]) => {
+    const updatedColumns = otherColumns.map(([_id, col]) => {
       if (col.order >= newOrder && col.order < currentColumn.order) {
         return { ...col, order: col.order + 1 };
       } else if (col.order <= newOrder && col.order > currentColumn.order) {

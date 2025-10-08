@@ -4,7 +4,7 @@
  */
 
 import { Suspense } from 'react';
-import { LocalityDetail } from '../services/localityService';
+import { LocalityDetail, City } from '../services/localityService';
 import { PropertySearchLayout } from '@/components/for-sale';
 import CompactCitiesList from './CompactCitiesList';
 import SmartAddressSearch from './SmartAddressSearch';
@@ -202,10 +202,10 @@ function generateFAQSchema(faq: Array<{ question: string; answer: string }>) {
 
 export default function LocalityPage({ locality, status, searchCity, fallbackMessage }: LocalityPageProps) {
   const vertical = status;
-  const title = generateTitle(locality, status);
+  const _title = generateTitle(locality, status);
   const description = generateDescription(locality, status);
   const h1 = generateH1(locality, status);
-  const canonicalUrl = generateCanonicalUrl(locality, status);
+  const _canonicalUrl = generateCanonicalUrl(locality, status);
   const breadcrumbSchema = generateBreadcrumbSchema(locality, status);
 
   // Generate FAQ schema if available
@@ -305,7 +305,7 @@ export default function LocalityPage({ locality, status, searchCity, fallbackMes
       {/* County Cities List */}
       {(locality.type === 'county' && locality.county?.cities && locality.county.cities.length > 0) && (
         <CompactCitiesList
-          cities={locality.county.cities}
+          cities={locality.county.cities as any}
           title={`Cities in ${locality.county.name} County`}
           vertical={vertical}
           maxVisible={12}

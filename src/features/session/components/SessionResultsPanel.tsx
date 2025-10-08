@@ -74,7 +74,7 @@ export default function SessionResultsPanel({
   };
 
   // Handle back to list
-  const handleBackToList = () => {
+  const handleBackToList = useCallback(() => {
     setCurrentView('list');
     setSelectedNode(null);
     setSelectedEntity(null);
@@ -85,7 +85,7 @@ export default function SessionResultsPanel({
         panelRef.current.scrollTop = scrollPosition;
       }
     }, 300);
-  };
+  }, [scrollPosition]);
 
 
   // Handle copy data
@@ -248,16 +248,8 @@ export default function SessionResultsPanel({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [currentView, handleBackToList]);
 
-  // Handle delete from detail view
-  const handleDeleteFromDetail = () => {
-    if (selectedNode && onDeleteNode) {
-      onDeleteNode(selectedNode.id);
-      handleBackToList();
-    }
-  };
-
   // Handle person trace from entity detail view
-  const handleEntityPersonTrace = async () => {
+  const _handleEntityPersonTrace = async () => {
     if (!selectedEntity || !onPersonTrace) return;
     
     const personRecord = selectedEntity as PersonRecord;
