@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import SessionBanner from './SessionBanner';
 import UsageDropdown from './UsageDropdown';
+import MinnesotaLocalityMenu from '@/features/localities/components/MinnesotaLocalityMenu';
 import { SessionData } from '../services/sessionStorage';
 import { useAuth } from '@/features/auth';
 import { ApiStatusLabel } from '@/features/shared';
@@ -58,10 +59,7 @@ export default function AppHeader({
   // Navigation items for non-map pages
   const navigationItems = [
     { href: '/map', label: 'Map' },
-    { href: '/trace', label: 'Trace' },
-    { href: '/buy', label: 'Buy' },
-    { href: '/sell', label: 'Sell' },
-    { href: '/loan', label: 'Loan' }
+    { href: '/trace', label: 'Trace' }
   ];
 
   return (
@@ -91,6 +89,7 @@ export default function AppHeader({
                           {item.label}
                         </Link>
                       ))}
+                      <MinnesotaLocalityMenu />
                     </div>
                     
                     {/* Mobile Menu Button */}
@@ -225,6 +224,24 @@ export default function AppHeader({
                 {item.label}
               </Link>
             ))}
+            
+            {/* Minnesota Section */}
+            <div className="pt-2 border-t border-gray-100">
+              <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Minnesota
+              </div>
+              <Link
+                href="/mn/cities"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  pathname?.startsWith('/mn')
+                    ? 'bg-[#014463] text-white'
+                    : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50'
+                }`}
+              >
+                Browse Properties
+              </Link>
+            </div>
           </div>
         </div>
       )}

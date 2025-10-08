@@ -391,6 +391,33 @@ function MapPageContent() {
     async (personId: string, personData: unknown, apiName: string, parentNodeId?: string, entityId?: string, entityData?: unknown) => {
       if (!currentSession) return;
       
+      // If personData is already provided (from EntityModal), use it instead of making another API call
+      if (personData) {
+        try {
+          // Parse the existing response using the person detail parser
+          const parsedData = personDetailParseService.parsePersonDetailResponse(personData as Record<string, unknown>, parentNodeId || currentSession.id);
+          
+          const node: NodeData = {
+            id: `person-${Date.now()}`,
+            type: 'people-result',
+            personId: personId,
+            personData: parsedData,
+            apiName: apiName,
+            timestamp: Date.now(),
+            mnNodeId: MnudaIdService.generateTypedId('node'),
+            parentNodeId: parentNodeId,
+            clickedEntityId: entityId,
+            clickedEntityData: entityData,
+          };
+          addNode(node);
+          return;
+        } catch (err) {
+          console.error('Error parsing existing person data:', err);
+          // Fall through to make a new API call if parsing fails
+        }
+      }
+
+      // Only make API call if no personData was provided or parsing failed
       // Check credits before making any API calls
       if (!apiUsageService.canMakeRequest()) {
         showCreditsModal();
@@ -616,6 +643,8 @@ function MapPageContent() {
           <FloatingSearchInput 
             onSearchComplete={handleSearchComplete} 
             onFlyTo={flyTo}
+            currentSession={currentSession}
+            onAddNode={addNode}
           />
           
           <TrackingFab />

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { SessionData } from '../services/sessionStorage';
 import { ExportModal } from '@/features/export';
+import { useToast } from '@/features/ui/hooks/useToast';
 
 interface SessionBannerProps {
   currentSession: SessionData | null;
@@ -26,8 +27,10 @@ export default function SessionBanner({
   const [editName, setEditName] = useState('');
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { success } = useToast();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -95,10 +98,29 @@ export default function SessionBanner({
     setIsDropdownOpen(false);
   };
 
-  const handleCreateNewSession = () => {
-    const newSession = onCreateNewSession();
-    onSessionSwitch(newSession.id);
-    setIsDropdownOpen(false);
+  const handleCreateNewSession = async () => {
+    // Prevent multiple rapid clicks
+    if (isCreatingSession) return;
+    
+    setIsCreatingSession(true);
+    
+    try {
+      const newSession = onCreateNewSession();
+      
+      // Show success toast
+      success('New Session Created', `Session "${newSession.name}" has been created and is now active.`);
+      
+      // Switch to the new session
+      onSessionSwitch(newSession.id);
+      setIsDropdownOpen(false);
+    } catch (error) {
+      console.error('Error creating new session:', error);
+    } finally {
+      // Reset the creating state after a short delay to prevent rapid clicking
+      setTimeout(() => {
+        setIsCreatingSession(false);
+      }, 500);
+    }
   };
 
   // Calculate total entities from all nodes in the session
@@ -314,13 +336,22 @@ export default function SessionBanner({
                 {/* Create New Session Button */}
                 <button
                   onClick={handleCreateNewSession}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-[#014463] hover:bg-[#1dd1f5] rounded"
-                  title="Create new session"
+                  disabled={isCreatingSession}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                    isCreatingSession 
+                      ? 'text-gray-400 bg-gray-200 cursor-not-allowed' 
+                      : 'text-white bg-[#014463] hover:bg-[#1dd1f5]'
+                  }`}
+                  title={isCreatingSession ? "Creating session..." : "Create new session"}
                 >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <span className="hidden sm:inline">New</span>
+                  {isCreatingSession ? (
+                    <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  )}
+                  <span className="hidden sm:inline">{isCreatingSession ? 'Creating...' : 'New'}</span>
                 </button>
               </div>
             </div>

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { SessionData } from '../services/sessionStorage';
+import { useToast } from '@/features/ui/hooks/useToast';
 
 interface SessionSelectorAccordionProps {
   onNewSession: () => SessionData;
@@ -22,8 +23,10 @@ export default function SessionSelectorAccordion({
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
+  const { success } = useToast();
 
   const handleSessionSelect = (sessionId: string) => {
     onSessionSwitch(sessionId);
@@ -34,16 +37,32 @@ export default function SessionSelectorAccordion({
   };
 
   const handleNewSession = async () => {
-    const newSession = onNewSession();
-    setIsExpanded(false);
-    setSearchTerm('');
-    setFocusedIndex(-1);
+    if (isCreatingSession) return;
     
-    // Wait for the new session to be created and set as current
-    if (newSession && newSession.id) {
-      router.push(`/map?session=${newSession.id}`);
-    } else {
-      router.push('/map');
+    setIsCreatingSession(true);
+    
+    try {
+      const newSession = onNewSession();
+      
+      // Show success toast
+      success('New Session Created', `Session "${newSession.name}" has been created and is now active.`);
+      
+      setIsExpanded(false);
+      setSearchTerm('');
+      setFocusedIndex(-1);
+      
+      // Wait for the new session to be created and set as current
+      if (newSession && newSession.id) {
+        router.push(`/map?session=${newSession.id}`);
+      } else {
+        router.push('/map');
+      }
+    } catch (error) {
+      console.error('Error creating new session:', error);
+    } finally {
+      setTimeout(() => {
+        setIsCreatingSession(false);
+      }, 500);
     }
   };
 
@@ -207,18 +226,31 @@ export default function SessionSelectorAccordion({
                     <button
                       key="new-session"
                       onClick={handleNewSession}
-                      className={`w-full px-3 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-                        isFocused ? 'bg-gray-50' : ''
-                      }`}
+                      disabled={isCreatingSession}
+                      className={`w-full px-3 py-3 text-left transition-colors border-b border-gray-100 ${
+                        isCreatingSession 
+                          ? 'bg-gray-50 cursor-not-allowed' 
+                          : 'hover:bg-gray-50'
+                      } ${isFocused ? 'bg-gray-50' : ''}`}
                     >
                       <div className="flex items-center space-x-3">
-                        <div className="w-6 h-6 bg-gray-600 rounded flex items-center justify-center flex-shrink-0">
-                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
+                        <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${
+                          isCreatingSession ? 'bg-gray-400' : 'bg-gray-600'
+                        }`}>
+                          {isCreatingSession ? (
+                            <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-900">New Session</div>
+                          <div className={`text-sm font-medium ${
+                            isCreatingSession ? 'text-gray-400' : 'text-gray-900'
+                          }`}>
+                            {isCreatingSession ? 'Creating Session...' : 'New Session'}
+                          </div>
                           <div className="text-xs text-gray-500">Create a new investigation session</div>
                         </div>
                       </div>

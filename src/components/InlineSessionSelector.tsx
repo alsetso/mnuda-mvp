@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { SessionData } from '@/features/session/services/sessionStorage';
+import { useToast } from '@/features/ui/hooks/useToast';
 
 interface InlineSessionSelectorProps {
   currentSession: SessionData | null;
@@ -17,15 +18,33 @@ export default function InlineSessionSelector({
   onSessionSwitch
 }: InlineSessionSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const { success } = useToast();
 
   const handleSessionSelect = (sessionId: string) => {
     onSessionSwitch(sessionId);
     setIsOpen(false);
   };
 
-  const handleNewSession = () => {
-    onNewSession();
-    setIsOpen(false);
+  const handleNewSession = async () => {
+    if (isCreatingSession) return;
+    
+    setIsCreatingSession(true);
+    
+    try {
+      const newSession = onNewSession();
+      
+      // Show success toast
+      success('New Session Created', `Session "${newSession.name}" has been created and is now active.`);
+      
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error creating new session:', error);
+    } finally {
+      setTimeout(() => {
+        setIsCreatingSession(false);
+      }, 500);
+    }
   };
 
   return (
@@ -64,15 +83,30 @@ export default function InlineSessionSelector({
           {/* New Session Button */}
           <button
             onClick={handleNewSession}
-            className="w-full flex items-center space-x-3 p-3 hover:bg-[#1dd1f5]/5 transition-colors border-b border-gray-100"
+            disabled={isCreatingSession}
+            className={`w-full flex items-center space-x-3 p-3 transition-colors border-b border-gray-100 ${
+              isCreatingSession 
+                ? 'bg-gray-50 cursor-not-allowed' 
+                : 'hover:bg-[#1dd1f5]/5'
+            }`}
           >
-            <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+              isCreatingSession ? 'bg-gray-200' : 'bg-green-100'
+            }`}>
+              {isCreatingSession ? (
+                <div className="w-4 h-4 border border-gray-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              )}
             </div>
             <div className="text-left">
-              <p className="text-sm font-medium text-gray-900">Create New Session</p>
+              <p className={`text-sm font-medium ${
+                isCreatingSession ? 'text-gray-400' : 'text-gray-900'
+              }`}>
+                {isCreatingSession ? 'Creating Session...' : 'Create New Session'}
+              </p>
               <p className="text-xs text-gray-500">Start a new trace session</p>
             </div>
           </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useEmailNotifications } from '@/features/email/hooks/useEmailNotifications';
@@ -21,20 +21,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const emailNotifications = useEmailNotifications();
+  const welcomeEmailSent = useRef<Set<string>>(new Set());
 
-  // Memoize the welcome email function to prevent infinite re-renders
-  const handleWelcomeEmail = useCallback(async (user: User) => {
-    if (user.email_confirmed_at) {
-      const welcomeResult = await emailNotifications.sendWelcomeEmail(
-        user.email!,
-        user.user_metadata?.full_name
-      );
+  // Handle welcome email without causing re-renders
+  const handleWelcomeEmail = async (user: User) => {
+    // Prevent sending multiple welcome emails to the same user
+    if (user.email_confirmed_at && !welcomeEmailSent.current.has(user.id)) {
+      welcomeEmailSent.current.add(user.id);
       
-      if (!welcomeResult.success) {
-        console.warn('Custom welcome email failed:', welcomeResult.error);
+      try {
+        const welcomeResult = await emailNotifications.sendWelcomeEmail(
+          user.email!,
+          user.user_metadata?.first_name || user.user_metadata?.full_name
+        );
+        
+        if (!welcomeResult.success) {
+          console.warn('Custom welcome email failed:', welcomeResult.error);
+        }
+      } catch (error) {
+        console.error('Error sending welcome email:', error);
+        // Remove from set so we can retry later
+        welcomeEmailSent.current.delete(user.id);
       }
     }
-  }, [emailNotifications]);
+  };
 
   useEffect(() => {
     // Get initial session
@@ -76,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
-  }, [handleWelcomeEmail]);
+  }, []); // Empty dependency array to prevent infinite re-renders
 
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
@@ -114,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const emailResult = await emailNotifications.sendSignupConfirmation(
           email,
           confirmationUrl,
-          data.user.user_metadata?.full_name
+          data.user.user_metadata?.first_name || data.user.user_metadata?.full_name
         );
         
         if (!emailResult.success) {
@@ -140,6 +150,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Clear user state immediately for better UX
       setUser(null);
+      
+      // Clear welcome email tracking
+      welcomeEmailSent.current.clear();
       
       // Clear any local storage data
       localStorage.removeItem('freemap_sessions');

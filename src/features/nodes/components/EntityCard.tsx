@@ -180,15 +180,6 @@ export default function EntityCard({
         {/* Single horizontal row layout */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
-            {/* Type badge */}
-            <span className={`text-xs px-1.5 sm:px-2 py-0.5 rounded font-medium flex-shrink-0 ${getTypeLabelColor(entityType)}`}>
-              <span className="hidden sm:inline">{entityType}</span>
-              <span className="sm:hidden">{entityType.charAt(0).toUpperCase()}</span>
-              {!isPersonRecord && (entity as PersonDetailEntity).category && (
-                <span className="hidden sm:inline"> ({(entity as PersonDetailEntity).category})</span>
-              )}
-            </span>
-            
             {/* Primary value */}
             <div className="text-xs sm:text-sm font-medium text-gray-900 truncate flex-1">
               {getPrimaryValue(entity)}
@@ -205,13 +196,6 @@ export default function EntityCard({
                 {additionalInfo.length > 2 && (
                   <span className="text-gray-500">+{additionalInfo.length - 2}</span>
                 )}
-              </div>
-            )}
-            
-            {/* Entity ID for all entities */}
-            {getEntityId() && (
-              <div className="text-xs text-[#014463] font-mono flex-shrink-0">
-                {getEntityId()}
               </div>
             )}
           </div>

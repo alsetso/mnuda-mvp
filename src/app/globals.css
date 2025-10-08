@@ -75,3 +75,85 @@ body {
 .credit-shake {
   animation: credit-shake 0.6s ease-in-out;
 }
+
+/* Document Editor Styles */
+.document-editor {
+  font-family: 'Arial', sans-serif;
+  line-height: 1.5;
+}
+
+.document-editor:focus {
+  outline: none;
+}
+
+.document-editor p {
+  margin: 0 0 1em 0;
+}
+
+.document-editor h1,
+.document-editor h2,
+.document-editor h3,
+.document-editor h4,
+.document-editor h5,
+.document-editor h6 {
+  margin: 1em 0 0.5em 0;
+  font-weight: bold;
+}
+
+.document-editor ul,
+.document-editor ol {
+  margin: 1em 0;
+  padding-left: 2em;
+}
+
+.document-editor li {
+  margin: 0.25em 0;
+}
+
+.document-editor blockquote {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 3px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.document-editor a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.document-editor a:hover {
+  color: #1d4ed8;
+}
+
+.document-editor img {
+  max-width: 100%;
+  height: auto;
+  margin: 1em 0;
+}
+
+/* Toolbar button hover effects */
+.toolbar-button {
+  transition: all 0.2s ease;
+}
+
+.toolbar-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Dropdown menu animations */
+.dropdown-menu {
+  animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

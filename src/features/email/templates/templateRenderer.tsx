@@ -3,51 +3,12 @@ import { render } from '@react-email/render';
 import { EmailTemplate, EmailTemplateData, EmailTemplateType } from '../types';
 import { SignupConfirmationEmail } from './SignupConfirmationEmail';
 import { PasswordResetEmail } from './PasswordResetEmail';
+import { PasswordChangedEmail } from './PasswordChangedEmail';
 import { WelcomeEmail } from './WelcomeEmail';
 import { EmailLayout } from '../components/EmailLayout';
 import { EmailText } from '../components/EmailText';
 
 // Additional email template components
-interface PasswordChangedEmailProps {
-  name?: string;
-  appName: string;
-  appUrl: string;
-  year: number;
-}
-
-const PasswordChangedEmail: React.FC<PasswordChangedEmailProps> = ({
-  name,
-  appName,
-  appUrl,
-  year,
-}) => {
-  const greeting = name ? `Hi ${name},` : 'Hi there,';
-
-  return (
-    <EmailLayout
-      appName={appName}
-      appUrl={appUrl}
-      year={year}
-      previewText="Your password has been changed"
-    >
-      <EmailText variant="heading">
-        Password Changed Successfully
-      </EmailText>
-      
-      <EmailText variant="body">
-        {greeting}
-      </EmailText>
-      
-      <EmailText variant="body">
-        This email confirms that your password for your {appName} account has been successfully changed.
-      </EmailText>
-      
-      <EmailText variant="small">
-        If you didn&apos;t make this change, please contact our support team immediately.
-      </EmailText>
-    </EmailLayout>
-  );
-};
 
 interface AccountDeletedEmailProps {
   name?: string;

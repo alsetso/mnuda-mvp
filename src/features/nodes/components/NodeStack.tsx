@@ -90,9 +90,18 @@ export default function NodeStack({
   // Auto-expand the most recent node when nodes are added (only if no nodes are currently expanded)
   useEffect(() => {
     if (nodes.length > 0 && expandedNodes.size === 0) {
-      // Get the most recent node (last in the array, which will be first in the reversed display)
-      const mostRecentNode = nodes[nodes.length - 1];
-      setExpandedNodes(new Set([mostRecentNode.id]));
+      // Prioritize search history nodes, otherwise get the most recent node
+      const searchHistoryNode = nodes.find(node => 
+        node.type === 'start' && node.apiName === 'Search History'
+      );
+      
+      if (searchHistoryNode) {
+        setExpandedNodes(new Set([searchHistoryNode.id]));
+      } else {
+        // Get the most recent node (last in the array, which will be first in the reversed display)
+        const mostRecentNode = nodes[nodes.length - 1];
+        setExpandedNodes(new Set([mostRecentNode.id]));
+      }
     }
   }, [nodes, expandedNodes.size]);
 
@@ -359,9 +368,21 @@ export default function NodeStack({
         </div>
       )}
       
-      {validDisplayNodes.slice().reverse().map((node, index) => {
+      {(() => {
+        // Separate search history nodes from other nodes
+        const searchHistoryNodes = validDisplayNodes.filter(node => 
+          node.type === 'start' && node.apiName === 'Search History'
+        );
+        const otherNodes = validDisplayNodes.filter(node => 
+          !(node.type === 'start' && node.apiName === 'Search History')
+        );
+        
+        // Search history nodes stay at top, other nodes are reversed
+        const orderedNodes = [...searchHistoryNodes, ...otherNodes.slice().reverse()];
+        
+        return orderedNodes.map((node, index) => {
         const isExpanded = expandedNodes.has(node.id);
-        const isLast = index === validDisplayNodes.length - 1;
+        const isLast = index === orderedNodes.length - 1;
         
         // Ensure we have a unique key by combining ID with index to handle duplicates
         const nodeKey = `${node.id}-${index}`;
@@ -461,7 +482,8 @@ export default function NodeStack({
             )}
           </div>
         );
-      })}
+        });
+      })()}
     </div>
   );
 }

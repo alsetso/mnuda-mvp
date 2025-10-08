@@ -44,6 +44,14 @@ export function useSkipTracePins({
   const addMarkerRef = useRef(addMarker);
   const removeMarkerRef = useRef(removeMarker);
   const geocodeAddressRef = useRef(geocodeAddress);
+  const createSkipTracePopupRef = useRef<
+    (address: SkipTraceAddress, peopleData: { people: PersonRecord[]; totalRecords: number }) => string
+  >(() => "");
+  const parseSkipTraceResponseRef = useRef<
+    (rawResponse: unknown, nodeId: string) => { people: PersonRecord[]; totalRecords: number }
+  >(() => ({ people: [], totalRecords: 0 }));
+  const isRestoringRef = useRef(false);
+  const lastNodesSignatureRef = useRef<string>("");
 
   // Update refs when callbacks change
   useEffect(() => {
@@ -57,6 +65,8 @@ export function useSkipTracePins({
   useEffect(() => {
     geocodeAddressRef.current = geocodeAddress;
   }, [geocodeAddress]);
+
+  // Keep helpers in refs so effects don't depend on their identities
 
   // Parse skip trace response to extract people data
   const parseSkipTraceResponse = useCallback((rawResponse: unknown, nodeId: string): { people: PersonRecord[]; totalRecords: number } => {
@@ -306,6 +316,15 @@ export function useSkipTracePins({
     return popupContent;
   }, [nodes]);
 
+  // After callbacks are defined, sync refs to their latest implementations
+  useEffect(() => {
+    createSkipTracePopupRef.current = createSkipTracePopup;
+  }, [createSkipTracePopup]);
+
+  useEffect(() => {
+    parseSkipTraceResponseRef.current = parseSkipTraceResponse;
+  }, [parseSkipTraceResponse]);
+
   /**
    * Add a skip trace pin to the map
    */
@@ -318,10 +337,10 @@ export function useSkipTracePins({
     };
 
     // Parse the response data the same way the node does
-    const peopleData = parseSkipTraceResponse(address.rawResponse, address.nodeId);
+    const peopleData = parseSkipTraceResponseRef.current(address.rawResponse, address.nodeId);
 
     // Create popup content with clickable person items
-    const popupContent = createSkipTracePopup(address, peopleData);
+    const popupContent = createSkipTracePopupRef.current(address, peopleData);
 
     // Create custom marker element - small purple circle with person count
     const markerElement = document.createElement('div');
@@ -366,7 +385,7 @@ export function useSkipTracePins({
       element: markerElement,
       popupContent,
     });
-  }, [createSkipTracePopup, parseSkipTraceResponse]);
+  }, []);
 
 
   /**
@@ -445,6 +464,13 @@ export function useSkipTracePins({
     if (!mapLoaded) return;
 
     const restorePins = async () => {
+      // Prevent re-entrancy and no-op when nodes did not meaningfully change
+      if (isRestoringRef.current) return;
+      const signature = `${sessionId || "_"}|${nodes.map(n => n.id).join(',')}`;
+      if (signature === lastNodesSignatureRef.current) return;
+      isRestoringRef.current = true;
+      lastNodesSignatureRef.current = signature;
+
       setIsLoading(true);
       try {
         // Extract skip trace addresses from nodes
@@ -468,10 +494,10 @@ export function useSkipTracePins({
           };
 
           // Parse the response data the same way the node does
-          const peopleData = parseSkipTraceResponse(address.rawResponse, address.nodeId);
+          const peopleData = parseSkipTraceResponseRef.current(address.rawResponse, address.nodeId);
 
           // Create popup content with clickable person items
-          const popupContent = createSkipTracePopup(address, peopleData);
+          const popupContent = createSkipTracePopupRef.current(address, peopleData);
 
           // Create custom marker element - small purple circle with person count
           const markerElement = document.createElement('div');
@@ -541,8 +567,8 @@ export function useSkipTracePins({
                 lng: addressWithCoords.coordinates.longitude,
               };
 
-              const peopleData = parseSkipTraceResponse(addressWithCoords.rawResponse, addressWithCoords.nodeId);
-              const popupContent = createSkipTracePopup(addressWithCoords, peopleData);
+              const peopleData = parseSkipTraceResponseRef.current(addressWithCoords.rawResponse, addressWithCoords.nodeId);
+              const popupContent = createSkipTracePopupRef.current(addressWithCoords, peopleData);
 
               const markerElement = document.createElement('div');
               markerElement.className = 'skip-trace-marker';
@@ -600,11 +626,12 @@ export function useSkipTracePins({
         console.error('Error restoring skip trace pins:', error);
       } finally {
         setIsLoading(false);
+        isRestoringRef.current = false;
       }
     };
 
     restorePins();
-  }, [nodes, mapLoaded, sessionId, parseSkipTraceResponse, createSkipTracePopup]); // Include all dependencies
+  }, [nodes, mapLoaded, sessionId]);
 
   // Note: Cleanup is handled by the component using this hook
   // No need for useEffect cleanup here as it causes infinite loops

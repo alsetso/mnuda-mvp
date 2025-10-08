@@ -1,26 +1,22 @@
 'use client';
 
-import LeadForm from '@/components/LeadForm';
-import AppHeader from '@/features/session/components/AppHeader';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function BuyPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to new marketplace URL
+    router.replace('/marketplace/for-sale');
+  }, [router]);
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <AppHeader 
-        currentSession={null}
-        sessions={[]}
-        onNewSession={() => ({ id: '', name: '', createdAt: Date.now(), lastAccessed: Date.now(), nodes: [], locationTrackingActive: false })}
-        onSessionSwitch={() => {}}
-        showSessionSelector={false}
-        showMobileToggle={false}
-        showSidebarToggle={false}
-        showSkipTraceToggle={false}
-      />
-      <LeadForm 
-        type="buy"
-        title="Find Your Dream Home in Minnesota"
-        subtitle="Connect with top Minnesota real estate agents and find the perfect property for your needs"
-      />
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecting to marketplace...</p>
+      </div>
     </div>
   );
 }

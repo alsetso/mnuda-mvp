@@ -176,7 +176,7 @@ export default function AddressAutocomplete({
         aria-autocomplete="list"
         role="combobox"
         aria-controls="address-suggestions"
-        className={`w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation ${className}`}
+        className={className || `w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation`}
         autoComplete="off"
       />
       

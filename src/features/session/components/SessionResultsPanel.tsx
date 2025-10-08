@@ -35,7 +35,19 @@ export default function SessionResultsPanel({
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<EntityData | null>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [forceUpdate, setForceUpdate] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Listen for session updates to trigger re-renders
+  useEffect(() => {
+    const handleSessionUpdate = () => {
+      // Force re-render when session is updated
+      setForceUpdate(prev => prev + 1);
+    };
+
+    window.addEventListener('sessionUpdated', handleSessionUpdate as EventListener);
+    return () => window.removeEventListener('sessionUpdated', handleSessionUpdate as EventListener);
+  }, []);
 
   // Handle record click - transition to detail view
   const handleRecordClick = (node: NodeData) => {
@@ -291,6 +303,7 @@ export default function SessionResultsPanel({
             {/* Node Stack */}
             {currentSession && currentSession.nodes.length > 0 ? (
               <NodeStack
+                key={`node-stack-${forceUpdate}`}
                 nodes={currentSession.nodes}
                 onPersonTrace={onPersonTrace}
                 onDeleteNode={onDeleteNode}

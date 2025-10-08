@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSessionManager } from '@/features/session/hooks/useSessionManager';
 import AppHeader from '@/features/session/components/AppHeader';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
   const { 
@@ -11,9 +12,50 @@ export default function Home() {
     createNewSession, 
     switchSession
   } = useSessionManager();
-  
+
+  const [, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
+  // Structured data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Minnesota Skip Trace Tool",
+    "description": "Free Minnesota skip tracing tool to find people, properties, and data instantly. No sign-up required.",
+    "url": "https://mnuda.com",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "Free skip tracing",
+      "Minnesota property search",
+      "People search",
+      "Address lookup",
+      "Phone number search",
+      "No registration required"
+    ],
+    "provider": {
+      "@type": "Organization",
+      "name": "MNUDA",
+      "url": "https://mnuda.com"
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gray-50">
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      
       {/* App Header */}
       <AppHeader
         currentSession={currentSession}
@@ -24,82 +66,469 @@ export default function Home() {
       />
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-40">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e0f2fe' fill-opacity='0.3'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            backgroundRepeat: 'repeat'
-          }}></div>
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             {/* Badge */}
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-[#1dd1f5]/10 border border-[#1dd1f5]/20 text-[#1dd1f5] text-sm font-medium mb-8">
+            <div className="inline-flex items-center px-3 py-1 rounded-md bg-gray-100 border border-gray-300 text-gray-700 text-sm font-medium mb-8">
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              100% Free • No Sign-up Required • Privacy First
+              Free • No Sign-up • Privacy First
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-              Skip Trace Any Address
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+              Minnesota Skip Trace
               <br />
-              <span className="bg-gradient-to-r from-[#1dd1f5] to-[#014463] bg-clip-text text-transparent">
-                in Minnesota
-              </span>
+              <span className="text-gray-600">Made Simple</span>
             </h1>
             
             {/* Subheadline */}
-            <p className="text-xl sm:text-2xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed">
-              Discover property owners, residents, relatives, and associates. Get contact info, property details, and relationship maps—all in seconds, completely free.
+            <p className="text-xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed">
+              Find people, properties, and data across Minnesota instantly. 
+              Professional skip tracing tools available to everyone, completely free.
             </p>
 
-            {/* CTA Button */}
-            <div className="flex justify-center mb-16">
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
               <Link 
                 href={currentSession ? `/map?session=${currentSession.id}` : '/map'} 
-                className="group relative inline-flex items-center justify-center px-8 py-4 bg-[#1dd1f5] text-white text-lg font-semibold rounded-xl hover:bg-[#014463] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                className="inline-flex items-center justify-center px-8 py-4 bg-[#014463] text-white text-lg font-semibold rounded-lg hover:bg-[#013a56] transition-colors border border-[#014463]"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                Start Searching Now
-                <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                Start Skip Tracing
+              </Link>
+              <Link 
+                href="/buy" 
+                className="inline-flex items-center justify-center px-8 py-4 bg-white text-[#014463] border border-[#014463] text-lg font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
+                Browse Properties
               </Link>
             </div>
 
             {/* Trust Indicators */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-sm text-gray-500">
               <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                Your data stays private
+                Your searches stay private
               </div>
               <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 Results in under 3 seconds
               </div>
               <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
-                100 free searches daily
+                Always free, no limits
               </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Main Tools Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Our Core Tools
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Three powerful tools to help you find people, properties, and data in Minnesota
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Map Tool */}
+            <div className="bg-white border border-gray-200 rounded-lg p-8 hover:border-[#014463] transition-colors group">
+              <div className="w-16 h-16 bg-[#014463] rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#013a56] transition-colors">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Interactive Map</h3>
+              <p className="text-gray-600 mb-6">
+                Visualize addresses, properties, and locations across Minnesota with our interactive mapping tool. 
+                Perfect for property research and location analysis.
+              </p>
+              <Link 
+                href={currentSession ? `/map?session=${currentSession.id}` : '/map'} 
+                className="inline-flex items-center px-6 py-3 bg-[#014463] text-white text-sm font-semibold rounded-lg hover:bg-[#013a56] transition-colors"
+              >
+                Open Map
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Trace Tool */}
+            <div className="bg-white border border-gray-200 rounded-lg p-8 hover:border-[#014463] transition-colors group">
+              <div className="w-16 h-16 bg-[#014463] rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#013a56] transition-colors">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Skip Trace</h3>
+              <p className="text-gray-600 mb-6">
+                Find people, addresses, phone numbers, and family connections. Our skip tracing tool 
+                searches comprehensive Minnesota databases to locate anyone.
+              </p>
+              <Link 
+                href={currentSession ? `/map?session=${currentSession.id}` : '/map'} 
+                className="inline-flex items-center px-6 py-3 bg-[#014463] text-white text-sm font-semibold rounded-lg hover:bg-[#013a56] transition-colors"
+              >
+                Start Tracing
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Property Search Tool */}
+            <div className="bg-white border border-gray-200 rounded-lg p-8 hover:border-[#014463] transition-colors group">
+              <div className="w-16 h-16 bg-[#014463] rounded-lg flex items-center justify-center mb-6 group-hover:bg-[#013a56] transition-colors">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Property Search</h3>
+              <p className="text-gray-600 mb-6">
+                Browse Minnesota properties for sale and rent. Access detailed property information, 
+                photos, and market data across the state.
+              </p>
+              <Link 
+                href="/buy" 
+                className="inline-flex items-center px-6 py-3 bg-[#014463] text-white text-sm font-semibold rounded-lg hover:bg-[#013a56] transition-colors"
+              >
+                Browse Properties
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* App Functions Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Powerful Skip Tracing Functions
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Everything you need to find people, properties, and data in Minnesota
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* People Search */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">People Search</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Find current addresses, phone numbers, and contact information for anyone in Minnesota.
+              </p>
+              <ul className="text-xs text-gray-500 space-y-1">
+                <li>• Name-based search</li>
+                <li>• Phone number lookup</li>
+                <li>• Email address finder</li>
+                <li>• Family connections</li>
+              </ul>
+            </div>
+
+            {/* Property Search */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Property Search</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Access property records, ownership history, and real estate data across Minnesota.
+              </p>
+              <ul className="text-xs text-gray-500 space-y-1">
+                <li>• Property ownership</li>
+                <li>• Tax assessments</li>
+                <li>• Sales history</li>
+                <li>• Zoning information</li>
+              </ul>
+            </div>
+
+            {/* Address Lookup */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Address Lookup</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Get detailed information about any address in Minnesota, including residents and property details.
+              </p>
+              <ul className="text-xs text-gray-500 space-y-1">
+                <li>• Current residents</li>
+                <li>• Property details</li>
+                <li>• Neighborhood data</li>
+                <li>• School districts</li>
+              </ul>
+            </div>
+
+            {/* Phone Search */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Phone Search</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Reverse phone number lookup to find the owner and associated information.
+              </p>
+              <ul className="text-xs text-gray-500 space-y-1">
+                <li>• Phone number owner</li>
+                <li>• Associated addresses</li>
+                <li>• Carrier information</li>
+                <li>• Line type detection</li>
+              </ul>
+            </div>
+
+            {/* Business Search */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Business Search</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Find business information, owners, and contact details for Minnesota companies.
+              </p>
+              <ul className="text-xs text-gray-500 space-y-1">
+                <li>• Business registration</li>
+                <li>• Owner information</li>
+                <li>• Contact details</li>
+                <li>• Business address</li>
+              </ul>
+            </div>
+
+            {/* Data Export */}
+            <div className="bg-white border border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Data Export</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Export your search results in multiple formats for further analysis and record keeping.
+              </p>
+              <ul className="text-xs text-gray-500 space-y-1">
+                <li>• CSV export</li>
+                <li>• Excel format</li>
+                <li>• PDF reports</li>
+                <li>• JSON data</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* How It Works Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              How Skip Tracing Works
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Three simple steps to find anyone or anything in Minnesota
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-gray-600">1</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Enter Information</h3>
+              <p className="text-gray-600">
+                Start with any information you have - name, address, phone number, or email. 
+                Our system accepts partial information and finds the rest.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-gray-600">2</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">AI-Powered Search</h3>
+              <p className="text-gray-600">
+                Our advanced algorithms search through Minnesota&apos;s comprehensive databases 
+                to find connections, addresses, and related information.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-gray-600">3</span>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Get Results</h3>
+              <p className="text-gray-600">
+                Receive detailed reports with addresses, phone numbers, property records, 
+                and family connections - all organized and easy to understand.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
 
+      {/* Key Features Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Why Choose Our Skip Trace Tool?
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Professional-grade skip tracing capabilities, available to everyone
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Lightning Fast</h3>
+              <p className="text-gray-600 text-sm">
+                Get results in seconds, not hours. Our optimized database queries deliver 
+                comprehensive skip trace results instantly.
+              </p>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Comprehensive Data</h3>
+              <p className="text-gray-600 text-sm">
+                Access property records, phone numbers, addresses, family connections, 
+                and more from Minnesota&apos;s most complete database.
+              </p>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Easy to Use</h3>
+              <p className="text-gray-600 text-sm">
+                No training required. Simply enter any information you have and let our 
+                system do the work. Results are organized and easy to understand.
+              </p>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Minnesota Focused</h3>
+              <p className="text-gray-600 text-sm">
+                Specialized for Minnesota data. Our system knows the state&apos;s geography, 
+                counties, and local databases better than any generic tool.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="bg-[#014463] text-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center">
+            <h2 className="text-4xl font-bold mb-6">
+              Ready to Start Skip Tracing?
+            </h2>
+            <p className="text-xl text-blue-100 mb-12 max-w-3xl mx-auto">
+              Join thousands of Minnesotans who use our free skip tracing tool to find people, 
+              properties, and information across the state.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <Link 
+                href={currentSession ? `/map?session=${currentSession.id}` : '/map'} 
+                className="inline-flex items-center justify-center px-8 py-4 bg-white text-[#014463] text-lg font-semibold rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Start Skip Tracing Now
+              </Link>
+              <Link 
+                href="/buy" 
+                className="inline-flex items-center justify-center px-8 py-4 bg-transparent text-white border border-white text-lg font-semibold rounded-lg hover:bg-white hover:text-[#014463] transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Browse Properties
+              </Link>
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-gray-300">
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                No registration required
+              </div>
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+                Completely free forever
+              </div>
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Your data stays private
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

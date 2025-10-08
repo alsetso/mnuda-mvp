@@ -214,6 +214,11 @@ class SessionStorageService {
       
       // Auto-update title for the newly added node
       this.autoUpdateNodeTitle(nodeWithId.id);
+      
+      // Trigger a custom event to notify React components of the update
+      window.dispatchEvent(new CustomEvent('sessionUpdated', { 
+        detail: { sessionId: session.id, nodeId: nodeWithId.id } 
+      }));
     }
   }
 

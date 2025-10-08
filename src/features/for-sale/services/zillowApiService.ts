@@ -1,0 +1,852 @@
+// Zillow API Service for property listings
+export interface ZillowProperty {
+  zpid: string;
+  address: string;
+  city: string;
+  state: string;
+  zipcode: string;
+  price: number;
+  bedrooms: number;
+  bathrooms: number;
+  squareFeet: number;
+  lotSize: number;
+  propertyType: string;
+  listingType: string;
+  status: string;
+  daysOnZillow: number;
+  imageUrl?: string;
+  imageUrls?: string[];
+  description?: string;
+  yearBuilt?: number;
+  parking?: string;
+  heating?: string;
+  cooling?: string;
+  hoaFee?: number;
+  propertyTax?: number;
+  latitude?: number;
+  longitude?: number;
+  url?: string;
+  // Enhanced fields from improved parsing
+  county?: string;
+  livingArea?: number;
+  livingAreaUnits?: string;
+  lotSizeUnits?: string;
+  homeType?: string;
+  homeStatus?: string;
+  currency?: string;
+  listingSubType?: {
+    is_FSBA: boolean;
+    is_FSBO: boolean;
+    is_bankOwned: boolean;
+    is_comingSoon: boolean;
+    is_forAuction: boolean;
+    is_foreclosure: boolean;
+    is_newHome: boolean;
+  };
+  attributionInfo?: {
+    agentName?: string;
+    agentPhoneNumber?: string;
+    agentEmail?: string;
+    agentLicenseNumber?: string;
+    brokerName?: string;
+    brokerPhoneNumber?: string;
+    buyerAgentName?: string;
+    buyerBrokerageName?: string;
+    coAgentName?: string;
+    coAgentNumber?: string;
+    lastChecked?: string;
+    lastUpdated?: string;
+    mlsId?: string;
+    mlsName?: string;
+    mlsDisclaimer?: string;
+    listingAgreement?: string;
+    listingAgents?: Array<{
+      name?: string;
+      phone?: string;
+      email?: string;
+      [key: string]: unknown;
+    }>;
+    listingOffices?: Array<{
+      name?: string;
+      phone?: string;
+      [key: string]: unknown;
+    }>;
+    providerLogo?: string;
+    attributionTitle?: string;
+    trueStatus?: string;
+  };
+  images?: Array<{
+    type: 'hero' | 'gallery' | 'street_view';
+    url: string;
+    caption: string;
+  }>;
+  priceHistory?: Array<{
+    date: string;
+    event: string;
+    price: number;
+    source: string;
+  }>;
+  taxHistory?: Array<{
+    year: number;
+    taxPaid: number;
+    assessment: number;
+  }>;
+  metadata?: {
+    canShowPriceHistory: boolean;
+    canShowTaxHistory: boolean;
+    listingStatus?: string;
+    propertyStatus?: string;
+    isZillowOwned: boolean;
+  };
+}
+
+export interface ZillowSearchResponse {
+  results: ZillowProperty[];
+  resultsPerPage: number;
+  totalPages: number;
+  currentPage: number;
+  totalResultCount: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface ZillowSearchParams {
+  location: string;
+  page?: number;
+  status?: 'forSale' | 'forRent' | 'sold';
+  sortSelection?: 'priorityscore' | 'price' | 'beds' | 'baths' | 'sqft';
+  listing_type?: 'by_agent' | 'by_owner' | 'new_construction';
+  doz?: 'any' | '1' | '7' | '30' | '90';
+  minPrice?: number;
+  maxPrice?: number;
+  minBeds?: number;
+  maxBeds?: number;
+  minBaths?: number;
+  maxBaths?: number;
+  minSqft?: number;
+  maxSqft?: number;
+}
+
+export class ZillowApiService {
+  private static readonly API_BASE_URL = 'https://zillow56.p.rapidapi.com';
+  private static readonly API_KEY = process.env.NEXT_PUBLIC_RAPIDAPI_KEY || 'f4a7d42741mshbc2b95a8fd24074p1cf1a6jsn44343abb32e8';
+
+  /**
+   * Search for properties using Zillow API
+   */
+  static async searchProperties(params: ZillowSearchParams): Promise<ZillowSearchResponse> {
+    try {
+      const searchParams = new URLSearchParams({
+        location: params.location,
+        output: 'json',
+        status: params.status || 'forSale',
+        sortSelection: params.sortSelection || 'priorityscore',
+        listing_type: params.listing_type || 'by_agent',
+        doz: params.doz || 'any',
+        ...(params.page && { page: params.page.toString() }),
+        ...(params.minPrice && { minPrice: params.minPrice.toString() }),
+        ...(params.maxPrice && { maxPrice: params.maxPrice.toString() }),
+        ...(params.minBeds && { minBeds: params.minBeds.toString() }),
+        ...(params.maxBeds && { maxBeds: params.maxBeds.toString() }),
+        ...(params.minBaths && { minBaths: params.minBaths.toString() }),
+        ...(params.maxBaths && { maxBaths: params.maxBaths.toString() }),
+        ...(params.minSqft && { minSqft: params.minSqft.toString() }),
+        ...(params.maxSqft && { maxSqft: params.maxSqft.toString() }),
+      });
+
+      const url = `${this.API_BASE_URL}/search?${searchParams.toString()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-host': 'zillow56.p.rapidapi.com',
+          'x-rapidapi-key': this.API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Zillow API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Transform the API response to our interface
+      return this.transformApiResponse(data, params.page || 1);
+      
+    } catch (error) {
+      console.error('Error fetching properties from Zillow API:', error);
+      throw new Error('Failed to fetch property listings. Please try again later.');
+    }
+  }
+
+  /**
+   * Transform Zillow API response to our interface
+   */
+  private static transformApiResponse(apiData: unknown, currentPage: number): ZillowSearchResponse {
+    // The actual structure will depend on the Zillow API response
+    // This is a placeholder transformation - adjust based on actual API response
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const properties: ZillowProperty[] = (apiData as { results?: Array<Record<string, unknown>> }).results?.map((item: Record<string, unknown>) => {
+      const parsed = this.parseAddressResponse(item);
+      return {
+        zpid: parsed.zpid || item.zpid || item.id || Math.random().toString(),
+        address: parsed.address || this.extractAddressString(item),
+        city: parsed.city || this.extractCityString(item),
+        state: parsed.state || this.extractStateString(item),
+        zipcode: parsed.zipcode || this.extractZipcodeString(item),
+        price: parsed.price || this.parsePrice(item.price || item.listPrice || item.estimate || 0),
+        bedrooms: parsed.bedrooms || parseInt(item.bedrooms || item.beds || 0) || 0,
+        bathrooms: parsed.bathrooms || parseFloat(item.bathrooms || item.baths || 0) || 0,
+        squareFeet: parsed.livingArea || parseInt(item.squareFeet || item.sqft || item.livingArea || 0) || 0,
+        lotSize: parsed.lotSize || parseInt(item.lotSize || item.lotSizeSqft || 0) || 0,
+        propertyType: parsed.homeType || item.propertyType || item.homeType || 'Unknown',
+        listingType: parsed.listingType || item.listingType || 'Unknown',
+        status: parsed.homeStatus || item.status || 'Active',
+        daysOnZillow: parseInt(item.daysOnZillow || item.daysOnMarket || 0) || 0,
+        imageUrl: this.extractPrimaryImageUrl(item),
+        imageUrls: this.extractImageUrls(item),
+        description: parsed.description || item.description || item.remarks || undefined,
+        yearBuilt: parsed.yearBuilt || parseInt(item.yearBuilt || 0) || undefined,
+        parking: item.parking || undefined,
+        heating: item.heating || undefined,
+        cooling: item.cooling || undefined,
+        hoaFee: this.parsePrice(item.hoaFee || 0),
+        propertyTax: this.parsePrice(item.propertyTax || item.taxAssessedValue || 0),
+        latitude: parsed.latitude || parseFloat(item.latitude || item.lat || 0) || undefined,
+        longitude: parsed.longitude || parseFloat(item.longitude || item.lng || 0) || undefined,
+        url: parsed.url || item.url || item.detailUrl || undefined,
+        // Enhanced fields
+        county: parsed.county,
+        livingArea: parsed.livingArea,
+        livingAreaUnits: parsed.livingAreaUnits,
+        lotSizeUnits: parsed.lotSizeUnits,
+        homeType: parsed.homeType,
+        homeStatus: parsed.homeStatus,
+        currency: parsed.currency,
+        listingSubType: parsed.listingSubType,
+        attributionInfo: parsed.attributionInfo,
+        images: parsed.images,
+        priceHistory: parsed.priceHistory,
+        taxHistory: parsed.taxHistory,
+        metadata: parsed.metadata,
+      };
+    }) || [];
+
+    // Extract pagination data from API response
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const resultsPerPage = (apiData as any).resultsPerPage || 20;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalPages = (apiData as any).totalPages || 1;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalResultCount = (apiData as any).totalResultCount || (apiData as any).totalResults || properties.length;
+
+    return {
+      results: properties,
+      resultsPerPage,
+      totalPages,
+      currentPage,
+      totalResultCount,
+      hasNextPage: currentPage < totalPages,
+      hasPreviousPage: currentPage > 1,
+    };
+  }
+
+  /**
+   * Extract address string from various formats
+   */
+  private static extractAddressString(item: Record<string, unknown>): string {
+    // If address is a string, return it
+    if (typeof item.address === 'string') {
+      return item.address;
+    }
+    
+    // If address is an object, try to construct from its properties
+    if (typeof item.address === 'object' && item.address !== null) {
+      const addr = item.address;
+      if (addr.streetAddress) {
+        return addr.streetAddress;
+      }
+      if (addr.street) {
+        return addr.street;
+      }
+    }
+    
+    // Fallback to other possible fields
+    return item.streetAddress || item.street || 'Address not available';
+  }
+
+  /**
+   * Extract city string from various formats
+   */
+  private static extractCityString(item: Record<string, unknown>): string {
+    // If city is a string, return it
+    if (typeof item.city === 'string') {
+      return item.city;
+    }
+    
+    // If city is an object, try to get the city property
+    if (typeof item.city === 'object' && item.city !== null) {
+      return item.city.city || item.city.name || 'City not available';
+    }
+    
+    // Check if address object has city
+    if (typeof item.address === 'object' && item.address !== null) {
+      return item.address.city || 'City not available';
+    }
+    
+    return 'City not available';
+  }
+
+  /**
+   * Extract state string from various formats
+   */
+  private static extractStateString(item: Record<string, unknown>): string {
+    // If state is a string, return it
+    if (typeof item.state === 'string') {
+      return item.state;
+    }
+    
+    // If state is an object, try to get the state property
+    if (typeof item.state === 'object' && item.state !== null) {
+      return item.state.state || item.state.name || 'MN';
+    }
+    
+    // Check if address object has state
+    if (typeof item.address === 'object' && item.address !== null) {
+      return item.address.state || 'MN';
+    }
+    
+    return 'MN';
+  }
+
+  /**
+   * Extract zipcode string from various formats
+   */
+  private static extractZipcodeString(item: Record<string, unknown>): string {
+    // If zipcode is a string, return it
+    if (typeof item.zipcode === 'string') {
+      return item.zipcode;
+    }
+    
+    // If zipcode is a number, convert to string
+    if (typeof item.zipcode === 'number') {
+      return item.zipcode.toString();
+    }
+    
+    // If zipcode is an object, try to get the zipcode property
+    if (typeof item.zipcode === 'object' && item.zipcode !== null) {
+      return item.zipcode.zipcode || item.zipcode.zip || '';
+    }
+    
+    // Check if address object has zipcode
+    if (typeof item.address === 'object' && item.address !== null) {
+      return item.address.zipcode || item.address.zip || '';
+    }
+    
+    // Fallback to other possible fields
+    return item.zipCode || item.zip || '';
+  }
+
+  /**
+   * Validate and clean image URL
+   */
+  private static validateImageUrl(url: string): string | undefined {
+    if (!url || typeof url !== 'string') {
+      console.log('Rejecting: not a string or empty:', url);
+      return undefined;
+    }
+    
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) {
+      console.log('Rejecting: empty after trim:', url);
+      return undefined;
+    }
+    
+    // TEMPORARILY DISABLE ALL VALIDATION TO DEBUG
+    console.log('ACCEPTING ALL URLS FOR DEBUGGING:', trimmedUrl);
+    return trimmedUrl;
+    
+    // Only reject specific Google Maps URLs that are clearly not images
+    if (trimmedUrl.includes('maps.googleapis.com/maps/api/streetview') ||
+        trimmedUrl.includes('maps.googleapis.com/maps/api/staticmap') ||
+        trimmedUrl.includes('google.com/maps/embed') ||
+        trimmedUrl.includes('google.com/maps/place')) {
+      console.log('Rejecting Google Maps URL:', trimmedUrl);
+      return undefined;
+    }
+    
+    // Basic URL validation - be more permissive
+    try {
+      // Use URL constructor safely
+      new URL(trimmedUrl);
+      console.log('Accepting valid URL:', trimmedUrl);
+      return trimmedUrl;
+    } catch (error) {
+      // If it's not a full URL, it might be a relative path
+      if (trimmedUrl.startsWith('/') || trimmedUrl.startsWith('./')) {
+        console.log('Accepting relative path:', trimmedUrl);
+        return trimmedUrl;
+      }
+      console.log('Rejecting invalid URL:', trimmedUrl, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Extract primary image URL from various possible fields
+   */
+  private static extractPrimaryImageUrl(item: Record<string, unknown>): string | undefined {
+    // Priority order for finding the best primary image
+    const imageFields = [
+      'imgSrc',        // Zillow's primary image field
+      'imageUrl',
+      'primaryPhoto', 
+      'heroImage',
+      'thumbnail',
+      'photo',
+      'mainImage',
+      'featuredImage'
+    ];
+
+    for (const field of imageFields) {
+      const value = item[field];
+      const validatedUrl = this.validateImageUrl(value);
+      if (validatedUrl) {
+        return validatedUrl;
+      }
+    }
+
+    // If no single image found, try to get the first image from an array
+    const arrayFields = ['imageUrls', 'photos', 'images'];
+    for (const field of arrayFields) {
+      const value = item[field];
+      if (Array.isArray(value) && value.length > 0) {
+        const firstImage = value[0];
+        const validatedUrl = this.validateImageUrl(firstImage);
+        if (validatedUrl) {
+          return validatedUrl;
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Extract all image URLs from various possible fields
+   */
+  private static extractImageUrls(item: Record<string, unknown>): string[] {
+    const imageUrls: string[] = [];
+
+    // Check array fields first
+    const arrayFields = ['imageUrls', 'photos', 'images', 'gallery'];
+    for (const field of arrayFields) {
+      const value = item[field];
+      if (Array.isArray(value)) {
+        for (const image of value) {
+          const validatedUrl = this.validateImageUrl(image);
+          if (validatedUrl && !imageUrls.includes(validatedUrl)) {
+            imageUrls.push(validatedUrl);
+          }
+        }
+      }
+    }
+
+    // Add single image fields if not already included
+    const singleFields = [
+      'imgSrc',        // Zillow's primary image field
+      'imageUrl',
+      'primaryPhoto', 
+      'heroImage',
+      'thumbnail',
+      'photo',
+      'mainImage',
+      'featuredImage'
+    ];
+
+    for (const field of singleFields) {
+      const value = item[field];
+      const validatedUrl = this.validateImageUrl(value);
+      if (validatedUrl && !imageUrls.includes(validatedUrl)) {
+        imageUrls.push(validatedUrl);
+      }
+    }
+
+    return imageUrls;
+  }
+
+  /**
+   * Parse price from various formats
+   */
+  private static parsePrice(price: unknown): number {
+    if (typeof price === 'number') return price;
+    if (typeof price === 'string') {
+      // Remove currency symbols and commas
+      const cleaned = price.replace(/[$,]/g, '');
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  }
+
+  /**
+   * Get property details by ZPID
+   */
+  static async getPropertyDetails(zpid: string): Promise<ZillowProperty | null> {
+    try {
+      const url = `${this.API_BASE_URL}/property?zpid=${zpid}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-host': 'zillow56.p.rapidapi.com',
+          'x-rapidapi-key': this.API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Zillow API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Transform single property response
+      const properties = this.transformApiResponse({ results: [data] }, 1);
+      return properties.results[0] || null;
+      
+    } catch (error) {
+      console.error('Error fetching property details from Zillow API:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get property photos by ZPID
+   */
+  static async getPropertyPhotos(zpid: string): Promise<string[]> {
+    try {
+      const url = `${this.API_BASE_URL}/photos?zpid=${zpid}`;
+      
+      console.log('Fetching photos for ZPID:', zpid, 'URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-host': 'zillow56.p.rapidapi.com',
+          'x-rapidapi-key': this.API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Zillow Photos API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Photos API response for ZPID:', zpid, data);
+      
+      // Extract photo URLs from the response
+      const photoUrls = this.extractPhotoUrlsFromResponse(data);
+      console.log('Extracted photo URLs for ZPID:', zpid, photoUrls);
+      
+      return photoUrls;
+      
+    } catch (error) {
+      console.error('Error fetching property photos from Zillow API for ZPID:', zpid, error);
+      return [];
+    }
+  }
+
+  /**
+   * Extract photo URLs from the photos API response
+   */
+  private static extractPhotoUrlsFromResponse(data: Record<string, unknown>): string[] {
+    const photoUrls: string[] = [];
+
+    // Handle different possible response structures
+    if (Array.isArray(data)) {
+      // If response is directly an array of photos
+      for (const photo of data) {
+        this.extractUrlsFromPhotoObject(photo, photoUrls);
+      }
+    } else if (typeof data === 'object' && data !== null) {
+      // If response is an object with photos array
+      const photosArray = data.photos || data.images || data.gallery || data.photoUrls;
+      if (Array.isArray(photosArray)) {
+        for (const photo of photosArray) {
+          this.extractUrlsFromPhotoObject(photo, photoUrls);
+        }
+      }
+    }
+
+    return photoUrls;
+  }
+
+  /**
+   * Extract URLs from a single photo object, handling various structures
+   */
+  private static extractUrlsFromPhotoObject(photo: Record<string, unknown>, photoUrls: string[]): void {
+    if (typeof photo === 'string') {
+      const validatedUrl = this.validateImageUrl(photo);
+      if (validatedUrl) {
+        photoUrls.push(validatedUrl);
+      }
+      return;
+    }
+
+    if (typeof photo !== 'object' || photo === null) {
+      return;
+    }
+
+    // Handle the actual Zillow API response structure with mixedSources
+    if (photo.mixedSources) {
+      // Prefer JPEG over WebP for better compatibility
+      const jpegSources = photo.mixedSources.jpeg || [];
+      const webpSources = photo.mixedSources.webp || [];
+      
+      // Try to get the highest resolution JPEG first
+      const sortedJpeg = jpegSources.sort((a: { width?: number }, b: { width?: number }) => (b.width || 0) - (a.width || 0));
+      for (const source of sortedJpeg) {
+        const validatedUrl = this.validateImageUrl(source.url);
+        if (validatedUrl && !photoUrls.includes(validatedUrl)) {
+          photoUrls.push(validatedUrl);
+          break; // Only take one URL per photo object
+        }
+      }
+      
+      // If no JPEG found, try WebP
+      if (photoUrls.length === 0 || !photoUrls.some(url => url.includes(photo.mixedSources.jpeg?.[0]?.url || ''))) {
+        const sortedWebp = webpSources.sort((a: { width?: number }, b: { width?: number }) => (b.width || 0) - (a.width || 0));
+        for (const source of sortedWebp) {
+          const validatedUrl = this.validateImageUrl(source.url);
+          if (validatedUrl && !photoUrls.includes(validatedUrl)) {
+            photoUrls.push(validatedUrl);
+            break;
+          }
+        }
+      }
+    } else {
+      // Fallback to simple URL fields for other response structures
+      const urlFields = ['url', 'src', 'imageUrl', 'photoUrl', 'href'];
+      for (const field of urlFields) {
+        const validatedUrl = this.validateImageUrl(photo[field]);
+        if (validatedUrl && !photoUrls.includes(validatedUrl)) {
+          photoUrls.push(validatedUrl);
+          break; // Use first valid URL from this photo object
+        }
+      }
+    }
+  }
+
+  /**
+   * Normalize a Zillow-like /address API raw response
+   * into a unified property data structure.
+   */
+  private static parseAddressResponse(apiResponse: Record<string, unknown>): Record<string, unknown> {
+    // Normalize root vs nested structure
+    const property = apiResponse.property || apiResponse;
+    const meta = property.listingMetadata || {};
+
+    // ------------------------------
+    // 1️⃣ Basic Property Information
+    // ------------------------------
+    const propertyData = {
+      zpid: property.zpid || null,
+      address: property.address?.streetAddress ||
+               property.abbreviatedAddress ||
+               property.displayAddress ||
+               "",
+      city: property.address?.city || property.city || "",
+      state: property.address?.state || property.state || "",
+      zipcode: property.address?.zipcode || property.zipcode || "",
+      county: property.county || property.address?.county || null,
+      latitude: property.latitude || null,
+      longitude: property.longitude || null,
+      bedrooms: property.bedrooms || null,
+      bathrooms: property.bathrooms || null,
+      livingArea: property.livingAreaValue || property.livingArea || null,
+      livingAreaUnits: property.livingAreaUnitsShort ||
+                       property.livingAreaUnits ||
+                       "sqft",
+      lotSize: property.lotAreaValue || property.lotSize || null,
+      lotSizeUnits: property.lotAreaUnits || "sqft",
+      yearBuilt: property.yearBuilt || null,
+      homeType: property.homeType ||
+                property.propertyTypeDimension ||
+                property.listingTypeDimension ||
+                null,
+      homeStatus: property.homeStatus ||
+                  property.keystoneHomeStatus ||
+                  property.homeStatusDimension ||
+                  null,
+      price: property.price ||
+             property.listPriceLow ||
+             property.listPrice ||
+             property.lastSoldPrice ||
+             null,
+      currency: property.currency || "USD",
+      description: property.description || null,
+      url: property.hdpUrl
+        ? `https://www.zillow.com${property.hdpUrl}`
+        : null,
+    };
+
+    // ---------------------------------
+    // 2️⃣ Listing Type and Sub-Type
+    // ---------------------------------
+    propertyData.listingType =
+      property.listingTypeDimension ||
+      property.homeType ||
+      null;
+
+    propertyData.listingSubType = property.listing_sub_type || {
+      is_FSBA: false,
+      is_FSBO: false,
+      is_bankOwned: false,
+      is_comingSoon: false,
+      is_forAuction: false,
+      is_foreclosure: false,
+      is_newHome: false,
+    };
+
+    // ------------------------------
+    // 3️⃣ Attribution / Agent Info
+    // ------------------------------
+    const att = property.attributionInfo || {};
+    propertyData.attributionInfo = {
+      agentName: att.agentName || null,
+      agentPhoneNumber: att.agentPhoneNumber || null,
+      agentEmail: att.agentEmail || null,
+      agentLicenseNumber: att.agentLicenseNumber || null,
+      brokerName: att.brokerName || null,
+      brokerPhoneNumber: att.brokerPhoneNumber || null,
+      buyerAgentName: att.buyerAgentName || null,
+      buyerBrokerageName: att.buyerBrokerageName || null,
+      coAgentName: att.coAgentName || null,
+      coAgentNumber: att.coAgentNumber || null,
+      lastChecked: att.lastChecked || null,
+      lastUpdated: att.lastUpdated || null,
+      mlsId: att.mlsId || null,
+      mlsName: att.mlsName || null,
+      mlsDisclaimer: att.mlsDisclaimer || "",
+      listingAgreement: att.listingAgreement || null,
+      listingAgents: att.listingAgents || [],
+      listingOffices: att.listingOffices || [],
+      providerLogo: att.providerLogo || null,
+      attributionTitle: att.attributionTitle || null,
+      trueStatus: att.trueStatus || null,
+    };
+
+    // ---------------------------------
+    // 4️⃣ Images (Hero + Gallery)
+    // ---------------------------------
+    const images = [];
+
+    if (property.hiResImageLink) {
+      images.push({
+        type: "hero",
+        url: property.hiResImageLink,
+        caption: "Main Photo",
+      });
+    } else if (property.desktopWebHdpImageLink) {
+      images.push({
+        type: "hero",
+        url: property.desktopWebHdpImageLink,
+        caption: "Main Photo",
+      });
+    }
+
+    // Add gallery / thumbnails
+    (property.miniCardPhotos || property.photos || []).forEach((p: Record<string, unknown>, i: number) => {
+      if (p.url) {
+        images.push({
+          type: "gallery",
+          url: p.url,
+          caption: p.caption || `Photo ${i + 1}`,
+        });
+      }
+    });
+
+    // Street View fallback
+    if (property.address?.streetAddress) {
+      images.push({
+        type: "street_view",
+        url: `https://maps.googleapis.com/maps/api/streetview?size=640x400&location=${encodeURIComponent(
+          property.address.streetAddress
+        )}`,
+        caption: "Street View",
+      });
+    }
+
+    propertyData.images = images;
+
+    // ---------------------------------
+    // 5️⃣ Price & Tax History
+    // ---------------------------------
+    propertyData.priceHistory = (property.priceHistory || []).map((ph: Record<string, unknown>) => ({
+      date: ph.date || ph.time || "",
+      event: ph.event || ph.priceChangeReason || "",
+      price: ph.price || ph.value || null,
+      source: ph.source || "Zillow",
+    }));
+
+    propertyData.taxHistory = (property.taxHistory || []).map((tx: Record<string, unknown>) => ({
+      year: tx.taxYear || null,
+      taxPaid: tx.taxPaid || null,
+      assessment: tx.assessedValue || null,
+    }));
+
+    // ---------------------------------
+    // 6️⃣ Metadata Flags
+    // ---------------------------------
+    propertyData.metadata = {
+      canShowPriceHistory: meta.canShowPriceHistory ?? true,
+      canShowTaxHistory: meta.canShowTaxHistory ?? true,
+      listingStatus: meta.listingStatus || property.statusType || null,
+      propertyStatus: property.homeStatus || null,
+      isZillowOwned: meta.isZillowOwned || false,
+    };
+
+    // ---------------------------------
+    // 7️⃣ Return Unified Result
+    // ---------------------------------
+    return propertyData;
+  }
+
+  /**
+   * Format price for display
+   */
+  static formatPrice(price: number): string {
+    if (price >= 1000000) {
+      return `$${(price / 1000000).toFixed(1)}M`;
+    } else if (price >= 1000) {
+      return `$${(price / 1000).toFixed(0)}K`;
+    } else {
+      return `$${price.toLocaleString()}`;
+    }
+  }
+
+  /**
+   * Format square footage for display
+   */
+  static formatSquareFeet(sqft: number): string {
+    if (sqft >= 1000) {
+      return `${(sqft / 1000).toFixed(1)}K sq ft`;
+    } else {
+      return `${sqft.toLocaleString()} sq ft`;
+    }
+  }
+
+  /**
+   * Format lot size for display
+   */
+  static formatLotSize(lotSize: number): string {
+    if (lotSize >= 43560) { // 1 acre = 43,560 sq ft
+      const acres = lotSize / 43560;
+      return `${acres.toFixed(1)} acres`;
+    } else if (lotSize >= 1000) {
+      return `${(lotSize / 1000).toFixed(1)}K sq ft`;
+    } else {
+      return `${lotSize.toLocaleString()} sq ft`;
+    }
+  }
+}

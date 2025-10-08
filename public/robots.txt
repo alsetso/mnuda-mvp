@@ -1,0 +1,13 @@
+# Mnuda Robots.txt
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://mnuda.com/sitemap.xml
+Sitemap: https://mnuda.com/sitemap-for-sale-mn.xml
+Sitemap: https://mnuda.com/sitemap-for-rent-mn.xml
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /admin/
+

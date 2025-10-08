@@ -19,9 +19,11 @@ interface SearchSuggestion {
 interface FloatingSearchInputProps {
   onSearchComplete?: (address: Address) => void;
   onFlyTo?: (coordinates: { lat: number; lng: number }, zoom?: number) => void;
+  currentSession?: { id: string; name: string; nodes: unknown[] } | null;
+  onAddNode?: (node: unknown) => void;
 }
 
-export function FloatingSearchInput({ onSearchComplete, onFlyTo }: FloatingSearchInputProps) {
+export function FloatingSearchInput({ onSearchComplete, onFlyTo, currentSession: propsCurrentSession, onAddNode: propsAddNode }: FloatingSearchInputProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
@@ -33,7 +35,11 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo }: FloatingSearc
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
   
-  const { currentSession, addNode } = useSessionManager();
+  // Use props if provided, otherwise fall back to hook (for backwards compatibility)
+  const sessionManagerHook = useSessionManager();
+  const currentSession = propsCurrentSession ?? sessionManagerHook.currentSession;
+  const addNode = propsAddNode ?? sessionManagerHook.addNode;
+  
   const { withApiToast } = useToast();
 
   // Debounced search for suggestions
@@ -57,9 +63,10 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo }: FloatingSearc
       const params = new URLSearchParams({
         access_token: token,
         country: 'US',
-        types: 'address,place,locality,neighborhood',
+        types: 'address', // Only addresses for single-line results
         limit: '8',
-        bbox: '-97.5,43.5,-89.5,49.5' // Minnesota bounds
+        bbox: '-97.5,43.5,-89.5,49.5', // Minnesota bounds (west,south,east,north)
+        proximity: '-94.6859,46.7296' // Center of Minnesota for better relevance
       });
 
       const response = await fetch(`${url}?${params}`);
@@ -67,13 +74,36 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo }: FloatingSearc
 
       const data = await response.json();
       const filteredSuggestions = data.features.filter((feature: SearchSuggestion) => {
-        // Filter to Minnesota only
+        // Multiple layers of Minnesota filtering for bulletproof results
+        
+        // 1. Coordinate-based filtering
         const coordinates = { lat: feature.center[1], lng: feature.center[0] };
+        const isWithinBounds = minnesotaBoundsService.isWithinMinnesota(coordinates);
+        
+        // 2. Context-based filtering (check if state is Minnesota)
+        const context = feature.context || [];
+        const stateContext = context.find(ctx => ctx.id.startsWith('region'));
+        const isMinnesotaState = stateContext ? 
+          minnesotaBoundsService.isMinnesotaState(stateContext.text) : false;
+        
+        // 3. Place name filtering (check if place name contains Minnesota indicators)
+        const placeName = feature.place_name.toLowerCase();
+        const hasMinnesotaIndicators = placeName.includes('minnesota') || 
+                                     placeName.includes(', mn') || 
+                                     placeName.includes(' mn ');
+        
+        // Must pass ALL three checks to be included
+        return isWithinBounds && (isMinnesotaState || hasMinnesotaIndicators);
+      });
+
+      // Final safety check - ensure no non-Minnesota results slip through
+      const finalSuggestions = filteredSuggestions.filter(suggestion => {
+        const coordinates = { lat: suggestion.center[1], lng: suggestion.center[0] };
         return minnesotaBoundsService.isWithinMinnesota(coordinates);
       });
 
-      setSuggestions(filteredSuggestions);
-      setShowSuggestions(filteredSuggestions.length > 0);
+      setSuggestions(finalSuggestions);
+      setShowSuggestions(finalSuggestions.length > 0);
     } catch (error) {
       console.error('Search suggestions error:', error);
       setSuggestions([]);
@@ -107,7 +137,10 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo }: FloatingSearc
 
     const coordinates = { lat: suggestion.center[1], lng: suggestion.center[0] };
     
-    // Validate Minnesota bounds
+    // Parse address from suggestion
+    const address = parseAddressFromSuggestion(suggestion);
+    
+    // Validate Minnesota bounds first
     if (!minnesotaBoundsService.isWithinMinnesota(coordinates)) {
       await withApiToast('Minnesota Only', () => Promise.reject('This location is not in Minnesota. Please search for addresses within Minnesota state boundaries.'), {
         errorMessage: 'Not in Minnesota',
@@ -115,33 +148,38 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo }: FloatingSearc
       return;
     }
 
-    // Parse address from suggestion
-    const address = parseAddressFromSuggestion(suggestion);
-    
-    // Fly to location
-    onFlyTo?.(coordinates, 16);
+    // Show toast and perform search
+    await withApiToast('Searching...', async () => {
+      // Create search history node IMMEDIATELY when search starts
+      if (currentSession) {
+        const searchNode = {
+          id: `search-${Date.now()}`,
+          type: 'start' as const,
+          customTitle: `Search: ${suggestion.place_name}`,
+          address: {
+            ...address,
+            coordinates: { latitude: coordinates.lat, longitude: coordinates.lng }
+          },
+          apiName: 'Search History',
+          timestamp: Date.now(),
+          mnNodeId: `search-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          hasCompleted: true, // Search is immediately completed
+        };
+        
+        addNode(searchNode);
+      }
 
-    // Create search history node
-    if (currentSession) {
-      const searchNode = {
-        id: `search-${Date.now()}`,
-        type: 'start' as const,
-        customTitle: `Search: ${suggestion.place_name}`,
-        address: {
-          ...address,
-          coordinates: { latitude: coordinates.lat, longitude: coordinates.lng }
-        },
-        apiName: 'Search History',
-        timestamp: Date.now(),
-        mnNodeId: `search-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        hasCompleted: true, // Search is immediately completed
-      };
-      
-      addNode(searchNode);
-    }
+      // Fly to location
+      onFlyTo?.(coordinates, 16);
 
-    // Notify parent component
-    onSearchComplete?.(address);
+      // Notify parent component
+      onSearchComplete?.(address);
+
+      return Promise.resolve();
+    }, {
+      successMessage: 'Search completed',
+      errorMessage: 'Search failed',
+    });
 
     // Collapse search input
     setIsExpanded(false);
@@ -296,15 +334,9 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo }: FloatingSearc
                   index === selectedIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                 }`}
               >
-                <div className="font-medium truncate">{suggestion.place_name}</div>
-                {suggestion.context && (
-                  <div className="text-xs text-gray-500 truncate">
-                    {suggestion.context
-                      .filter(ctx => ctx.id.startsWith('place') || ctx.id.startsWith('region'))
-                      .map(ctx => ctx.text)
-                      .join(', ')}
-                  </div>
-                )}
+                <div className="font-medium truncate">
+                  {formatAddressSuggestion(suggestion)}
+                </div>
               </button>
             ))}
           </div>
@@ -312,6 +344,25 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo }: FloatingSearc
       </div>
     </div>
   );
+}
+
+// Helper function to format address suggestion for display
+function formatAddressSuggestion(suggestion: SearchSuggestion): string {
+  const context = suggestion.context || [];
+  
+  // Extract components from context
+  const street = suggestion.place_name.split(',')[0] || '';
+  const city = context.find(ctx => ctx.id.startsWith('place'))?.text || '';
+  const state = context.find(ctx => ctx.id.startsWith('region'))?.text || 'MN';
+  const zip = context.find(ctx => ctx.id.startsWith('postcode'))?.text || '';
+
+  // Format as single line: "123 Main St, Minneapolis, MN 55401"
+  const parts = [street.trim()];
+  if (city) parts.push(city.trim());
+  if (state) parts.push(state.trim());
+  if (zip) parts.push(zip.trim());
+  
+  return parts.join(', ');
 }
 
 // Helper function to parse address from Mapbox suggestion

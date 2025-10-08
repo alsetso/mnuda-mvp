@@ -202,11 +202,36 @@ export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }
           onMapReadyRef.current?.(map.current!);
         });
 
-        const handleClick = (e: import('mapbox-gl').MapMouseEvent) => {
+        // Track last interaction to prevent duplicate events
+        let lastInteractionTime = 0;
+        const INTERACTION_DEBOUNCE_MS = 300; // Prevent duplicate events within 300ms
+
+        const handleMapInteraction = (e: import('mapbox-gl').MapMouseEvent | import('mapbox-gl').MapTouchEvent) => {
+          const now = Date.now();
+          if (now - lastInteractionTime < INTERACTION_DEBOUNCE_MS) {
+            return; // Ignore duplicate events
+          }
+          lastInteractionTime = now;
+
           const { lng, lat } = e.lngLat;
           onMapClickRef.current?.({ lat, lng });
         };
+
+        const handleClick = (e: import('mapbox-gl').MapMouseEvent) => {
+          handleMapInteraction(e);
+        };
+
+        // Handle mobile touch events for immediate pin dropping
+        const handleTouchEnd = (e: import('mapbox-gl').MapTouchEvent) => {
+          // Only handle single touch (not multi-touch gestures)
+          if (e.originalEvent.touches.length === 0) {
+            handleMapInteraction(e);
+          }
+        };
+
+        // Add both click and touchend event listeners
         map.current.on('click', handleClick);
+        map.current.on('touchend', handleTouchEnd);
 
         // Track map movement and cursor position
 
@@ -223,6 +248,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }
         return () => {
           if (map.current) {
             map.current.off('click', handleClick);
+            map.current.off('touchend', handleTouchEnd);
             map.current.off('move', updateMapInfo);
             map.current.off('zoom', updateMapInfo);
             map.current.off('rotate', updateMapInfo);
