@@ -67,9 +67,12 @@ export async function GET() {
   // Add cities
   if (cities) {
     for (const city of cities) {
-      const lastmod = city.updated_at || now;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lastmod = (city as any).updated_at || now;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const citySlug = (city as any).slug;
       urls.push(`  <url>
-    <loc>${baseUrl}/mn/${city.slug}?status=for-rent</loc>
+    <loc>${baseUrl}/mn/${citySlug}?status=for-rent</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
@@ -80,9 +83,12 @@ export async function GET() {
   // Add counties
   if (counties) {
     for (const county of counties) {
-      const lastmod = county.created_at || now;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lastmod = (county as any).created_at || now;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const countySlug = (county as any).slug;
       urls.push(`  <url>
-    <loc>${baseUrl}/mn/county/${county.slug}?status=for-rent</loc>
+    <loc>${baseUrl}/mn/county/${countySlug}?status=for-rent</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -93,9 +99,12 @@ export async function GET() {
   // Add zips
   if (zips) {
     for (const zip of zips) {
-      const lastmod = zip.created_at || now;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lastmod = (zip as any).created_at || now;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const zipCode = (zip as any).zip_code;
       urls.push(`  <url>
-    <loc>${baseUrl}/mn/zip/${zip.zip_code}?status=for-rent</loc>
+    <loc>${baseUrl}/mn/zip/${zipCode}?status=for-rent</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>

@@ -644,7 +644,7 @@ function MapPageContent() {
             onSearchComplete={handleSearchComplete} 
             onFlyTo={flyTo}
             currentSession={currentSession}
-            onAddNode={addNode}
+            onAddNode={(node: unknown) => addNode(node as NodeData)}
           />
           
           <TrackingFab />

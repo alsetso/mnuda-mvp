@@ -33,7 +33,7 @@ export function PropertyCarousel({
   const [selectedProperty, setSelectedProperty] = useState<ZillowProperty | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [, ] = useState(0);
 
   const displayTitle = title || `${city} Homes ${status === 'forSale' ? 'For Sale' : 'For Rent'}`;
 
@@ -73,13 +73,6 @@ export function PropertyCarousel({
     setSelectedProperty(null);
   };
 
-  const nextProperty = () => {
-    setCurrentIndex((prev) => (prev + 1) % properties.length);
-  };
-
-  const prevProperty = () => {
-    setCurrentIndex((prev) => (prev - 1 + properties.length) % properties.length);
-  };
 
   if (loading) {
     return (
@@ -145,7 +138,7 @@ export function PropertyCarousel({
           ) : (
             // Multiple properties - show compact list
             <div className="space-y-4">
-              {visibleProperties.map((property, index) => (
+              {visibleProperties.map((property) => (
                 <div
                   key={property.zpid}
                   className="flex space-x-4 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
@@ -217,7 +210,8 @@ export function PropertyCarousel({
       {selectedProperty && (
         <PropertyModal
           zpid={selectedProperty.zpid}
-          propertyData={selectedProperty}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          propertyData={selectedProperty as any}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
         />

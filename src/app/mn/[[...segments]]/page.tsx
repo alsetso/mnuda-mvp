@@ -98,7 +98,9 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   return {
     title,
     description,
-    canonical: canonicalUrl,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     ...(noindex && { robots: 'noindex, nofollow' }),
   };
 }

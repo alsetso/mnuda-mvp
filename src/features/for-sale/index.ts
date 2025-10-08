@@ -1,2 +1,3 @@
 // For Sale feature exports
-export { ZillowApiService, ZillowProperty, ZillowSearchResponse, ZillowSearchParams } from './services/zillowApiService';
+export { ZillowApiService } from './services/zillowApiService';
+export type { ZillowProperty, ZillowSearchResponse, ZillowSearchParams } from './services/zillowApiService';

@@ -30,7 +30,7 @@ interface PropertyModalProps {
   onClose: () => void;
 }
 
-interface PropertyDetails extends ZillowProperty {
+interface PropertyDetails extends Omit<ZillowProperty, 'zipcode' | 'lotSize' | 'priceHistory' | 'taxHistory'> {
   // Additional detailed fields from the property details API
   description?: string;
   yearBuilt?: number;
@@ -65,6 +65,8 @@ interface PropertyDetails extends ZillowProperty {
   taxHistory?: Array<{
     year: number;
     tax: number;
+    taxPaid?: number;
+    assessment?: number;
   }>;
 }
 
@@ -73,8 +75,8 @@ export function PropertyModal({ zpid, propertyData, isOpen, onClose }: PropertyM
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPhotoSkeleton, setShowPhotoSkeleton] = useState(false);
-  const [loadingPhotos, setLoadingPhotos] = useState(false);
-  const [photosRetryCount, setPhotosRetryCount] = useState(0);
+  const [, setLoadingPhotos] = useState(false);
+  const [, setPhotosRetryCount] = useState(0);
   const [isTracing, setIsTracing] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -507,7 +509,7 @@ export function PropertyModal({ zpid, propertyData, isOpen, onClose }: PropertyM
       property.bedrooms > 0 ? `Bedrooms: ${property.bedrooms}` : null,
       property.bathrooms > 0 ? `Bathrooms: ${property.bathrooms}` : null,
       property.squareFeet > 0 ? `Square Feet: ${formatSquareFeet(property.squareFeet)}` : null,
-      property.lotSize > 0 ? `Lot Size: ${formatLotSize(property.lotSize)}` : null,
+      property.lotSize && property.lotSize > 0 ? `Lot Size: ${formatLotSize(property.lotSize)}` : null,
       property.yearBuilt ? `Year Built: ${property.yearBuilt}` : null,
       property.propertyType ? `Property Type: ${property.propertyType}` : null,
     ].filter(Boolean);
@@ -578,7 +580,8 @@ export function PropertyModal({ zpid, propertyData, isOpen, onClose }: PropertyM
     }
 
     // Footer
-    const totalPages = doc.getNumberOfPages();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalPages = (doc as any).getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
@@ -728,7 +731,7 @@ export function PropertyModal({ zpid, propertyData, isOpen, onClose }: PropertyM
           // Check if personData is already parsed (has entities array)
           if (node.personData && typeof node.personData === 'object' && 'entities' in node.personData) {
             const parsedData = node.personData as Record<string, unknown>;
-            entityCount += parsedData.totalEntities || 0;
+            entityCount += (parsedData.totalEntities as number) || 0;
           } else {
             // If not parsed, try to parse it
             const parsedData = personDetailParseService.parsePersonDetailResponse(
@@ -1069,7 +1072,7 @@ export function PropertyModal({ zpid, propertyData, isOpen, onClose }: PropertyM
                                 <span className="font-medium">{formatSquareFeet(property.squareFeet)}</span>
                               </div>
                             )}
-                            {property.lotSize > 0 && (
+                            {property.lotSize && property.lotSize > 0 && (
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Lot Size</span>
                                 <span className="font-medium">{formatLotSize(property.lotSize)}</span>
@@ -1382,7 +1385,8 @@ export function PropertyModal({ zpid, propertyData, isOpen, onClose }: PropertyM
                                 </div>
                                 <div className="text-right">
                                   <div className="text-sm text-gray-500">{entry.date}</div>
-                                  <div className="text-xs text-gray-400">{entry.source}</div>
+                                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                  <div className="text-xs text-gray-400">{(entry as any).source || 'N/A'}</div>
                                 </div>
                               </div>
                             ))}

@@ -50,10 +50,24 @@ export function PropertySearchLayout({
       setLoading(true);
       setError(null);
 
+      // Map PropertyStatus to ZillowSearchParams status
+      const getZillowStatus = (propertyStatus: PropertyStatus): 'forSale' | 'forRent' | 'sold' => {
+        switch (propertyStatus) {
+          case 'recentlySold':
+            return 'sold';
+          case 'forSale':
+            return 'forSale';
+          case 'forRent':
+            return 'forRent';
+          default:
+            return 'forSale';
+        }
+      };
+
       const searchParams = {
         location: `${city}, ${state}`,
         page: currentPage,
-        status: status as const,
+        status: getZillowStatus(status),
         sortSelection: filters.sortBy,
         listing_type: 'by_agent' as const,
         doz: 'any' as const,

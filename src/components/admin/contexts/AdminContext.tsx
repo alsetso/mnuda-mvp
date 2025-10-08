@@ -41,7 +41,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
   const config = getAdminConfig();
   
   // Check if user can perform specific actions
-  const canPerformAction = (action: AdminAction): boolean => {
+  const canPerformAction = (): boolean => {
     // For now, all admin actions require admin access
     // In the future, this could be more granular based on the specific action
     return permissions.canAccessAdminPanel && isAdmin;

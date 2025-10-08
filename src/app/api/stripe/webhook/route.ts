@@ -100,18 +100,23 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
     }
 
     // Update the profile
-    const { error: updateError } = await supabase
+    const updateData = {
+      subscription_status: subscriptionStatus,
+      updated_at: new Date().toISOString()
+    };
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
       .from('profiles')
-      .update({ 
-        subscription_status: subscriptionStatus,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', profile.id);
+      .update(updateData)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq('id', (profile as any).id);
 
     if (updateError) {
       console.error('Error updating subscription status:', updateError);
     } else {
-      console.log(`Updated subscription status to ${subscriptionStatus} for user ${profile.id}`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.log(`Updated subscription status to ${subscriptionStatus} for user ${(profile as any).id}`);
     }
   } catch (error) {
     console.error('Error handling subscription change:', error);
@@ -135,18 +140,21 @@ async function handleSubscriptionCanceled(subscription: Stripe.Subscription) {
     }
 
     // Update the profile to canceled status
-    const { error: updateError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
       .from('profiles')
       .update({ 
         subscription_status: 'canceled',
         updated_at: new Date().toISOString()
       })
-      .eq('id', profile.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq('id', (profile as any).id);
 
     if (updateError) {
       console.error('Error updating subscription status to canceled:', updateError);
     } else {
-      console.log(`Updated subscription status to canceled for user ${profile.id}`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.log(`Updated subscription status to canceled for user ${(profile as any).id}`);
     }
   } catch (error) {
     console.error('Error handling subscription cancellation:', error);
@@ -170,18 +178,21 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
     }
 
     // Ensure subscription is marked as active after successful payment
-    const { error: updateError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
       .from('profiles')
       .update({ 
         subscription_status: 'active',
         updated_at: new Date().toISOString()
       })
-      .eq('id', profile.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq('id', (profile as any).id);
 
     if (updateError) {
       console.error('Error updating subscription status after payment:', updateError);
     } else {
-      console.log(`Payment succeeded, updated subscription status to active for user ${profile.id}`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.log(`Payment succeeded, updated subscription status to active for user ${(profile as any).id}`);
     }
   } catch (error) {
     console.error('Error handling payment success:', error);
@@ -205,18 +216,21 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     }
 
     // Mark subscription as past_due after failed payment
-    const { error: updateError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
       .from('profiles')
       .update({ 
         subscription_status: 'past_due',
         updated_at: new Date().toISOString()
       })
-      .eq('id', profile.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq('id', (profile as any).id);
 
     if (updateError) {
       console.error('Error updating subscription status after failed payment:', updateError);
     } else {
-      console.log(`Payment failed, updated subscription status to past_due for user ${profile.id}`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.log(`Payment failed, updated subscription status to past_due for user ${(profile as any).id}`);
     }
   } catch (error) {
     console.error('Error handling payment failure:', error);

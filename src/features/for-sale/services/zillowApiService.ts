@@ -185,50 +185,55 @@ export class ZillowApiService {
   private static transformApiResponse(apiData: unknown, currentPage: number): ZillowSearchResponse {
     // The actual structure will depend on the Zillow API response
     // This is a placeholder transformation - adjust based on actual API response
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const properties: ZillowProperty[] = (apiData as { results?: Array<Record<string, unknown>> }).results?.map((item: Record<string, unknown>) => {
       const parsed = this.parseAddressResponse(item);
       return {
-        zpid: parsed.zpid || item.zpid || item.id || Math.random().toString(),
-        address: parsed.address || this.extractAddressString(item),
-        city: parsed.city || this.extractCityString(item),
-        state: parsed.state || this.extractStateString(item),
-        zipcode: parsed.zipcode || this.extractZipcodeString(item),
-        price: parsed.price || this.parsePrice(item.price || item.listPrice || item.estimate || 0),
-        bedrooms: parsed.bedrooms || parseInt(item.bedrooms || item.beds || 0) || 0,
-        bathrooms: parsed.bathrooms || parseFloat(item.bathrooms || item.baths || 0) || 0,
-        squareFeet: parsed.livingArea || parseInt(item.squareFeet || item.sqft || item.livingArea || 0) || 0,
-        lotSize: parsed.lotSize || parseInt(item.lotSize || item.lotSizeSqft || 0) || 0,
-        propertyType: parsed.homeType || item.propertyType || item.homeType || 'Unknown',
-        listingType: parsed.listingType || item.listingType || 'Unknown',
-        status: parsed.homeStatus || item.status || 'Active',
-        daysOnZillow: parseInt(item.daysOnZillow || item.daysOnMarket || 0) || 0,
+        zpid: (parsed.zpid || item.zpid || item.id || Math.random().toString()) as string,
+        address: (parsed.address || this.extractAddressString(item)) as string,
+        city: (parsed.city || this.extractCityString(item)) as string,
+        state: (parsed.state || this.extractStateString(item)) as string,
+        zipcode: (parsed.zipcode || this.extractZipcodeString(item)) as string,
+        price: (parsed.price || this.parsePrice(item.price || item.listPrice || item.estimate || 0)) as number,
+        bedrooms: (parsed.bedrooms || parseInt(String(item.bedrooms || item.beds || 0)) || 0) as number,
+        bathrooms: (parsed.bathrooms || parseFloat(String(item.bathrooms || item.baths || 0)) || 0) as number,
+        squareFeet: (parsed.livingArea || parseInt(String(item.squareFeet || item.sqft || item.livingArea || 0)) || 0) as number,
+        lotSize: (parsed.lotSize || parseInt(String(item.lotSize || item.lotSizeSqft || 0)) || 0) as number,
+        propertyType: (parsed.homeType || item.propertyType || item.homeType || 'Unknown') as string,
+        listingType: (parsed.listingType || item.listingType || 'Unknown') as string,
+        status: (parsed.homeStatus || item.status || 'Active') as string,
+        daysOnZillow: (parseInt(String(item.daysOnZillow || item.daysOnMarket || 0)) || 0) as number,
         imageUrl: this.extractPrimaryImageUrl(item),
         imageUrls: this.extractImageUrls(item),
-        description: parsed.description || item.description || item.remarks || undefined,
-        yearBuilt: parsed.yearBuilt || parseInt(item.yearBuilt || 0) || undefined,
-        parking: item.parking || undefined,
-        heating: item.heating || undefined,
-        cooling: item.cooling || undefined,
-        hoaFee: this.parsePrice(item.hoaFee || 0),
-        propertyTax: this.parsePrice(item.propertyTax || item.taxAssessedValue || 0),
-        latitude: parsed.latitude || parseFloat(item.latitude || item.lat || 0) || undefined,
-        longitude: parsed.longitude || parseFloat(item.longitude || item.lng || 0) || undefined,
-        url: parsed.url || item.url || item.detailUrl || undefined,
+        description: (parsed.description || item.description || item.remarks || undefined) as string | undefined,
+        yearBuilt: (parsed.yearBuilt || parseInt(String(item.yearBuilt || 0)) || undefined) as number | undefined,
+        parking: (item.parking || undefined) as string | undefined,
+        heating: (item.heating || undefined) as string | undefined,
+        cooling: (item.cooling || undefined) as string | undefined,
+        hoaFee: (this.parsePrice(item.hoaFee || 0)) as number,
+        propertyTax: (this.parsePrice(item.propertyTax || item.taxAssessedValue || 0)) as number,
+        latitude: (parsed.latitude || parseFloat(String(item.latitude || item.lat || 0)) || undefined) as number | undefined,
+        longitude: (parsed.longitude || parseFloat(String(item.longitude || item.lng || 0)) || undefined) as number | undefined,
+        url: (parsed.url || item.url || item.detailUrl || undefined) as string | undefined,
         // Enhanced fields
-        county: parsed.county,
-        livingArea: parsed.livingArea,
-        livingAreaUnits: parsed.livingAreaUnits,
-        lotSizeUnits: parsed.lotSizeUnits,
-        homeType: parsed.homeType,
-        homeStatus: parsed.homeStatus,
-        currency: parsed.currency,
-        listingSubType: parsed.listingSubType,
-        attributionInfo: parsed.attributionInfo,
-        images: parsed.images,
-        priceHistory: parsed.priceHistory,
-        taxHistory: parsed.taxHistory,
-        metadata: parsed.metadata,
+        county: parsed.county as string | undefined,
+        livingArea: parsed.livingArea as number | undefined,
+        livingAreaUnits: parsed.livingAreaUnits as string | undefined,
+        lotSizeUnits: parsed.lotSizeUnits as string | undefined,
+        homeType: parsed.homeType as string | undefined,
+        homeStatus: parsed.homeStatus as string | undefined,
+        currency: parsed.currency as string | undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        listingSubType: parsed.listingSubType as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        attributionInfo: parsed.attributionInfo as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        images: parsed.images as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        priceHistory: parsed.priceHistory as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        taxHistory: parsed.taxHistory as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        metadata: parsed.metadata as any,
       };
     }) || [];
 
@@ -262,7 +267,8 @@ export class ZillowApiService {
     
     // If address is an object, try to construct from its properties
     if (typeof item.address === 'object' && item.address !== null) {
-      const addr = item.address;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const addr = item.address as any;
       if (addr.streetAddress) {
         return addr.streetAddress;
       }
@@ -272,7 +278,7 @@ export class ZillowApiService {
     }
     
     // Fallback to other possible fields
-    return item.streetAddress || item.street || 'Address not available';
+    return (item.streetAddress as string) || (item.street as string) || 'Address not available';
   }
 
   /**
@@ -286,12 +292,16 @@ export class ZillowApiService {
     
     // If city is an object, try to get the city property
     if (typeof item.city === 'object' && item.city !== null) {
-      return item.city.city || item.city.name || 'City not available';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cityObj = item.city as any;
+      return cityObj.city || cityObj.name || 'City not available';
     }
     
     // Check if address object has city
     if (typeof item.address === 'object' && item.address !== null) {
-      return item.address.city || 'City not available';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const addr = item.address as any;
+      return addr.city || 'City not available';
     }
     
     return 'City not available';
@@ -308,12 +318,16 @@ export class ZillowApiService {
     
     // If state is an object, try to get the state property
     if (typeof item.state === 'object' && item.state !== null) {
-      return item.state.state || item.state.name || 'MN';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const stateObj = item.state as any;
+      return stateObj.state || stateObj.name || 'MN';
     }
     
     // Check if address object has state
     if (typeof item.address === 'object' && item.address !== null) {
-      return item.address.state || 'MN';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const addr = item.address as any;
+      return addr.state || 'MN';
     }
     
     return 'MN';
@@ -335,16 +349,20 @@ export class ZillowApiService {
     
     // If zipcode is an object, try to get the zipcode property
     if (typeof item.zipcode === 'object' && item.zipcode !== null) {
-      return item.zipcode.zipcode || item.zipcode.zip || '';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const zipObj = item.zipcode as any;
+      return zipObj.zipcode || zipObj.zip || '';
     }
     
     // Check if address object has zipcode
     if (typeof item.address === 'object' && item.address !== null) {
-      return item.address.zipcode || item.address.zip || '';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const addr = item.address as any;
+      return addr.zipcode || addr.zip || '';
     }
     
     // Fallback to other possible fields
-    return item.zipCode || item.zip || '';
+    return (item.zipCode as string) || (item.zip as string) || '';
   }
 
   /**
@@ -410,7 +428,7 @@ export class ZillowApiService {
 
     for (const field of imageFields) {
       const value = item[field];
-      const validatedUrl = this.validateImageUrl(value);
+      const validatedUrl = this.validateImageUrl(value as string);
       if (validatedUrl) {
         return validatedUrl;
       }
@@ -466,7 +484,7 @@ export class ZillowApiService {
 
     for (const field of singleFields) {
       const value = item[field];
-      const validatedUrl = this.validateImageUrl(value);
+      const validatedUrl = this.validateImageUrl(value as string);
       if (validatedUrl && !imageUrls.includes(validatedUrl)) {
         imageUrls.push(validatedUrl);
       }

@@ -59,7 +59,8 @@ export class ProfileService {
    */
   static async createProfile(profileData: ProfileInsert): Promise<Profile | null> {
     try {
-      const { data: profile, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile, error } = await (supabase as any)
         .from('profiles')
         .insert(profileData)
         .select()
@@ -82,7 +83,8 @@ export class ProfileService {
    */
   static async updateProfile(userId: string, updates: ProfileUpdate): Promise<Profile | null> {
     try {
-      const { data: profile, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile, error } = await (supabase as any)
         .from('profiles')
         .update(updates)
         .eq('id', userId)

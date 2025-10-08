@@ -437,6 +437,7 @@ export default function HelpCenterPage() {
         <EditArticleAdminPanel
           mode="create"
           onCreate={handleCreateArticle}
+          onUpdate={handleUpdateArticle}
           onCancel={() => setShowCreateModal(false)}
         />
       )}

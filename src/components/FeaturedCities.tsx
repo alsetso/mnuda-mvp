@@ -81,7 +81,7 @@ export default function FeaturedCities({ maxCities = 6 }: FeaturedCitiesProps) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      {cities.slice(0, maxCities).map((city, index) => (
+      {cities.slice(0, maxCities).map((city) => (
         <Link
           key={city.slug}
           href={`/buy/mn/${city.slug}`}
