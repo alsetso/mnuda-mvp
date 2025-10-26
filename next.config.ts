@@ -37,97 +37,97 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // Redirect old for-sale routes to new unified structure
+      // Redirect old routes to home page
       {
         source: '/for-sale/mn',
-        destination: '/mn/cities',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-sale/mn/cities',
-        destination: '/mn/cities',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-sale/mn/counties',
-        destination: '/mn/counties',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-sale/mn/zips',
-        destination: '/mn/zips',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-sale/mn/:slug',
-        destination: '/mn/:slug?status=for-sale',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-sale/mn/county/:slug',
-        destination: '/mn/county/:slug?status=for-sale',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-sale/mn/zip/:zip',
-        destination: '/mn/zip/:zip?status=for-sale',
+        destination: '/',
         permanent: true,
       },
-      // Redirect old for-rent routes to new unified structure
+      // Redirect old for-rent routes to home page
       {
         source: '/for-rent/mn',
-        destination: '/mn/cities',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-rent/mn/cities',
-        destination: '/mn/cities',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-rent/mn/counties',
-        destination: '/mn/counties',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-rent/mn/zips',
-        destination: '/mn/zips',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-rent/mn/:slug',
-        destination: '/mn/:slug?status=for-rent',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-rent/mn/county/:slug',
-        destination: '/mn/county/:slug?status=for-rent',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/for-rent/mn/zip/:zip',
-        destination: '/mn/zip/:zip?status=for-rent',
+        destination: '/',
         permanent: true,
       },
-      // Redirect marketplace routes to new unified structure
+      // Redirect marketplace routes to home page
       {
         source: '/marketplace/for-sale',
-        destination: '/mn/cities',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/marketplace/for-rent',
-        destination: '/mn/cities',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/marketplace/for-sale/:slug',
-        destination: '/mn/:slug?status=for-sale',
+        destination: '/',
         permanent: true,
       },
       {
         source: '/marketplace/for-rent/:slug',
-        destination: '/mn/:slug?status=for-rent',
+        destination: '/',
         permanent: true,
       },
     ];

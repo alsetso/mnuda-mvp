@@ -41,9 +41,7 @@ export function CityQuickActions({
   const router = useRouter();
 
   const handleCityClick = (city: string) => {
-    const slug = city.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const marketplaceType = status === 'forRent' ? 'for-rent' : 'for-sale';
-    router.push(`/marketplace/${marketplaceType}/${slug}?city=${encodeURIComponent(city)}&state=MN&status=${status}`);
+    router.push('/');
   };
 
   const getStatusText = () => {

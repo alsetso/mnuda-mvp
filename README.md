@@ -1,4 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) project with [Supabase](https://supabase.com) backend integration for local development with Docker.
+
+## Local Development Setup
+
+### Prerequisites
+- Docker installed and running
+- Node.js 18+ installed
+
+### Environment Setup
+
+1. **Copy environment file:**
+   ```bash
+   cp env.example .env.local
+   ```
+
+2. **Start local Supabase:**
+   ```bash
+   npm run supabase:start
+   ```
+
+3. **Apply database migrations:**
+   ```bash
+   npm run supabase:reset
+   ```
+
+4. **Generate TypeScript types:**
+   ```bash
+   npm run types:generate
+   ```
+
+5. **Start development server:**
+   ```bash
+   npm run dev
+   ```
+
+## Development Workflow
+
+### Daily Development
+1. `npm run supabase:start` - Start local Supabase Docker container
+2. Make schema changes in `supabase/migrations/*.sql` files
+3. `npm run supabase:reset` - Apply changes to local database
+4. `npm run types:generate` - Update TypeScript types
+5. `npm run dev` - Test in Next.js app
+
+### Database Management
+- **Local Supabase Studio:** http://127.0.0.1:54323
+- **API URL:** http://127.0.0.1:54321
+- **Database URL:** postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+### Available Scripts
+- `npm run supabase:start` - Start local Supabase
+- `npm run supabase:stop` - Stop local Supabase
+- `npm run supabase:reset` - Reset database with migrations
+- `npm run supabase:push` - Push migrations to production
+- `npm run types:generate` - Generate TypeScript types from local DB
+
+### RLS Debugging
+- Make RLS policy changes in SQL files
+- Run `npm run supabase:reset` to apply changes
+- Test immediately in your app - no production risk
+- Fast iteration cycle for debugging auth and permissions
 
 ## Getting Started
 
@@ -6,12 +66,6 @@ First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

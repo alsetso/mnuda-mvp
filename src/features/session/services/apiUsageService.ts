@@ -255,24 +255,10 @@ class ApiUsageService {
   }
 
   /**
-   * Get usage data from localStorage
+   * Get usage data - STUB (localStorage removed)
    */
   private getUsageData(): ApiUsageData {
-    try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Ensure backward compatibility by adding missing fields
-        return {
-          ...parsed,
-          apiUsageHistory: parsed.apiUsageHistory || [],
-        };
-      }
-    } catch (error) {
-      console.warn('Failed to parse API usage data:', error);
-    }
-
-    // Return default data
+    console.warn('ApiUsageService.getUsageData() - localStorage removed, returning default data');
     return {
       date: this.getTodayString(),
       creditsUsed: 0,
@@ -282,14 +268,10 @@ class ApiUsageService {
   }
 
   /**
-   * Save usage data to localStorage
+   * Save usage data - STUB (localStorage removed)
    */
-  private saveUsageData(data: ApiUsageData): void {
-    try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
-    } catch (error) {
-      console.error('Failed to save API usage data:', error);
-    }
+  private saveUsageData(_data: ApiUsageData): void {
+    console.warn('ApiUsageService.saveUsageData() - localStorage removed, no-op');
   }
 
   /**
@@ -302,10 +284,10 @@ class ApiUsageService {
   }
 
   /**
-   * Clear all usage data (for testing/admin purposes)
+   * Clear all usage data - STUB (localStorage removed)
    */
   clearUsageData(): void {
-    localStorage.removeItem(this.STORAGE_KEY);
+    console.warn('ApiUsageService.clearUsageData() - localStorage removed, no-op');
   }
 
   /**

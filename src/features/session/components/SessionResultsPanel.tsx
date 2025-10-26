@@ -18,6 +18,10 @@ interface SessionResultsPanelProps {
   onAddNode?: (node: NodeData) => void;
   onAddressIntel?: (address: { street: string; city: string; state: string; zip: string }, entityId?: string) => void;
   mobileView?: 'map' | 'results';
+  // Location tracking props
+  userLocation?: { latitude: number; longitude: number } | null;
+  isTracking?: boolean;
+  locationTrackingActive?: boolean;
 }
 
 type ViewState = 'list' | 'detail' | 'entity';
@@ -29,7 +33,10 @@ export default function SessionResultsPanel({
   onDeleteNode,
   onAddNode,
   onAddressIntel,
-  mobileView = 'results'
+  mobileView = 'results',
+  userLocation,
+  isTracking,
+  locationTrackingActive
 }: SessionResultsPanelProps) {
   const [currentView, setCurrentView] = useState<ViewState>('list');
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
@@ -254,11 +261,34 @@ export default function SessionResultsPanel({
       {/* Fixed Header */}
       <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 bg-white">
         <div className="max-w-4xl mx-auto">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Session Results</h3>
-            <p className="text-sm text-gray-500">
-              {currentSession ? `${currentSession.nodes.length} result${currentSession.nodes.length !== 1 ? 's' : ''} found` : 'No session selected'}
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Session Results</h3>
+              <p className="text-sm text-gray-500">
+                {currentSession ? `${currentSession.nodes.length} result${currentSession.nodes.length !== 1 ? 's' : ''} found` : 'No session selected'}
+              </p>
+            </div>
+            
+            {/* Live Tracking Visual */}
+            {locationTrackingActive && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                <div className={`w-2 h-2 rounded-full ${isTracking && userLocation ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
+                <div className="text-xs text-green-700">
+                  <div className="font-medium">
+                    {isTracking && userLocation ? 'Live Tracking' : 'Location Tracking Enabled'}
+                  </div>
+                  {userLocation ? (
+                    <div className="text-green-600">
+                      {userLocation.latitude.toFixed(6)}, {userLocation.longitude.toFixed(6)}
+                    </div>
+                  ) : (
+                    <div className="text-yellow-600">
+                      Waiting for GPS signal...
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

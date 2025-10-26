@@ -7,10 +7,12 @@ import { useAuth } from '@/features/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { user, signIn, isLoading } = useAuth();
+  const { user, signInWithOtp, verifyOtp, isLoading } = useAuth();
 
   // Redirect to account page if user is already authenticated
   useEffect(() => {
@@ -19,29 +21,51 @@ export default function LoginPage() {
     }
   }, [user, isLoading, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    if (!email) {
+      setMessage('Please enter your email address');
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
 
     try {
-      await signIn(email, password);
-      router.push('/account');
-    } catch (err: unknown) {
-      console.error('Sign in error:', err);
+      console.log('Attempting to send OTP to:', email);
       
-      // Provide more specific error messages based on the error type
-      if (err && typeof err === 'object' && 'message' in err && 
-          typeof err.message === 'string' && err.message.includes('Invalid login credentials')) {
-        setError('Incorrect email or password. Please try again.');
-      } else if (err && typeof err === 'object' && 'message' in err && 
-                 typeof err.message === 'string' && err.message.includes('Email not confirmed')) {
-        setError('Please confirm your email address before signing in.');
-      } else if (err && typeof err === 'object' && 'message' in err && 
-                 typeof err.message === 'string' && err.message.includes('Too many requests')) {
-        setError('Too many failed attempts. Please wait a moment before trying again.');
-      } else {
-        setError('Sign in failed. Please check your credentials and try again.');
-      }
+      // Always use shouldCreateUser: true for signup/login
+      // This creates user ONLY when OTP is verified, not when sent
+      const result = await signInWithOtp(email);
+      console.log('OTP result:', result);
+      setOtpSent(true);
+      setMessage('Check your email for the 6-digit code!');
+    } catch (error: any) {
+      console.error('OTP error:', error);
+      setMessage(`Error: ${error.message || 'Failed to send code'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length !== 6) {
+      setMessage('Please enter the complete 6-digit code');
+      return;
+    }
+
+    setLoading(true);
+    setMessage('');
+
+    try {
+      await verifyOtp(email, otp, 'email');
+      setMessage('Login successful! Redirecting...');
+      setTimeout(() => router.push('/account'), 2000);
+    } catch (error: any) {
+      setMessage(error.message || 'Invalid code');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -75,98 +99,135 @@ export default function LoginPage() {
           </Link>
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-          Sign in to your account
+          Sign in to MNUDA
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Don&apos;t have an account?{' '}
-          <Link
-            href="/signup"
-            className="font-medium text-[#1dd1f5] hover:text-[#014463] transition-colors"
-          >
-            Sign up
-          </Link>
+          Enter your email to get started
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded text-sm">
-                {error}
+          {!otpSent ? (
+            <form className="space-y-6" onSubmit={handleSendOtp}>
+              {message && (
+                <div className={`px-4 py-3 rounded text-sm ${
+                  message.includes('Check your email') 
+                    ? 'bg-green-50 border border-green-200 text-green-600' 
+                    : 'bg-red-50 border border-red-200 text-red-600'
+                }`}>
+                  {message}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email address
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-[#1dd1f5] focus:border-[#1dd1f5] sm:text-sm"
+                    placeholder="Enter your email"
+                  />
+                </div>
               </div>
-            )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-[#1dd1f5] focus:border-[#1dd1f5] sm:text-sm"
-                  placeholder="Enter your email"
-                />
+              <div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1dd1f5] hover:bg-[#014463] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1dd1f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending code...
+                    </div>
+                  ) : (
+                    'Send verification code'
+                  )}
+                </button>
               </div>
-            </div>
+            </form>
+          ) : (
+            <form className="space-y-6" onSubmit={handleVerifyOtp}>
+              {message && (
+                <div className={`px-4 py-3 rounded text-sm ${
+                  message.includes('successful') 
+                    ? 'bg-green-50 border border-green-200 text-green-600' 
+                    : 'bg-red-50 border border-red-200 text-red-600'
+                }`}>
+                  {message}
+                </div>
+              )}
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-[#1dd1f5] focus:border-[#1dd1f5] sm:text-sm"
-                  placeholder="Enter your password"
-                />
+              <div>
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
+                  Verification code
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="otp"
+                    name="otp"
+                    type="text"
+                    maxLength={6}
+                    required
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-[#1dd1f5] focus:border-[#1dd1f5] sm:text-sm text-center text-2xl tracking-widest"
+                    placeholder="000000"
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Enter the 6-digit code sent to {email}
+                </p>
               </div>
-            </div>
 
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-[#1dd1f5] focus:ring-[#1dd1f5] border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
-            </div>
+              <div>
+                <button
+                  type="submit"
+                  disabled={loading || otp.length !== 6}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1dd1f5] hover:bg-[#014463] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1dd1f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Verifying...
+                    </div>
+                  ) : (
+                    'Verify code'
+                  )}
+                </button>
+              </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1dd1f5] hover:bg-[#014463] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1dd1f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Signing in...
-                  </div>
-                ) : (
-                  'Sign in'
-                )}
-              </button>
-            </div>
-          </form>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtp('');
+                    setMessage('');
+                  }}
+                  className="text-sm text-[#1dd1f5] hover:text-[#014463] transition-colors"
+                >
+                  Use a different email
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

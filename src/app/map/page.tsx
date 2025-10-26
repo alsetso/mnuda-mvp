@@ -25,12 +25,13 @@ import { WeatherDialog } from '@/features/weather';
 // import { GeocodingService } from '@/features/map/services/geocodingService';
 import { AddressService } from '@/features/api/services/addressService';
 import { personDetailParseService } from '@/features/api/services/personDetailParse';
+import { useAuth } from '@/features/auth';
 
 /**
  * MapPage (Refactored)
  * - Uses improved useMap + useUserLocationTracker
  * - Unified marker management & popup support
- * - Streamlined banners + tracking FAB
+ * - Location tracking controlled by session settings
  * - Session-safe UserFound node lifecycle
  */
 
@@ -41,6 +42,7 @@ function MapPageContent() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user, isLoading } = useAuth();
 
   // --- UI state ---
   const [mobileView, setMobileView] = useState<'map' | 'results'>('map'); // Mobile view toggle
@@ -55,6 +57,18 @@ function MapPageContent() {
     hideProperty
     // onPersonClick: handlePropertyPersonClick // Unused
   } = usePropertyPanel();
+
+  // --- Session manager ---
+  const {
+    currentSession,
+    sessions,
+    createNewSession,
+    switchSession,
+    renameSession,
+    addNode,
+    deleteNode,
+    updateSession,
+  } = useSessionManager();
 
   // Handle person clicks from property panel
   const handlePropertyPersonClickWrapper = useCallback((person: PropertyPerson) => {
@@ -73,16 +87,12 @@ function MapPageContent() {
     // and flying to the location, so we just need to log it here
   }, []);
 
-  // --- Session manager ---
-  const {
-    currentSession,
-    sessions,
-    createNewSession,
-    switchSession,
-    renameSession,
-    addNode,
-    deleteNode,
-  } = useSessionManager();
+  // Authentication check - redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
 
   // --- User location tracker ---
   const {
@@ -93,6 +103,9 @@ function MapPageContent() {
     startTracking,
     stopTracking,
   } = useUserLocationTracker({ pollIntervalMs: 0, historyLimit: 200 });
+
+  // --- UserFound node lifecycle ---
+  const [userFoundState, setUserFoundState] = useState<UserFoundLifecycle>('idle');
 
   // --- Map ---
   const {
@@ -148,11 +161,6 @@ function MapPageContent() {
     onMapFlyTo: (coordinates, zoom) => flyTo(coordinates, zoom),
   });
 
-  // --- Skip trace pins (moved after handlePersonTrace is defined) ---
-
-  // --- UserFound node lifecycle ---
-  const [userFoundState, setUserFoundState] = useState<UserFoundLifecycle>('idle');
-
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
@@ -166,7 +174,6 @@ function MapPageContent() {
       AddressParserService.parseMapboxFeature(feature),
     []
   );
-
 
   const handleSessionSwitch = useCallback(
     (sessionId: string) => {
@@ -189,10 +196,6 @@ function MapPageContent() {
     }
   }, [searchParams, currentSession?.id, sessions, switchSession]);
 
-  // Session overlay disabled - allow access without session selection
-  const shouldShowSessionOverlay = false;
-
-
   // ---------------------------------------------------------------------------
   // UserFound node lifecycle
   // ---------------------------------------------------------------------------
@@ -213,25 +216,24 @@ function MapPageContent() {
     }
   }, [currentSession]);
 
-  const handleUserFoundStartTracking = useCallback(() => {
-    setUserFoundState('locating');
-    startTracking();
-  }, [startTracking]);
 
-  const handleUserFoundStopTracking = useCallback(() => {
-    stopTracking();
-    completeActiveUserFoundNode();
-    setUserFoundState('completed');
-  }, [stopTracking, completeActiveUserFoundNode]);
+  // Control location tracking based on session setting
+  useEffect(() => {
+    if (!currentSession) {
+      // No session - stop tracking
+      if (isTracking) {
+        stopTracking();
+      }
+      return;
+    }
 
-  // const handleCreateNewLocationSession = useCallback(() => {
-  //   if (!currentSession) return;
-  //   const node = sessionStorageService.createNewUserFoundNode();
-  //   if (node) {
-  //     addNode(node);
-  //     setUserFoundState('idle');
-  //   }
-  // }, [currentSession, addNode]);
+    // Start/stop tracking based on session setting
+    if (currentSession.locationTrackingActive && !isTracking) {
+      startTracking();
+    } else if (!currentSession.locationTrackingActive && isTracking) {
+      stopTracking();
+    }
+  }, [currentSession?.locationTrackingActive, isTracking, startTracking, stopTracking]);
 
   // Track lifecycle when new location arrives
   useEffect(() => {
@@ -271,9 +273,6 @@ function MapPageContent() {
     flyTo,
   ]);
 
-
-  // Handle person clicks from skip trace pin popups (moved after handlePersonTrace is defined)
-  
   // ---------------------------------------------------------------------------
   // Map click with session → reverse geocode → Address Intel node
   // ---------------------------------------------------------------------------
@@ -342,7 +341,15 @@ function MapPageContent() {
         console.log('Map click - AddressService result:', result);
         if (result.success && result.node) {
           console.log('Map click - Adding node:', result.node);
-          addNode(result.node);
+          console.log('Map click - Current session:', currentSession?.id);
+          console.log('Map click - User authenticated:', !!user);
+          
+          try {
+            await addNode(result.node);
+            console.log('✅ Map click - Node added successfully');
+          } catch (addError) {
+            console.error('❌ Map click - Error adding node:', addError);
+          }
           
           // Show property details in the property panel
           if (result.node.response && typeof result.node.response === 'object' && result.node.response !== null && 'people' in result.node.response && Array.isArray(result.node.response.people)) {
@@ -543,6 +550,18 @@ function MapPageContent() {
     };
   }, [handlePersonTrace]);
 
+  // Session overlay disabled - allow access without session selection
+  const shouldShowSessionOverlay = false;
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#014463]"></div>
+      </div>
+    );
+  }
+
   // const handleAddressIntel = useCallback(
   //   async (address: { street: string; city: string; state: string; zip: string }) => {
   //     if (!currentSession) return;
@@ -579,30 +598,10 @@ function MapPageContent() {
   // UI helpers
   // ---------------------------------------------------------------------------
 
-  const StatusBanner = () => {
-    if (!mapLoaded) return <Banner className="bg-gray-100"><Spinner /><span>Loading map…</span></Banner>;
-    if (locationError) return <Banner className="bg-red-500 text-white">⚠ {locationError}</Banner>;
-    if (isSearching) return <Banner className="bg-blue-500 text-white"><Spinner small />Searching address…</Banner>;
-    return null;
-  };
 
 
 
 
-  const TrackingFab = () => {
-    const active = isTracking || userFoundState === 'active' || userFoundState === 'locating';
-    return (
-      <button
-        onClick={active ? handleUserFoundStopTracking : handleUserFoundStartTracking}
-        className={`absolute top-4 left-4 z-20 rounded-lg px-3 py-2 shadow-lg font-medium flex items-center space-x-2 text-sm ${
-          active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-[#014463] hover:bg-[#1dd1f5] text-white'
-        }`}
-      >
-        <IconTarget />
-        <span>{active ? 'Stop' : 'Find Me'}</span>
-      </button>
-    );
-  };
 
 
   const AddressCard = ({ title, address }: { title: string; address: Address }) => (
@@ -625,6 +624,7 @@ function MapPageContent() {
           onNewSession={createNewSession}
           onSessionSwitch={handleSessionSwitch}
           onSessionRename={renameSession}
+          onUpdateSession={updateSession}
           updateUrl={true}
           showSessionSelector={true}
         />
@@ -636,7 +636,6 @@ function MapPageContent() {
         <div className={`flex-1 min-w-0 relative ${mobileView === 'results' ? 'hidden md:block' : ''}`}>
           <div ref={mapContainer} className="w-full h-full" />
 
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10"><StatusBanner /></div>
           {selectedAddress && !currentSession && <AddressCard title="Selected" address={selectedAddress} />}
           
           {/* Floating Search Input */}
@@ -647,7 +646,6 @@ function MapPageContent() {
             onAddNode={(node: unknown) => addNode(node as NodeData)}
           />
           
-          <TrackingFab />
 
           {/* Weather Dialog - Bottom Left, adjusted for mobile toggle */}
           <div className="absolute bottom-16 left-4 z-20 md:bottom-4 md:left-4">
@@ -671,6 +669,9 @@ function MapPageContent() {
           onDeleteNode={deleteNode}
           onAddNode={addNode}
           mobileView={mobileView}
+          userLocation={userLocation}
+          isTracking={isTracking}
+          locationTrackingActive={currentSession?.locationTrackingActive}
         />
       </div>
 
@@ -740,13 +741,6 @@ function Banner({ children, className = '' }: { children: React.ReactNode; class
 function Spinner({ small = false }: { small?: boolean }) {
   const size = small ? 'h-4 w-4' : 'h-8 w-8';
   return <div className={`animate-spin rounded-full ${size} border-b-2 border-current`} />;
-}
-function IconTarget() {
-  return (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 6v0m0 12v0m6-6v0M6 12v0m6-9a9 9 0 100 18 9 9 0 000-18z" />
-    </svg>
-  );
 }
 
 export default function MapPage() {

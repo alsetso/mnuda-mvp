@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { SessionData } from '../services/sessionStorage';
 import { ExportModal } from '@/features/export';
 import { useToast } from '@/features/ui/hooks/useToast';
+import SessionSettingsModal from './SessionSettingsModal';
 
 interface SessionBannerProps {
   currentSession: SessionData | null;
@@ -12,6 +13,12 @@ interface SessionBannerProps {
   onCreateNewSession: () => SessionData;
   onSessionRename?: (sessionId: string, newName: string) => void;
   onSessionDelete?: (sessionId: string) => void;
+  onUpdateSession?: (updates: {
+    name: string;
+    description: string;
+    isActive: boolean;
+    locationTrackingActive: boolean;
+  }) => Promise<void>;
 }
 
 export default function SessionBanner({
@@ -21,12 +28,14 @@ export default function SessionBanner({
   onCreateNewSession,
   onSessionRename,
   onSessionDelete,
+  onUpdateSession,
 }: SessionBannerProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -154,7 +163,11 @@ export default function SessionBanner({
               {/* Left Section - Session Dropdown and Stats */}
               <div className="flex items-center gap-4">
                 {/* Status Indicator */}
-                <div className={`w-2 h-2 rounded-full ${currentSession ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <div className={`w-2 h-2 rounded-full ${
+                  currentSession?.isActive === true ? 'bg-green-500' : 
+                  currentSession?.isActive === false ? 'bg-red-500' : 
+                  'bg-gray-400'
+                }`} />
 
                 {/* Session Name Dropdown */}
                 <div className="relative" ref={dropdownRef}>
@@ -353,6 +366,21 @@ export default function SessionBanner({
                   )}
                   <span className="hidden sm:inline">{isCreatingSession ? 'Creating...' : 'New'}</span>
                 </button>
+
+                {/* Settings Button */}
+                {currentSession && onUpdateSession && (
+                  <button
+                    onClick={() => setIsSettingsModalOpen(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 hover:text-[#014463] transition-colors"
+                    title="Session settings"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="hidden sm:inline">Settings</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -364,6 +392,16 @@ export default function SessionBanner({
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
       />
+
+      {/* Session Settings Modal */}
+      {onUpdateSession && (
+        <SessionSettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          currentSession={currentSession}
+          onUpdateSession={onUpdateSession}
+        />
+      )}
     </>
   );
 }

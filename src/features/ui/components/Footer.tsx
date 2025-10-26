@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 export default function Footer() {
   return (
     <footer className="bg-gray-50 border-t border-gray-200 mt-auto">
@@ -17,18 +19,18 @@ export default function Footer() {
           <div className="text-center sm:text-right max-w-2xl">
             <p className="text-sm text-gray-600 leading-relaxed">
               <strong>MNUDA</strong> is a free local service that stores data only in your browser; paid plans are required for cloud-based features. 
-              <a 
-                href="/map" 
+              <Link 
+                href="/" 
                 className="text-[#1dd1f5] hover:text-[#014463] font-medium transition-colors ml-1"
               >
                 View Map →
-              </a>
-              <a 
-                href="/signup" 
+              </Link>
+              <Link 
+                href="/" 
                 className="text-[#1dd1f5] hover:text-[#014463] font-medium transition-colors ml-2"
               >
                 Pricing →
-              </a>
+              </Link>
             </p>
           </div>
         </div>

@@ -1,31 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import { createServerClient } from '@/lib/supabase';
+import { createStripeCustomerIfMissing } from '@/lib/stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover',
-});
-
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { email, name, metadata } = await request.json();
+    const { userId, email } = await req.json();
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+    if (!userId || !email) {
+      return NextResponse.json({ error: 'Missing userId or email' }, { status: 400 });
     }
 
-    // Create Stripe customer
-    const customer = await stripe.customers.create({
-      email,
-      name,
-      metadata,
+    const supabase = createServerClient();
+
+    // Use the centralized helper function
+    const customerId = await createStripeCustomerIfMissing(userId, email, supabase);
+
+    return NextResponse.json({ 
+      customerId: customerId,
+      message: 'Customer created successfully' 
     });
 
-    return NextResponse.json({ customerId: customer.id });
   } catch (error) {
     console.error('Error creating Stripe customer:', error);
-    return NextResponse.json(
-      { error: 'Failed to create customer' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create customer' }, { status: 500 });
   }
 }

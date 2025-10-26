@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ZillowProperty, ZillowApiService } from '@/features/for-sale/services/zillowApiService';
 import { PropertyCard } from './PropertyCard';
 import { PropertyModal } from './PropertyModal';
@@ -195,12 +196,12 @@ export function PropertyCarousel({
           {/* View All Properties CTA */}
           {properties.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <a
-                href={`/mn/${city.toLowerCase().replace(/\s+/g, '-')}/${status === 'forSale' ? 'for-sale' : 'for-rent'}`}
+              <Link
+                href="/"
                 className="block w-full text-center py-2 px-4 bg-[#014463] text-white rounded-lg hover:bg-[#0a5a7a] transition-colors text-sm font-medium"
               >
                 View All {city} Properties
-              </a>
+              </Link>
             </div>
           )}
         </div>

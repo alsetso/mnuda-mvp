@@ -5,10 +5,10 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import SessionBanner from './SessionBanner';
 import UsageDropdown from './UsageDropdown';
-import MinnesotaLocalityMenu from '@/features/localities/components/MinnesotaLocalityMenu';
+import ProfileDropdown from './ProfileDropdown';
 import { SessionData } from '../services/sessionStorage';
 import { useAuth } from '@/features/auth';
-import { ApiStatusLabel } from '@/features/shared';
+import { CompactUsageIndicator } from '@/features/billing';
 
 interface AppHeaderProps {
   currentSession: SessionData | null;
@@ -16,6 +16,12 @@ interface AppHeaderProps {
   onNewSession: () => SessionData;
   onSessionSwitch: (sessionId: string) => void;
   onSessionRename?: (sessionId: string, newName: string) => void;
+  onUpdateSession?: (updates: {
+    name: string;
+    description: string;
+    isActive: boolean;
+    locationTrackingActive: boolean;
+  }) => Promise<void>;
   updateUrl?: boolean; // Optional prop to enable URL updates
   showSessionSelector?: boolean; // Optional prop to show/hide session selector
   // Mobile view toggle props
@@ -39,6 +45,7 @@ export default function AppHeader({
   onNewSession,
   onSessionSwitch,
   onSessionRename,
+  onUpdateSession,
   showMobileToggle = false,
   mobileView = 'map',
   onMobileViewToggle,
@@ -56,10 +63,11 @@ export default function AppHeader({
   const needsSessionManagement = isMapPage || isTracePage;
   // Show navigation on ALL pages for consistency
   
-  // Navigation items for non-map pages
+  // Navigation items for core pages
   const navigationItems = [
     { href: '/map', label: 'Map' },
-    { href: '/trace', label: 'Trace' }
+    { href: '/trace', label: 'Trace' },
+    { href: '/search', label: 'Search' }
   ];
 
   return (
@@ -89,7 +97,6 @@ export default function AppHeader({
                           {item.label}
                         </Link>
                       ))}
-                      <MinnesotaLocalityMenu />
                     </div>
                     
                     {/* Mobile Menu Button */}
@@ -105,10 +112,6 @@ export default function AppHeader({
                       </button>
                     </div>
                     
-                    {/* API Status Label - Mobile only, positioned after hamburger menu */}
-                    <div className="md:hidden">
-                      <ApiStatusLabel />
-                    </div>
                   </>
                 )}
               </div>
@@ -126,10 +129,6 @@ export default function AppHeader({
             
             {/* Right Section - Unified controls (1/3) */}
             <div className="w-1/3 flex items-center justify-end space-x-1 sm:space-x-2 pl-2 sm:pl-4">
-              {/* API Status Label - Desktop only */}
-              <div className="hidden md:block">
-                <ApiStatusLabel />
-              </div>
 
               {/* Map-specific controls */}
               {isMapPage && (
@@ -179,16 +178,13 @@ export default function AppHeader({
               {/* Usage Dropdown - Show on all pages */}
               <UsageDropdown />
               
-              {/* Profile Icon - Always show */}
-              <Link
-                href={user ? "/account" : "/login"}
-                className="px-2.5 py-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors touch-manipulation"
-                title={user ? "Account" : "Sign in"}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </Link>
+              {/* Compact Usage Indicator - Mobile only */}
+              <div className="md:hidden">
+                <CompactUsageIndicator />
+              </div>
+              
+              {/* Profile Dropdown - Always show */}
+              <ProfileDropdown />
             </div>
           </div>
         </div>
@@ -202,6 +198,7 @@ export default function AppHeader({
           onSessionSwitch={onSessionSwitch}
           onCreateNewSession={onNewSession}
           onSessionRename={onSessionRename}
+          onUpdateSession={onUpdateSession}
         />
       )}
       
@@ -225,23 +222,6 @@ export default function AppHeader({
               </Link>
             ))}
             
-            {/* Minnesota Section */}
-            <div className="pt-2 border-t border-gray-100">
-              <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Minnesota
-              </div>
-              <Link
-                href="/mn/cities"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  pathname?.startsWith('/mn')
-                    ? 'bg-[#014463] text-white'
-                    : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50'
-                }`}
-              >
-                Browse Properties
-              </Link>
-            </div>
           </div>
         </div>
       )}

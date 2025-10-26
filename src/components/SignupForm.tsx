@@ -4,7 +4,6 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { useEmailNotifications } from '@/features/email/hooks/useEmailNotifications';
 import { ProfileService } from '@/features/auth';
 import { UserType } from '@/types/supabase';
 
@@ -72,7 +71,6 @@ export default function SignupForm({
   onError,
 }: SignupFormProps) {
   const router = useRouter();
-  const emailNotifications = useEmailNotifications();
 
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -212,19 +210,6 @@ export default function SignupForm({
           console.warn('Profile creation failed, but user was created:', profileError);
         }
 
-        // Send custom signup confirmation email if user needs to confirm
-        if (!data.user.email_confirmed_at) {
-          const confirmationUrl = `${window.location.origin}/account?token=${data.user.id}`;
-          const emailResult = await emailNotifications.sendSignupConfirmation(
-            formData.email.trim(),
-            confirmationUrl,
-            `${formData.firstName.trim()} ${formData.lastName.trim()}`
-          );
-
-          if (!emailResult.success) {
-            console.warn('Custom signup email failed, Supabase default email will be sent:', emailResult.error);
-          }
-        }
 
         setIsSuccess(true);
         onSuccess?.();

@@ -1,9 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useRef, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { useEmailNotifications } from '@/features/email/hooks/useEmailNotifications';
 
 type AuthUser = User;
 
@@ -12,6 +11,11 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInWithOtp: (email: string) => Promise<void>;
+  signUpWithOtp: (email: string) => Promise<void>;
+  signInWithMagicLink: (email: string) => Promise<void>;
+  signUpWithMagicLink: (email: string) => Promise<void>;
+  verifyOtp: (email: string, token: string, type: 'email') => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -20,32 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const emailNotifications = useEmailNotifications();
-  const welcomeEmailSent = useRef<Set<string>>(new Set());
 
-  // Handle welcome email without causing re-renders
-  const handleWelcomeEmail = useCallback(async (user: User) => {
-    // Prevent sending multiple welcome emails to the same user
-    if (user.email_confirmed_at && !welcomeEmailSent.current.has(user.id)) {
-      welcomeEmailSent.current.add(user.id);
-      
-      try {
-        const welcomeResult = await emailNotifications.sendWelcomeEmail(
-          user.email!,
-          user.user_metadata?.first_name || user.user_metadata?.full_name
-        );
-        
-        if (!welcomeResult.success) {
-          console.warn('Custom welcome email failed:', welcomeResult.error);
-        }
-      } catch (error) {
-        console.error('Error sending welcome email:', error);
-        // Remove from set so we can retry later
-        welcomeEmailSent.current.delete(user.id);
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Remove emailNotifications dependency to prevent infinite loop
 
   useEffect(() => {
     // Get initial session
@@ -74,11 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (session?.user) {
           setUser(session.user);
-          
-          // Send welcome email on first sign in
-          if (event === 'SIGNED_IN') {
-            await handleWelcomeEmail(session.user);
-          }
         } else {
           setUser(null);
         }
@@ -87,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array to prevent infinite re-renders
 
   const signIn = async (email: string, password: string) => {
@@ -111,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -120,19 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (error) throw error;
       
-      // Send custom signup confirmation email if user needs to confirm
-      if (data.user && !data.user.email_confirmed_at) {
-        const confirmationUrl = `${window.location.origin}/account?token=${data.user.id}`;
-        const emailResult = await emailNotifications.sendSignupConfirmation(
-          email,
-          confirmationUrl,
-          data.user.user_metadata?.first_name || data.user.user_metadata?.full_name
-        );
-        
-        if (!emailResult.success) {
-          console.warn('Custom signup email failed, Supabase default email will be sent:', emailResult.error);
-        }
-      }
       
       // User will be set by the auth state change listener
     } catch (error) {
@@ -144,6 +104,99 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
 
+  const signInWithOtp = async (email: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: true, // Creates user ONLY when OTP is verified
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Sign in with OTP error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signUpWithOtp = async (email: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: true, // Create account if doesn't exist
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Sign up with OTP error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signInWithMagicLink = async (email: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: false, // Only existing users
+          emailRedirectTo: `${window.location.origin}/account`,
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Sign in with magic link error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signUpWithMagicLink = async (email: string) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: true, // Create account if doesn't exist
+          emailRedirectTo: `${window.location.origin}/account`,
+        }
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Sign up with magic link error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyOtp = async (email: string, token: string, type: 'email') => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email,
+        token: token,
+        type: type
+      });
+      if (error) throw error;
+      
+      // User will be set by the auth state change listener
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const signOut = async () => {
     setIsLoading(true);
     try {
@@ -153,8 +206,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear user state immediately for better UX
       setUser(null);
       
-      // Clear welcome email tracking
-      welcomeEmailSent.current.clear();
       
       // Clear any local storage data
       localStorage.removeItem('freemap_sessions');
@@ -175,6 +226,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     signIn,
     signUp,
+    signInWithOtp,
+    signUpWithOtp,
+    signInWithMagicLink,
+    signUpWithMagicLink,
+    verifyOtp,
     signOut,
   };
 
