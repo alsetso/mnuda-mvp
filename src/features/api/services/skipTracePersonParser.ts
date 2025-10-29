@@ -49,9 +49,23 @@ export const skipTracePersonParser = {
     const response = rawResponse as Record<string, unknown>;
     
     return {
-      source: response.source || 'Unknown',
-      status: response.status || 200,
-      message: response.message || '',
+      source:
+        typeof (response as { source?: unknown }).source === 'string'
+          ? ((response as { source?: unknown }).source as string)
+          : String((response as { source?: unknown }).source ?? 'Unknown'),
+      status: (() => {
+        const v = (response as { status?: unknown }).status;
+        if (typeof v === 'number' && !Number.isNaN(v)) return v;
+        if (typeof v === 'string') {
+          const n = Number(v);
+          return Number.isNaN(n) ? 200 : n;
+        }
+        return 200;
+      })(),
+      message:
+        typeof (response as { message?: unknown }).message === 'string'
+          ? ((response as { message?: unknown }).message as string)
+          : String((response as { message?: unknown }).message ?? ''),
       personDetails: this.parsePersonDetails(
         (response.personDetails as unknown[]) || (response as Record<string, unknown>).PersonDetails as unknown[] || []
       ),
