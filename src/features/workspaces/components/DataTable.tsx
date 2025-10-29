@@ -95,9 +95,28 @@ export function DataTable({
     
     const aVal = a[sortColumn];
     const bVal = b[sortColumn];
-    
-    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+
+    const normalize = (val: unknown): { type: 'number' | 'string'; value: number | string } => {
+      if (typeof val === 'number') return { type: 'number', value: val };
+      if (typeof val === 'string') {
+        const num = Number(val);
+        if (!Number.isNaN(num) && val.trim() !== '') return { type: 'number', value: num };
+        return { type: 'string', value: val.toLowerCase() };
+      }
+      if (val instanceof Date) return { type: 'number', value: val.getTime() };
+      if (typeof val === 'boolean') return { type: 'number', value: val ? 1 : 0 };
+      return { type: 'string', value: String(val ?? '') };
+    };
+
+    const an = normalize(aVal);
+    const bn = normalize(bVal);
+
+    const cmp = an.type === 'number' && bn.type === 'number'
+      ? (an.value as number) - (bn.value as number)
+      : String(an.value).localeCompare(String(bn.value));
+
+    if (cmp < 0) return sortDirection === 'asc' ? -1 : 1;
+    if (cmp > 0) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
 
