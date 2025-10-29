@@ -37,7 +37,7 @@ export async function middleware(req: NextRequest) {
 
   // Check if user is authenticated
   const {
-    data: { session },
+    data: { session: _session },
   } = await supabase.auth.getSession();
 
   // Protect /map route - redirect to login if not authenticated

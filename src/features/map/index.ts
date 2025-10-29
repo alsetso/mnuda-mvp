@@ -1,6 +1,5 @@
 // Map feature exports
-export { default as MapNodeStackFooter } from './components/MapNodeStackFooter';
-export { default as SkipTracePinsList } from './components/SkipTracePinsList';
+// Removed exports for components with missing dependencies: MapNodeStackFooter, SkipTracePinsList
 export { PropertyPanel } from './components/PropertyPanel';
 export { FloatingSearchInput } from './components/FloatingSearchInput';
 export { useGeocoding } from './hooks/useGeocoding';

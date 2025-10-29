@@ -1,5 +1,4 @@
 // API service for property data calls
-import { apiUsageService, ApiType, API_PRICING } from '../../session/services/apiUsageService';
 import { apiConfig, shouldUseMockData, getApiHeaders } from '../config/apiConfig';
 
 // Global callback for API usage updates - will be set by the context provider
@@ -57,33 +56,8 @@ export class CreditsExhaustedError extends Error {
   }
 }
 
-// Helper function to check and record API usage with specific API type
-const checkAndRecordApiUsage = (apiType: ApiType): boolean => {
-  // Check if we can make the specific API request
-  if (!apiUsageService.canMakeApiRequest(apiType)) {
-    const cost = API_PRICING[apiType];
-    const remaining = apiUsageService.getRemainingCredits();
-    throw new CreditsExhaustedError(`Insufficient credits for ${apiType} API call. Cost: $${cost.toFixed(2)}, Remaining: $${remaining.toFixed(2)}`);
-  }
-  
-  // Record the usage (this will always succeed for authenticated users)
-  const recorded = apiUsageService.recordApiRequest(apiType, true);
-  if (!recorded) {
-    throw new CreditsExhaustedError('Failed to record API usage. Please try again.');
-  }
-  
-  // Trigger real-time update in the UI
-  if (onApiUsageUpdate) {
-    onApiUsageUpdate();
-  }
-  
-  return true;
-};
-
 export const apiService = {
   async callZillowAPI(address: { street: string; city: string; state: string; zip: string }): Promise<unknown> {
-    // Check and record API usage
-    checkAndRecordApiUsage('zillow');
     console.log('Zillow API - Input address:', address);
     const fullAddress = `${address.street} ${address.city} ${address.state} ${address.zip}`;
     const encodedAddress = encodeURIComponent(fullAddress);
@@ -109,8 +83,6 @@ export const apiService = {
   },
 
   async callSkipTraceAPI(address: { street: string; city: string; state: string; zip: string }): Promise<unknown> {
-    // Check and record API usage
-    checkAndRecordApiUsage('address');
     console.log('Skip Trace API - Input address:', address);
     
     // Check if we should use mock data
@@ -136,24 +108,15 @@ export const apiService = {
       });
 
       if (!response.ok) {
-        console.error(`Skip Trace API error: ${response.status} - ${response.statusText}`);
-        
-        // If API fails, return mock data for development
-        if (response.status === 403) {
-          console.warn('⚠️ Skip Trace API returned 403 - using mock data for development');
-          return this.getMockSkipTraceData(address);
-        }
-        
-        throw new Error(`Skip Trace API error: ${response.status}`);
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error(`Skip Trace API error: ${response.status} - ${response.statusText}`, errorText);
+        throw new Error(`Skip Trace API error: ${response.status} - ${response.statusText}`);
       }
 
       return response.json();
     } catch (error) {
       console.error('Skip Trace API request failed:', error);
-      
-      // Return mock data as fallback for development
-      console.warn('⚠️ Using mock data due to API failure');
-      return this.getMockSkipTraceData(address);
+      throw error;
     }
   },
 
@@ -189,7 +152,7 @@ export const apiService = {
   async callPersonAPI(personId: string, retryCount = 0): Promise<unknown> {
     // Check and record API usage (only on first attempt, not retries)
     if (retryCount === 0) {
-      checkAndRecordApiUsage('person-id');
+      // Usage tracking removed
     }
     console.log('Person API - Input person ID:', personId);
     const url = `https://skip-tracing-working-api.p.rapidapi.com/search/detailsbyID?peo_id=${personId}`;
@@ -221,8 +184,6 @@ export const apiService = {
   },
 
   async callNameSearchAPI(name: { firstName: string; middleInitial?: string; lastName: string }): Promise<unknown> {
-    // Check and record API usage
-    checkAndRecordApiUsage('name');
     console.log('Name Search API - Input name:', name);
     
     // Format name as "FirstName MiddleInitial LastName" or "FirstName LastName"
@@ -253,8 +214,6 @@ export const apiService = {
   },
 
   async callEmailSearchAPI(email: string): Promise<unknown> {
-    // Check and record API usage
-    checkAndRecordApiUsage('email');
     console.log('Email Search API - Input email:', email);
     
     const encodedEmail = encodeURIComponent(email);
@@ -279,8 +238,6 @@ export const apiService = {
   },
 
   async callPhoneSearchAPI(phone: string): Promise<unknown> {
-    // Check and record API usage
-    checkAndRecordApiUsage('phone');
     console.log('Phone Search API - Input phone:', phone);
     
     const encodedPhone = encodeURIComponent(phone);

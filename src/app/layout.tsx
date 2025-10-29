@@ -2,10 +2,10 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ToastProvider } from '@/features/ui/contexts/ToastContext'
 import { ToastContainer } from '@/features/ui/components/Toast'
-import Footer from '@/features/ui/components/Footer'
 import { AuthProvider } from '@/features/auth'
-import { ApiUsageProvider } from '@/features/session/contexts/ApiUsageContext'
-import CreditsModalWrapper from '@/features/session/components/CreditsModalWrapper'
+import { WorkspaceProvider } from '@/features/workspaces'
+// Removed usage/billing context and modals after simplifying app
+// Footer moved to PageLayout component for consistent page structure
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://mnuda.com'),
@@ -70,19 +70,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen flex flex-col">
+    <html lang="en" className="h-full w-full" style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
+      <body className="h-full w-full" style={{ margin: 0, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <AuthProvider>
-          <ApiUsageProvider>
+          <WorkspaceProvider>
             <ToastProvider>
-              <main className="flex-1">
+              {/* Pages handle their own header/footer via PageLayout component */}
+              <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', margin: 0, padding: 0 }}>
                 {children}
-              </main>
-              <Footer />
+              </div>
               <ToastContainer />
-              <CreditsModalWrapper />
             </ToastProvider>
-          </ApiUsageProvider>
+          </WorkspaceProvider>
         </AuthProvider>
       </body>
     </html>

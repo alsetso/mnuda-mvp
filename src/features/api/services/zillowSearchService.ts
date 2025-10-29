@@ -7,7 +7,7 @@ import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 
 export interface ZillowSearchResult {
   success: boolean;
-  node?: NodeData;
+  node?: Partial<NodeData>;
   error?: string;
 }
 
@@ -30,13 +30,13 @@ export class ZillowSearchService {
       const response = await apiService.callZillowAPI(address);
 
       // Create the result node
-      const node: NodeData = {
+      const node: Partial<NodeData> = {
         id: `zillow-${Date.now()}`,
         type: 'api-result',
         apiName: 'Zillow Search',
         address: addressWithCoordinates,
         response,
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         mnNodeId: MnudaIdService.generateTypedId('node'),
       };
 

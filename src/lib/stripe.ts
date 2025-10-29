@@ -5,14 +5,14 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-09-30.clover',
 });
 
 // Helper function to create Stripe customer if missing
 export const createStripeCustomerIfMissing = async (
   userId: string, 
   email: string, 
-  supabase: any
+  supabase: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ): Promise<string> => {
   // Check if user already has a Stripe customer ID
   const { data: profile, error: profileError } = await supabase

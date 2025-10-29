@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { ProfileService } from '../services/profileService';
 
 type AuthUser = User;
 
@@ -53,6 +54,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (session?.user) {
           setUser(session.user);
+          
+          // Link invited user to workspaces if they just signed up
+          if (event === 'SIGNED_IN' && session.user.email) {
+            try {
+              await ProfileService.linkInvitedUserToWorkspaces(session.user.id, session.user.email);
+            } catch (error) {
+              console.error('Error linking user to workspaces:', error);
+            }
+          }
         } else {
           setUser(null);
         }

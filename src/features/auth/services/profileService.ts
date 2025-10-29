@@ -1,30 +1,65 @@
 import { supabase } from '@/lib/supabase';
-import { Profile, ProfileInsert, ProfileUpdate, UserType, SubscriptionStatus } from '@/types/supabase';
+import { Profile, ProfileInsert, ProfileUpdate } from '@/types/supabase';
 
 export class ProfileService {
   /**
-   * Get the current user's profile
+   * Link invited user to workspaces when they create their profile
    */
-  static async getCurrentProfile(): Promise<Profile | null> {
+  static async linkInvitedUserToWorkspaces(userId: string, email: string): Promise<void> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        return null;
-      }
-
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      // Find workspace memberships that have this email but no profile_id
+      const { data: pendingInvitations, error } = await supabase
+        .from('workspace_members')
+        .select('workspace_id, role, joined_at')
+        .eq('email', email)
+        .is('profile_id', null);
 
       if (error) {
-        console.error('Error fetching profile:', error);
-        return null;
+        console.error('Error finding pending invitations:', error);
+        return;
       }
 
-      return profile;
+      if (!pendingInvitations || pendingInvitations.length === 0) {
+        return; // No pending invitations
+      }
+
+      // Update each pending invitation with the user's profile_id
+      for (const invitation of pendingInvitations) {
+        const { error: updateError } = await supabase
+          .from('workspace_members')
+          .update({ profile_id: userId })
+          .eq('workspace_id', invitation.workspace_id)
+          .eq('email', email)
+          .is('profile_id', null);
+
+        if (updateError) {
+          console.error('Error linking user to workspace:', updateError);
+        }
+      }
+
+      console.log(`Linked user ${email} to ${pendingInvitations.length} workspace(s)`);
+    } catch (error) {
+      console.error('Error linking invited user to workspaces:', error);
+    }
+  }
+
+  /**
+   * Get the current user's profile by user ID
+   */
+  static async getCurrentProfile(userId?: string): Promise<Profile | null> {
+    try {
+      let userIdToUse = userId;
+      
+      // If no userId provided, try to get from auth
+      if (!userIdToUse) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          return null;
+        }
+        userIdToUse = user.id;
+      }
+
+      return await this.getProfileById(userIdToUse);
     } catch (error) {
       console.error('Error getting current profile:', error);
       return null;
@@ -43,7 +78,7 @@ export class ProfileService {
         .single();
 
       if (error) {
-        console.error('Error fetching profile by ID:', error);
+        console.error('Error fetching profile:', error.message);
         return null;
       }
 
@@ -104,17 +139,32 @@ export class ProfileService {
   }
 
   /**
-   * Update the current user's profile
+   * Update the current user's profile by user ID
    */
-  static async updateCurrentProfile(updates: ProfileUpdate): Promise<Profile | null> {
+  static async updateCurrentProfile(userId: string, updates: ProfileUpdate): Promise<Profile | null> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('No authenticated user');
+      if (!userId) {
+        throw new Error('User ID is required to update profile');
       }
 
-      return await this.updateProfile(user.id, updates);
+      // Check if profile exists, create if it doesn't
+      let profile = await this.getProfileById(userId);
+      
+      if (!profile) {
+        // Get user email from auth
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Create profile if it doesn't exist
+          profile = await this.createProfile({
+            id: userId,
+            email: user.email || '',
+            full_name: user.user_metadata?.full_name || null,
+            avatar_url: user.user_metadata?.avatar_url || null
+          });
+        }
+      }
+
+      return await this.updateProfile(userId, updates);
     } catch (error) {
       console.error('Error updating current profile:', error);
       throw error;
@@ -172,11 +222,7 @@ export class ProfileService {
         const profileData: ProfileInsert = {
           id: user.id,
           email: user.email!,
-          first_name: user.user_metadata?.first_name || null,
-          last_name: user.user_metadata?.last_name || null,
-          phone: user.user_metadata?.phone || null,
-          user_type: (user.user_metadata?.user_type as UserType) || 'buyer',
-          subscription_status: (user.user_metadata?.subscription_status as SubscriptionStatus) || 'free',
+          full_name: user.user_metadata?.full_name || user.user_metadata?.first_name || null,
         };
         
         profile = await this.createProfile(profileData);
@@ -190,180 +236,29 @@ export class ProfileService {
   }
 
   /**
+   * Get user's display name (first name + last name, or full name, or email prefix)
+   */
+  static getDisplayName(profile: Profile): string {
+    if (profile.first_name && profile.last_name) {
+      return `${profile.first_name} ${profile.last_name}`;
+    }
+    if (profile.first_name) {
+      return profile.first_name;
+    }
+    if (profile.full_name) {
+      return profile.full_name;
+    }
+    return profile.email.split('@')[0] || 'User';
+  }
+
+  /**
    * Get user's full name (combines first_name and last_name)
    */
   static getFullName(profile: Profile): string {
-    const firstName = profile.first_name || '';
-    const lastName = profile.last_name || '';
-    
-    return [firstName, lastName].filter(Boolean).join(' ');
-  }
-
-  /**
-   * Get user's display name (first name or full name)
-   */
-  static getDisplayName(profile: Profile): string {
-    return profile.first_name || this.getFullName(profile) || 'User';
-  }
-
-  /**
-   * Check if user has a specific user type
-   */
-  static hasUserType(profile: Profile, userType: UserType): boolean {
-    return profile.user_type === userType;
-  }
-
-  /**
-   * Check if user has a specific subscription status
-   */
-  static hasSubscriptionStatus(profile: Profile, status: SubscriptionStatus): boolean {
-    return profile.subscription_status === status;
-  }
-
-  /**
-   * Check if user has an active subscription
-   */
-  static hasActiveSubscription(profile: Profile): boolean {
-    return ['active', 'trialing'].includes(profile.subscription_status);
-  }
-
-  /**
-   * Check if user is a realtor
-   */
-  static isRealtor(profile: Profile): boolean {
-    return this.hasUserType(profile, 'realtor');
-  }
-
-  /**
-   * Check if user is an investor
-   */
-  static isInvestor(profile: Profile): boolean {
-    return this.hasUserType(profile, 'investor');
-  }
-
-  /**
-   * Check if user is a wholesaler
-   */
-  static isWholesaler(profile: Profile): boolean {
-    return this.hasUserType(profile, 'wholesaler');
-  }
-
-  /**
-   * Check if user is a buyer
-   */
-  static isBuyer(profile: Profile): boolean {
-    return this.hasUserType(profile, 'buyer');
-  }
-
-  /**
-   * Check if user is an admin
-   */
-  static isAdmin(profile: Profile): boolean {
-    return this.hasUserType(profile, 'admin');
-  }
-
-  /**
-   * Get all users with a specific user type
-   */
-  static async getUsersByType(userType: UserType): Promise<Profile[]> {
-    try {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_type', userType)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching users by type:', error);
-        return [];
-      }
-
-      return profiles || [];
-    } catch (error) {
-      console.error('Error getting users by type:', error);
-      return [];
+    if (profile.first_name && profile.last_name) {
+      return `${profile.first_name} ${profile.last_name}`;
     }
+    return profile.full_name || '';
   }
 
-  /**
-   * Get all users with a specific subscription status
-   */
-  static async getUsersBySubscriptionStatus(status: SubscriptionStatus): Promise<Profile[]> {
-    try {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('subscription_status', status)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching users by subscription status:', error);
-        return [];
-      }
-
-      return profiles || [];
-    } catch (error) {
-      console.error('Error getting users by subscription status:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Update user type
-   */
-  static async updateUserType(userId: string, newUserType: UserType): Promise<Profile | null> {
-    try {
-      return await this.updateProfile(userId, { user_type: newUserType });
-    } catch (error) {
-      console.error('Error updating user type:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update subscription status
-   */
-  static async updateSubscriptionStatus(userId: string, newStatus: SubscriptionStatus): Promise<Profile | null> {
-    try {
-      return await this.updateProfile(userId, { subscription_status: newStatus });
-    } catch (error) {
-      console.error('Error updating subscription status:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update Stripe customer ID
-   */
-  static async updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<Profile | null> {
-    try {
-      return await this.updateProfile(userId, { stripe_customer_id: stripeCustomerId });
-    } catch (error) {
-      console.error('Error updating Stripe customer ID:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get profile by Stripe customer ID
-   */
-  static async getProfileByStripeCustomerId(stripeCustomerId: string): Promise<Profile | null> {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('stripe_customer_id', stripeCustomerId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile by Stripe customer ID:', error);
-        return null;
-      }
-
-      return profile;
-    } catch (error) {
-      console.error('Error getting profile by Stripe customer ID:', error);
-      return null;
-    }
-  }
 }

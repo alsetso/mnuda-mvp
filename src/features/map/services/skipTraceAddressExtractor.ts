@@ -12,7 +12,7 @@ export interface SkipTraceAddress {
   };
   nodeId: string;
   apiName: string;
-  timestamp: number;
+  timestamp: number | string;
   entityCount: number;
   rawResponse: unknown;
 }

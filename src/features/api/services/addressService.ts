@@ -7,7 +7,7 @@ import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 
 export interface AddressSearchResult {
   success: boolean;
-  node?: NodeData;
+  node?: Partial<NodeData>;
   error?: string;
 }
 
@@ -32,13 +32,13 @@ export class AddressService {
       console.log('AddressService - Skip Trace API response:', response);
 
       // Create the result node
-      const node: NodeData = {
+      const node: Partial<NodeData> = {
         id: `api-${Date.now()}`,
         type: 'api-result',
         address: addressWithCoordinates,
         apiName: 'Skip Trace',
         response,
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         mnNodeId: MnudaIdService.generateTypedId('node'),
       };
 

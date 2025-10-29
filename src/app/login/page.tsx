@@ -40,9 +40,9 @@ export default function LoginPage() {
       console.log('OTP result:', result);
       setOtpSent(true);
       setMessage('Check your email for the 6-digit code!');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('OTP error:', error);
-      setMessage(`Error: ${error.message || 'Failed to send code'}`);
+      setMessage(`Error: ${error instanceof Error ? error.message : 'Failed to send code'}`);
     } finally {
       setLoading(false);
     }
@@ -62,8 +62,8 @@ export default function LoginPage() {
       await verifyOtp(email, otp, 'email');
       setMessage('Login successful! Redirecting...');
       setTimeout(() => router.push('/account'), 2000);
-    } catch (error: any) {
-      setMessage(error.message || 'Invalid code');
+    } catch (error: unknown) {
+      setMessage(error instanceof Error ? error.message : 'Invalid code');
     } finally {
       setLoading(false);
     }

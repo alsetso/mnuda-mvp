@@ -4,7 +4,7 @@ export const MAP_CONFIG = {
   GEOCODE_CACHE_TTL: parseInt(process.env.NEXT_PUBLIC_GEOCODE_CACHE_TTL || '86400000'), // 24 hours default
   
   // Mapbox settings
-  MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || 'your_mapbox_token_here',
+  MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
   MAPBOX_STYLE: process.env.NEXT_PUBLIC_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12',
   
   // Strategic map styles for different use cases
@@ -16,9 +16,9 @@ export const MAP_CONFIG = {
     outdoors: 'mapbox://styles/mapbox/outdoors-v12',
   },
   
-  // Map defaults - Start with globe view, then fly to Minnesota
-  DEFAULT_CENTER: [0, 0] as [number, number], // Center of globe
-  DEFAULT_ZOOM: 0, // Start at zoom 0 for full globe view
+  // Map defaults - Start with reasonable view
+  DEFAULT_CENTER: [-93.2650, 44.9778] as [number, number], // Minneapolis, MN
+  DEFAULT_ZOOM: 10, // Start at zoom 10 for city view
   GLOBE_ZOOM: 0, // Globe view zoom level
   MAX_ZOOM: 22, // Maximum zoom level (Mapbox default)
   ADDRESS_ZOOM: 16,

@@ -1,104 +1,106 @@
-export type UserType = 
-  | 'free'
-  | 'premium'
-  | 'admin'
-  | 'buyer'
-  | 'realtor'
-  | 'investor'
-  | 'wholesaler'
-  | 'owner'
-  | 'lender'
-  | 'appraiser'
-  | 'contractor'
-  | 'other';
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-export type SubscriptionStatus = 
-  | 'free'
-  | 'trial'
-  | 'active'
-  | 'past_due'
-  | 'canceled'
-  | 'unpaid'
-  | 'incomplete'
-  | 'incomplete_expired'
-  | 'trialing';
+// Type aliases for convenience
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type UserType = 'free' | 'premium' | 'admin' | 'buyer' | 'realtor' | 'investor' | 'wholesaler' | 'owner' | 'lender' | 'appraiser' | 'contractor' | 'other'
+export type SubscriptionStatus = 'active' | 'canceled' | 'incomplete' | 'incomplete_expired' | 'past_due' | 'trialing' | 'unpaid' | 'free' | 'trial'
 
-export interface Profile {
-  id: string;
-  user_id: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  user_type: UserType;
-  subscription_status: SubscriptionStatus;
-  stripe_customer_id?: string;
-  stripe_subscription_id?: string;
-  plan_tier?: string;
-  current_period_end?: string;
-  default_payment_method?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProfileInsert {
-  user_id: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  user_type?: UserType;
-  subscription_status?: SubscriptionStatus;
-  stripe_customer_id?: string;
-  stripe_subscription_id?: string;
-  plan_tier?: string;
-  current_period_end?: string;
-  default_payment_method?: string;
-}
-
-export interface ProfileUpdate {
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  user_type?: UserType;
-  subscription_status?: SubscriptionStatus;
-  stripe_customer_id?: string;
-  stripe_subscription_id?: string;
-  plan_tier?: string;
-  current_period_end?: string;
-  default_payment_method?: string;
-  updated_at?: string;
-}
-
-// Database schema types
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: Profile;
-        Insert: ProfileInsert;
-        Update: ProfileUpdate;
-      };
-      stripe_events: {
         Row: {
-          id: string;
-          event_id: string;
-          event_type: string;
-          processed_at: string;
-          created_at: string;
-        };
+          id: string
+          email: string
+          full_name: string | null
+          avatar_url: string | null
+          first_name: string | null
+          last_name: string | null
+          phone: string | null
+          company: string | null
+          job_title: string | null
+          location: string | null
+          bio: string | null
+          website: string | null
+          linkedin_url: string | null
+          timezone: string | null
+          created_at: string | null
+          updated_at: string | null
+          stripe_customer_id: string | null
+          active_subscription_id: string | null
+        }
         Insert: {
-          event_id: string;
-          event_type: string;
-          processed_at?: string;
-        };
+          id: string
+          email: string
+          full_name?: string | null
+          avatar_url?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          phone?: string | null
+          company?: string | null
+          job_title?: string | null
+          location?: string | null
+          bio?: string | null
+          website?: string | null
+          linkedin_url?: string | null
+          timezone?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          stripe_customer_id?: string | null
+          active_subscription_id?: string | null
+        }
         Update: {
-          event_id?: string;
-          event_type?: string;
-          processed_at?: string;
-        };
-      };
-    };
-  };
+          id?: string
+          email?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          first_name?: string | null
+          last_name?: string | null
+          phone?: string | null
+          company?: string | null
+          job_title?: string | null
+          location?: string | null
+          bio?: string | null
+          website?: string | null
+          linkedin_url?: string | null
+          timezone?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          stripe_customer_id?: string | null
+          active_subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
+
+// Type aliases for profiles table
+export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
+export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useSessionManager } from '@/features/session';
 import { useToast } from '@/features/ui/hooks/useToast';
 import { minnesotaBoundsService } from '../services/minnesotaBoundsService';
 import { Address } from '../types';
@@ -16,31 +15,41 @@ interface SearchSuggestion {
   }>;
 }
 
+const STATUS_OPTIONS = [
+  'Preforeclosure', 'Foreclosure', 'Foreclosed', 'Auction', 'Redemption',
+  'Bank Owned', 'Short Sale', 'Subject To', 'Deed In Lieu', 'Leaseback',
+  'For Sale By Owner', 'Listed On MLS', 'Under Contract', 'Sold', 'Off Market'
+];
+
 interface FloatingSearchInputProps {
   onSearchComplete?: (address: Address) => void;
   onFlyTo?: (coordinates: { lat: number; lng: number }, zoom?: number) => void;
+  onSaveProperty?: (address: Address, coordinates: { lat: number; lng: number }, status: string) => void;
   currentSession?: { id: string; name: string; nodes: unknown[] } | null;
   onAddNode?: (node: unknown) => void;
 }
 
-export function FloatingSearchInput({ onSearchComplete, onFlyTo, currentSession: propsCurrentSession, onAddNode: propsAddNode }: FloatingSearchInputProps) {
+export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty, currentSession: propsCurrentSession, onAddNode: propsAddNode }: FloatingSearchInputProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [selectedCoordinates, setSelectedCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [showPropertyPopup, setShowPropertyPopup] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>('Off Market');
   
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
   
-  // Use props if provided, otherwise fall back to hook (for backwards compatibility)
-  const sessionManagerHook = useSessionManager();
-  const currentSession = propsCurrentSession ?? sessionManagerHook.currentSession;
-  const addNode = propsAddNode ?? sessionManagerHook.addNode;
+  // Use props if provided, otherwise fall back to defaults
+  const currentSession = propsCurrentSession ?? null;
+  const addNode = propsAddNode ?? (() => {});
   
-  const { withApiToast } = useToast();
+  const { withApiToast, success, error } = useToast();
 
   // Debounced search for suggestions
   const debouncedSearch = useCallback(async (query: string) => {
@@ -148,25 +157,29 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, currentSession:
       return;
     }
 
-    // Show toast and perform search
-    await withApiToast('Searching...', async () => {
+    // Store selected address and coordinates for popup
+    setSelectedAddress(address);
+    setSelectedCoordinates(coordinates);
+    setShowPropertyPopup(true);
+
+    // Perform search actions
+    try {
       // Create search history node IMMEDIATELY when search starts
       if (currentSession) {
-        const searchNode = {
-          id: `search-${Date.now()}`,
+        await addNode({
           type: 'start' as const,
+          status: 'completed',
           customTitle: `Search: ${suggestion.place_name}`,
-          address: {
+          addressData: {
             ...address,
             coordinates: { latitude: coordinates.lat, longitude: coordinates.lng }
           },
           apiName: 'Search History',
-          timestamp: Date.now(),
+          timestamp: new Date().toISOString(),
           mnNodeId: `search-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           hasCompleted: true, // Search is immediately completed
-        };
-        
-        addNode(searchNode);
+          metadata: {}
+        });
       }
 
       // Fly to location
@@ -174,16 +187,67 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, currentSession:
 
       // Notify parent component
       onSearchComplete?.(address);
-
-      return Promise.resolve();
-    }, {
-      successMessage: 'Search completed',
-      errorMessage: 'Search failed',
-    });
+    } catch (error) {
+      console.error('Search error:', error);
+    }
 
     // Collapse search input
     setIsExpanded(false);
-  }, [currentSession, addNode, onFlyTo, onSearchComplete, withApiToast]);
+  }, [currentSession, addNode, onFlyTo, onSearchComplete]);
+
+  // Handle saving property
+  const handleSaveProperty = useCallback(async () => {
+    // Store values in local variables to avoid stale closure issues
+    const addressToSave = selectedAddress;
+    const coordinatesToSave = selectedCoordinates;
+    const statusToSave = selectedStatus;
+    const saveHandler = onSaveProperty;
+    
+    if (!addressToSave || !coordinatesToSave || !saveHandler) {
+      console.warn('Cannot save property: missing required data', {
+        hasAddress: !!addressToSave,
+        hasCoordinates: !!coordinatesToSave,
+        hasOnSave: !!saveHandler
+      });
+      return;
+    }
+
+    try {
+      console.log('FloatingSearchInput: Saving property...', { 
+        address: addressToSave, 
+        coordinates: coordinatesToSave, 
+        status: statusToSave 
+      });
+      
+      await saveHandler(addressToSave, coordinatesToSave, statusToSave);
+      
+      console.log('FloatingSearchInput: Property saved successfully, clearing state');
+      
+      // Clear all state to allow immediate new search
+      setShowPropertyPopup(false);
+      setSelectedAddress(null);
+      setSelectedCoordinates(null);
+      setSelectedStatus('Off Market');
+      setSearchQuery(''); // Clear search input
+      setShowSuggestions(false); // Close suggestions dropdown
+      setSuggestions([]); // Clear suggestions
+      setSelectedIndex(-1); // Reset selection index
+      
+      // Focus back on input for next search with slight delay to ensure DOM updates
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+      
+      // Simple success notification
+      success('Property Saved', 'Added to your workspace');
+    } catch (err) {
+      console.error('FloatingSearchInput: Error saving property:', err);
+      error('Save Failed', err instanceof Error ? err.message : 'Please try again');
+      // Don't clear state on error - let user try again or cancel
+    }
+  }, [selectedAddress, selectedCoordinates, selectedStatus, onSaveProperty, success, error]);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -248,7 +312,7 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, currentSession:
   }, []);
 
   return (
-    <div className="absolute top-4 right-4 z-30">
+    <div className="absolute top-4 left-4 z-30">
       <div className="relative">
         {/* Search Input */}
         <div
@@ -339,6 +403,130 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, currentSession:
                 </div>
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Property Save Popup */}
+        {showPropertyPopup && selectedAddress && selectedCoordinates && (
+          <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-semibold text-gray-900">Save Property</h3>
+                <button
+                  onClick={() => {
+                    setShowPropertyPopup(false);
+                    setSelectedAddress(null);
+                    setSelectedCoordinates(null);
+                    setSelectedStatus('Off Market');
+                    setSearchQuery('');
+                    setShowSuggestions(false);
+                    setSuggestions([]);
+                    if (inputRef.current) {
+                      inputRef.current.focus();
+                    }
+                  }}
+                  className="text-gray-400 hover:text-gray-600 p-0.5"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="space-y-2 mb-3">
+                {/* Status Selector - First */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  >
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Address</label>
+                  <div className="text-xs text-gray-900 bg-gray-50 px-2 py-1.5 rounded border">
+                    {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state} {selectedAddress.zip}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Street</label>
+                    <div className="text-xs text-gray-900 bg-gray-50 px-2 py-1 rounded border">
+                      {selectedAddress.street}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">City</label>
+                    <div className="text-xs text-gray-900 bg-gray-50 px-2 py-1 rounded border">
+                      {selectedAddress.city}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">State</label>
+                    <div className="text-xs text-gray-900 bg-gray-50 px-2 py-1 rounded border">
+                      {selectedAddress.state}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">ZIP</label>
+                    <div className="text-xs text-gray-900 bg-gray-50 px-2 py-1 rounded border">
+                      {selectedAddress.zip}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Latitude</label>
+                    <div className="text-xs text-gray-900 bg-gray-50 px-2 py-1 rounded border">
+                      {selectedCoordinates.lat.toFixed(6)}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Longitude</label>
+                    <div className="text-xs text-gray-900 bg-gray-50 px-2 py-1 rounded border">
+                      {selectedCoordinates.lng.toFixed(6)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-2 pt-2 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowPropertyPopup(false);
+                    setSelectedAddress(null);
+                    setSelectedCoordinates(null);
+                    setSelectedStatus('Off Market');
+                    setSearchQuery('');
+                    setShowSuggestions(false);
+                    setSuggestions([]);
+                    if (inputRef.current) {
+                      inputRef.current.focus();
+                    }
+                  }}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProperty}
+                  disabled={!selectedAddress || !selectedCoordinates || !onSaveProperty}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Save Property
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -1,19 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import SessionBanner from './SessionBanner';
-import UsageDropdown from './UsageDropdown';
+// Usage indicator removed
 import ProfileDropdown from './ProfileDropdown';
 import { SessionData } from '../services/sessionStorage';
 import { useAuth } from '@/features/auth';
-import { CompactUsageIndicator } from '@/features/billing';
+import { WorkspaceSelector, WorkspaceSettingsModal } from '@/features/workspaces';
+import { Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 interface AppHeaderProps {
   currentSession: SessionData | null;
   sessions: SessionData[];
-  onNewSession: () => SessionData;
+  onNewSession: () => Promise<SessionData>;
   onSessionSwitch: (sessionId: string) => void;
   onSessionRename?: (sessionId: string, newName: string) => void;
   onUpdateSession?: (updates: {
@@ -53,21 +53,21 @@ export default function AppHeader({
   isSidebarOpen = true,
   onSidebarToggle,
 }: AppHeaderProps) {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
   
   // Determine page types
   const isMapPage = pathname === '/map';
-  const isTracePage = pathname === '/trace';
-  const needsSessionManagement = isMapPage || isTracePage;
-  // Show navigation on ALL pages for consistency
+  const needsSessionManagement = isMapPage;
+  const isWorkspacePage = pathname.startsWith('/workspace/');
+  const isDashboardPage = pathname === '/dashboard';
   
   // Navigation items for core pages
   const navigationItems = [
-    { href: '/map', label: 'Map' },
-    { href: '/trace', label: 'Trace' },
-    { href: '/search', label: 'Search' }
+    { href: '/dashboard', label: 'Dashboard' }
   ];
 
   return (
@@ -76,44 +76,44 @@ export default function AppHeader({
       <div className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm backdrop-blur-sm">
         <div className="w-full px-3 sm:px-4 lg:px-8">
           <div className="flex items-center h-14 sm:h-16">
-            {/* Left Section - Unified Navigation + Page-specific controls (1/3) */}
+            {/* Left Section - Workspace Selector + Navigation (1/3) */}
             <div className="w-1/3 flex items-center justify-start pr-1 sm:pr-4">
               <div className="flex items-center space-x-1 sm:space-x-2 w-full min-w-0">
-                {/* Universal Navigation - Show on all pages */}
-                {(
-                  <>
-                    {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center space-x-2">
-                      {navigationItems.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-                            pathname === item.href
-                              ? 'bg-[#014463] text-white shadow-sm'
-                              : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50 hover:scale-105'
-                          }`}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                    
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden">
-                      <button
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        className="p-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 rounded-lg transition-colors"
-                        title="Navigation Menu"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                  </>
+                {/* Workspace Selector - Show on dashboard and workspace pages */}
+                {(isDashboardPage || isWorkspacePage) && (
+                  <div className="mr-2">
+                    <WorkspaceSelector />
+                  </div>
                 )}
+                
+                {/* Navigation - Show dashboard button when on dashboard */}
+                {isDashboardPage && (
+                  <div className="hidden md:flex items-center space-x-2">
+                    <Link
+                      href="/dashboard"
+                      className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                        isDashboardPage
+                          ? 'bg-[#014463] text-white shadow-sm'
+                          : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50 hover:scale-105'
+                      }`}
+                    >
+                      Dashboard
+                    </Link>
+                  </div>
+                )}
+                
+                {/* Mobile Menu Button - Show on mobile */}
+                <div className="md:hidden">
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="p-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 rounded-lg transition-colors"
+                    title="Navigation Menu"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
             
@@ -175,13 +175,18 @@ export default function AppHeader({
                 </>
               )}
 
-              {/* Usage Dropdown - Show on all pages */}
-              <UsageDropdown />
+              {/* Usage indicator removed */}
               
-              {/* Compact Usage Indicator - Mobile only */}
-              <div className="md:hidden">
-                <CompactUsageIndicator />
-              </div>
+              {/* Workspace Settings - Show on workspace pages */}
+              {isWorkspacePage && (
+                <button
+                  onClick={() => setIsWorkspaceSettingsOpen(true)}
+                  className="p-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 rounded-lg transition-colors"
+                  title="Workspace Settings"
+                >
+                  <Cog6ToothIcon className="w-5 h-5" />
+                </button>
+              )}
               
               {/* Profile Dropdown - Always show */}
               <ProfileDropdown />
@@ -190,41 +195,33 @@ export default function AppHeader({
         </div>
       </div>
 
-      {/* Session Banner - Show on pages that need session management */}
-      {needsSessionManagement && (
-        <SessionBanner
-          currentSession={currentSession}
-          sessions={sessions}
-          onSessionSwitch={onSessionSwitch}
-          onCreateNewSession={onNewSession}
-          onSessionRename={onSessionRename}
-          onUpdateSession={onUpdateSession}
-        />
-      )}
-      
       {/* Mobile Navigation Menu - Show on all pages */}
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 shadow-sm">
           <div className="px-4 py-2 space-y-1">
             
-            {navigationItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  pathname === item.href
-                    ? 'bg-[#014463] text-white'
-                    : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {/* Dashboard Button for Mobile */}
+            <Link
+              href="/dashboard"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                isDashboardPage
+                  ? 'bg-[#014463] text-white'
+                  : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50'
+              }`}
+            >
+              Dashboard
+            </Link>
             
           </div>
         </div>
       )}
+      
+      {/* Workspace Settings Modal */}
+      <WorkspaceSettingsModal 
+        isOpen={isWorkspaceSettingsOpen}
+        onClose={() => setIsWorkspaceSettingsOpen(false)}
+      />
     </>
   );
 }

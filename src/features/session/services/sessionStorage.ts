@@ -6,17 +6,48 @@ import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 export interface SessionData {
   id: string;
   name: string;
+  isActive: boolean;
   createdAt: number;
   lastAccessed: number;
   nodes: NodeData[];
   mnudaId?: string; // MNSESSION ID
   activeUserFoundNodeId?: string; // Track which UserFoundNode is currently active
   locationTrackingActive: boolean; // Prevent multiple GPS tracking sessions
+  metadata?: Record<string, unknown>;
+  // Team-related fields
+  isOwned?: boolean; // true if user owns this session, false if shared via team
+  team?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
+  sharedAt?: number; // timestamp when session was shared with team
+  sharedBy?: string; // user ID who shared the session
 }
 
 export interface NodeData {
   id: string;
-  type: 'userFound' | 'start' | 'api-result' | 'people-result';
+  sessionId: string;
+  userId: string;
+  type: 'userFound' | 'start' | 'api-result' | 'people-result' | 'end';
+  status: 'pending' | 'ready' | 'processing' | 'completed' | 'error';
+  apiName?: string;
+  title?: string;
+  customTitle?: string;
+  hasCompleted: boolean;
+  timestamp: string;
+  createdAt: string;
+  updatedAt: string;
+  coordinates?: string;
+  addressData?: unknown;
+  rawResponse?: unknown;
+  parsedData?: unknown;
+  personData?: unknown;
+  metadata: unknown;
+  errorMessage?: string;
+  processingTimeMs?: number;
+  
+  // Legacy fields for compatibility
   address?: { 
     street: string; 
     city: string; 
@@ -27,15 +58,10 @@ export interface NodeData {
       longitude: number;
     };
   };
-  apiName?: string;
   response?: unknown;
   personId?: string;
-  personData?: unknown;
-  timestamp: number;
-  hasCompleted?: boolean;
   
   // UserFoundNode specific fields
-  status?: 'pending' | 'ready';
   payload?: {
     coords: { lat: number; lng: number };
     address?: { 
@@ -63,9 +89,6 @@ export interface NodeData {
   parentNodeId?: string;               // Parent node ID (replaces parentMnudaId)
   clickedEntityId?: string;            // Which entity triggered this node
   clickedEntityData?: unknown;         // The actual entity data that triggered this node
-  
-  // Custom title support
-  customTitle?: string;                // User-defined custom title
   
   // Legacy fields for compatibility
   childMnudaIds?: string[];            // Child node IDs
@@ -127,6 +150,7 @@ class SessionStorageService {
       nodes: [],
       mnudaId: MnudaIdService.generateTypedId('session'),
       locationTrackingActive: false,
+      isActive: true,
     };
   }
 

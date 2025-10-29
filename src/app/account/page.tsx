@@ -4,80 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth, ProfileService } from '@/features/auth';
-import { Profile, UserType, SubscriptionStatus } from '@/types/supabase';
-import { CreditBalanceWidget, SubscriptionPanel, CompactUsageIndicator } from '@/features/billing';
+import { Profile } from '@/types/supabase';
+import ProfilePhoto from '@/components/ProfilePhoto';
+// Billing UI removed
 
 export default function AccountPage() {
   const router = useRouter();
-  const { user, signOut, isLoading } = useAuth();
-  const [isSigningOut, setIsSigningOut] = useState(false);
-  const [signOutError, setSignOutError] = useState('');
-  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  const { user, isLoading } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState('');
-
-  const handleSignOutClick = () => {
-    setShowSignOutConfirm(true);
-  };
-
-  const handleSignOutConfirm = async () => {
-    setIsSigningOut(true);
-    setSignOutError('');
-    setShowSignOutConfirm(false);
-    
-    try {
-      await signOut();
-      // Clear any local session data
-      localStorage.removeItem('freemap_sessions');
-      localStorage.removeItem('freemap_current_session');
-      // Redirect to login page
-      router.push('/login');
-    } catch (error) {
-      console.error('Sign out error:', error);
-      setSignOutError('Failed to sign out. Please try again.');
-    } finally {
-      setIsSigningOut(false);
-    }
-  };
-
-  const handleSignOutCancel = () => {
-    setShowSignOutConfirm(false);
-  };
-
-  // Helper functions for formatting
-  const formatUserType = (userType: UserType): string => {
-    const typeMap: Record<UserType, string> = {
-      free: 'Free User',
-      premium: 'Premium User',
-      admin: 'Administrator',
-      buyer: 'Home Buyer',
-      realtor: 'Real Estate Agent',
-      investor: 'Real Estate Investor',
-      wholesaler: 'Wholesaler',
-      owner: 'Property Owner',
-      lender: 'Lender',
-      appraiser: 'Appraiser',
-      contractor: 'Contractor',
-      other: 'Other'
-    };
-    return typeMap[userType] || userType;
-  };
-
-  const formatSubscriptionStatus = (status: SubscriptionStatus): { text: string; color: string; bgColor: string } => {
-    const statusMap: Record<SubscriptionStatus, { text: string; color: string; bgColor: string }> = {
-      free: { text: 'Free', color: 'text-gray-600', bgColor: 'bg-gray-100' },
-      trial: { text: 'Trial', color: 'text-blue-600', bgColor: 'bg-blue-100' },
-      active: { text: 'Active', color: 'text-green-600', bgColor: 'bg-green-100' },
-      past_due: { text: 'Past Due', color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
-      canceled: { text: 'Canceled', color: 'text-red-600', bgColor: 'bg-red-100' },
-      unpaid: { text: 'Unpaid', color: 'text-red-600', bgColor: 'bg-red-100' },
-      incomplete: { text: 'Incomplete', color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
-      incomplete_expired: { text: 'Expired', color: 'text-red-600', bgColor: 'bg-red-100' },
-      trialing: { text: 'Trialing', color: 'text-blue-600', bgColor: 'bg-blue-100' }
-    };
-    return statusMap[status] || { text: status, color: 'text-gray-600', bgColor: 'bg-gray-100' };
-  };
 
   const getDisplayName = (): string => {
     if (profile) {
@@ -89,17 +24,14 @@ export default function AccountPage() {
   // Load profile data when user is available
   useEffect(() => {
     const loadProfile = async () => {
-      if (user) {
-        setProfileLoading(true);
+      if (user?.id) {
         setProfileError('');
         try {
-          const userProfile = await ProfileService.getCurrentProfile();
+          const userProfile = await ProfileService.getCurrentProfile(user.id);
           setProfile(userProfile);
         } catch (error) {
           console.error('Error loading profile:', error);
           setProfileError('Failed to load profile information');
-        } finally {
-          setProfileLoading(false);
         }
       }
     };
@@ -117,6 +49,7 @@ export default function AccountPage() {
       
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isLoading, user, router]);
 
   // Show loading state while checking authentication
@@ -150,60 +83,22 @@ export default function AccountPage() {
       {/* Account Summary */}
       <div className="mb-6">
         <div className="flex items-center space-x-3 mb-4">
-          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
+          <ProfilePhoto 
+            profile={profile} 
+            size="md" 
+            editable={false}
+          />
           <div>
             <h2 className="text-lg font-medium text-gray-900">{getDisplayName()}</h2>
             <p className="text-sm text-gray-600">{user.email}</p>
-            {profile && (
-              <div className="flex items-center space-x-2 mt-1">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${formatSubscriptionStatus(profile.subscription_status || 'free').bgColor} ${formatSubscriptionStatus(profile.subscription_status || 'free').color}`}>
-                  {formatSubscriptionStatus(profile.subscription_status || 'free').text}
-                </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                  {formatUserType(profile.user_type || 'free')}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <CreditBalanceWidget showDetails={false} compact={true} />
-        <SubscriptionPanel showActions={false} compact={true} />
-      </div>
+      {/* Quick Stats - Removed billing components */}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Link
-          href="/account/billing"
-          className="p-3 border border-gray-200 rounded hover:border-gray-300 hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center space-x-2">
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-            </svg>
-            <span className="text-sm font-medium text-gray-900">Billing</span>
-          </div>
-        </Link>
-
-        <Link
-          href="/account/usage"
-          className="p-3 border border-gray-200 rounded hover:border-gray-300 hover:bg-gray-50 transition-colors"
-        >
-          <div className="flex items-center space-x-2">
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span className="text-sm font-medium text-gray-900">Usage</span>
-          </div>
-        </Link>
-
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-3 mb-6">
         <Link
           href="/account/settings"
           className="p-3 border border-gray-200 rounded hover:border-gray-300 hover:bg-gray-50 transition-colors"

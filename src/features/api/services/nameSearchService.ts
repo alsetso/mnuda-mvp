@@ -6,7 +6,7 @@ import { MnudaIdService } from '@/features/shared/services/mnudaIdService';
 
 export interface NameSearchResult {
   success: boolean;
-  node?: NodeData;
+  node?: Partial<NodeData>;
   error?: string;
 }
 
@@ -22,12 +22,12 @@ export class NameSearchService {
       const response = await apiService.callNameSearchAPI(name);
 
       // Create the result node
-      const node: NodeData = {
+      const node: Partial<NodeData> = {
         id: `name-${Date.now()}`,
         type: 'api-result',
         apiName: 'Skip Trace',
         response,
-        timestamp: Date.now(),
+        timestamp: new Date().toISOString(),
         mnNodeId: MnudaIdService.generateTypedId('node'),
       };
 

@@ -2,7 +2,8 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import AppHeader from '@/features/session/components/AppHeader';
+import { useAuth } from '@/features/auth';
+import PageLayout from '@/components/PageLayout';
 
 interface AccountLayoutProps {
   children: React.ReactNode;
@@ -10,36 +11,15 @@ interface AccountLayoutProps {
 
 const navigationItems = [
   { name: 'Overview', href: '/account' },
-  { name: 'Billing', href: '/account/billing' },
-  { name: 'Usage', href: '/account/usage' },
   { name: 'Settings', href: '/account/settings' },
 ];
 
 export default function AccountLayout({ children }: AccountLayoutProps) {
   const pathname = usePathname();
+  const { user: _user, isLoading: _isLoading } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <AppHeader
-        currentSession={null}
-        sessions={[]}
-        onNewSession={() => ({
-          id: '',
-          name: '',
-          createdAt: Date.now(),
-          lastAccessed: Date.now(),
-          nodes: [],
-          locationTrackingActive: false
-        })}
-        onSessionSwitch={() => {}}
-        updateUrl={false}
-        showSessionSelector={false}
-        showMobileToggle={false}
-      />
-
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
+    <PageLayout containerMaxWidth="2xl" contentPadding="px-4 py-6">
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">
@@ -76,7 +56,6 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
         <div className="bg-white border border-gray-200 rounded">
           {children}
         </div>
-      </div>
-    </div>
+    </PageLayout>
   );
 }

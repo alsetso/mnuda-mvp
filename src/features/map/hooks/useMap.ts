@@ -271,6 +271,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }
         };
       } catch (err) {
         console.error('Error initializing map:', err);
+        return;
       }
     };
 
@@ -319,14 +320,40 @@ export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }
           popup.on('open', () => {
             const popupElement = popup.getElement();
             if (popupElement) {
+              // Store property ID from popup content on marker for later retrieval
+              const propertyIdAttr = popupElement.querySelector('[data-property-id]');
+              if (propertyIdAttr) {
+                const propertyId = propertyIdAttr.getAttribute('data-property-id');
+                if (propertyId) {
+                  // propertyId available via popupElement dataset if needed
+                  popupElement.setAttribute('data-current-property-id', propertyId);
+                }
+              }
+              
               popupElement.addEventListener('click', (e) => {
                 const target = e.target as HTMLElement;
+                
+                // Handle property detail button clicks
+                const propertyBtn = target.closest('[data-property-id]');
+                if (propertyBtn) {
+                  e.stopPropagation();
+                  const propertyId = propertyBtn.getAttribute('data-property-id');
+                  if (propertyId) {
+                    // Dispatch custom event that WorkspaceMap can listen to
+                    const event = new CustomEvent('propertyDetailClick', { 
+                      detail: { propertyId },
+                      bubbles: true 
+                    });
+                    document.dispatchEvent(event);
+                  }
+                  return;
+                }
                 
                 // Handle popup close button clicks
                 const closeBtn = target.closest('.popup-close-btn');
                 if (closeBtn) {
                   e.stopPropagation();
-                  marker.remove();
+                  popup.remove();
                   return;
                 }
                 
@@ -399,13 +426,17 @@ export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }
         }
 
         // Add click event handler to prevent map click when clicking on marker
-        marker.getElement().addEventListener('click', (e) => {
-          e.stopPropagation();
-          // Toggle popup on marker click
-          if (options.popupContent) {
-            marker.togglePopup();
-          }
-        });
+        const markerElement = marker.getElement();
+        if (markerElement) {
+          markerElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Toggle popup on marker click
+            if (options.popupContent) {
+              marker.togglePopup();
+            }
+            // Property click handled via custom event in popup button click handler above
+          });
+        }
 
         marker.addTo(map.current);
         markers.current.set(id, marker);

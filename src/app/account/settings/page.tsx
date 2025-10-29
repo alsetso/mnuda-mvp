@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, ProfileService } from '@/features/auth';
-import { Profile, UserType, SubscriptionStatus } from '@/types/supabase';
+import { Profile } from '@/types/supabase';
 import ChangePasswordModal from '@/components/ChangePasswordModal';
+import ProfilePhoto from '@/components/ProfilePhoto';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -22,7 +23,13 @@ export default function SettingsPage() {
     first_name: '',
     last_name: '',
     phone: '',
-    user_type: 'buyer' as UserType
+    company: '',
+    job_title: '',
+    location: '',
+    bio: '',
+    website: '',
+    linkedin_url: '',
+    timezone: 'UTC'
   });
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
@@ -54,46 +61,7 @@ export default function SettingsPage() {
     setShowSignOutConfirm(false);
   };
 
-  // Helper functions for formatting
-  const formatUserType = (userType: UserType): string => {
-    const typeMap: Record<UserType, string> = {
-      free: 'Free User',
-      premium: 'Premium User',
-      admin: 'Administrator',
-      buyer: 'Home Buyer',
-      realtor: 'Real Estate Agent',
-      investor: 'Real Estate Investor',
-      wholesaler: 'Wholesaler',
-      owner: 'Property Owner',
-      lender: 'Lender',
-      appraiser: 'Appraiser',
-      contractor: 'Contractor',
-      other: 'Other'
-    };
-    return typeMap[userType] || userType;
-  };
 
-  const formatSubscriptionStatus = (status: SubscriptionStatus): { text: string; color: string; bgColor: string } => {
-    const statusMap: Record<SubscriptionStatus, { text: string; color: string; bgColor: string }> = {
-      free: { text: 'Free', color: 'text-gray-600', bgColor: 'bg-gray-100' },
-      trial: { text: 'Trial', color: 'text-blue-600', bgColor: 'bg-blue-100' },
-      active: { text: 'Active', color: 'text-green-600', bgColor: 'bg-green-100' },
-      past_due: { text: 'Past Due', color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
-      canceled: { text: 'Canceled', color: 'text-red-600', bgColor: 'bg-red-100' },
-      unpaid: { text: 'Unpaid', color: 'text-red-600', bgColor: 'bg-red-100' },
-      incomplete: { text: 'Incomplete', color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
-      incomplete_expired: { text: 'Expired', color: 'text-red-600', bgColor: 'bg-red-100' },
-      trialing: { text: 'Trialing', color: 'text-blue-600', bgColor: 'bg-blue-100' }
-    };
-    return statusMap[status] || { text: status, color: 'text-gray-600', bgColor: 'bg-gray-100' };
-  };
-
-  const getDisplayName = (): string => {
-    if (profile) {
-      return ProfileService.getDisplayName(profile);
-    }
-    return user?.user_metadata?.first_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-  };
 
   const handleEditClick = () => {
     if (profile) {
@@ -101,7 +69,13 @@ export default function SettingsPage() {
         first_name: profile.first_name || '',
         last_name: profile.last_name || '',
         phone: profile.phone || '',
-        user_type: profile.user_type || 'free'
+        company: profile.company || '',
+        job_title: profile.job_title || '',
+        location: profile.location || '',
+        bio: profile.bio || '',
+        website: profile.website || '',
+        linkedin_url: profile.linkedin_url || '',
+        timezone: profile.timezone || 'UTC'
       });
       setIsEditing(true);
       setEditError('');
@@ -115,7 +89,13 @@ export default function SettingsPage() {
       first_name: '',
       last_name: '',
       phone: '',
-      user_type: 'buyer'
+      company: '',
+      job_title: '',
+      location: '',
+      bio: '',
+      website: '',
+      linkedin_url: '',
+      timezone: 'UTC'
     });
   };
 
@@ -126,11 +106,22 @@ export default function SettingsPage() {
     setEditError('');
     
     try {
-      const updatedProfile = await ProfileService.updateCurrentProfile({
-        first_name: editForm.first_name || null,
-        last_name: editForm.last_name || null,
-        phone: editForm.phone || null,
-        user_type: editForm.user_type
+      if (!user?.id) {
+        setEditError('User not authenticated');
+        return;
+      }
+      
+      const updatedProfile = await ProfileService.updateCurrentProfile(user.id, {
+        first_name: editForm.first_name || undefined,
+        last_name: editForm.last_name || undefined,
+        phone: editForm.phone || undefined,
+        company: editForm.company || undefined,
+        job_title: editForm.job_title || undefined,
+        location: editForm.location || undefined,
+        bio: editForm.bio || undefined,
+        website: editForm.website || undefined,
+        linkedin_url: editForm.linkedin_url || undefined,
+        timezone: editForm.timezone || undefined
       });
       
       if (updatedProfile) {
@@ -163,11 +154,11 @@ export default function SettingsPage() {
   // Load profile data when user is available
   useEffect(() => {
     const loadProfile = async () => {
-      if (user) {
+      if (user?.id) {
         setProfileLoading(true);
         setProfileError('');
         try {
-          const userProfile = await ProfileService.getCurrentProfile();
+          const userProfile = await ProfileService.getCurrentProfile(user.id);
           setProfile(userProfile);
         } catch (error) {
           console.error('Error loading profile:', error);
@@ -190,6 +181,7 @@ export default function SettingsPage() {
       
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isLoading, user, router]);
 
   // Show loading state while checking authentication
@@ -276,119 +268,283 @@ export default function SettingsPage() {
             <span className="ml-2 text-gray-600">Loading profile...</span>
           </div>
         ) : isEditing ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+          <div className="space-y-6">
+            {/* Personal Information */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-4">Personal Information</h4>
+              <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="first_name" className="block text-sm font-medium text-gray-500 mb-1">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    id="first_name"
+                    value={editForm.first_name}
+                    onChange={(e) => handleFormChange('first_name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
+                    placeholder="Enter first name"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="last_name" className="block text-sm font-medium text-gray-500 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    id="last_name"
+                    value={editForm.last_name}
+                    onChange={(e) => handleFormChange('last_name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
+                    placeholder="Enter last name"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-500 mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    value={editForm.phone}
+                    onChange={(e) => handleFormChange('phone', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="location" className="block text-sm font-medium text-gray-500 mb-1">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    id="location"
+                    value={editForm.location}
+                    onChange={(e) => handleFormChange('location', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
+                    placeholder="City, State"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Professional Information */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-4">Professional Information</h4>
+              <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="company" className="block text-sm font-medium text-gray-500 mb-1">
+                    Company
+                  </label>
+                  <input
+                    type="text"
+                    id="company"
+                    value={editForm.company}
+                    onChange={(e) => handleFormChange('company', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
+                    placeholder="Company name"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="job_title" className="block text-sm font-medium text-gray-500 mb-1">
+                    Job Title
+                  </label>
+                  <input
+                    type="text"
+                    id="job_title"
+                    value={editForm.job_title}
+                    onChange={(e) => handleFormChange('job_title', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
+                    placeholder="Your role"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Bio */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-4">About</h4>
               <div>
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-500 mb-1">
-                  First Name
+                <label htmlFor="bio" className="block text-sm font-medium text-gray-500 mb-1">
+                  Bio
                 </label>
-                <input
-                  type="text"
-                  id="first_name"
-                  value={editForm.first_name}
-                  onChange={(e) => handleFormChange('first_name', e.target.value)}
+                <textarea
+                  id="bio"
+                  rows={3}
+                  value={editForm.bio}
+                  onChange={(e) => handleFormChange('bio', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
-                  placeholder="Enter first name"
+                  placeholder="Tell us about yourself..."
                 />
               </div>
-              <div>
-                <label htmlFor="last_name" className="block text-sm font-medium text-gray-500 mb-1">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  id="last_name"
-                  value={editForm.last_name}
-                  onChange={(e) => handleFormChange('last_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
-                  placeholder="Enter last name"
-                />
+            </div>
+
+            {/* Online Presence */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-4">Online Presence</h4>
+              <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="website" className="block text-sm font-medium text-gray-500 mb-1">
+                    Website
+                  </label>
+                  <input
+                    type="url"
+                    id="website"
+                    value={editForm.website}
+                    onChange={(e) => handleFormChange('website', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
+                    placeholder="https://yourwebsite.com"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="linkedin_url" className="block text-sm font-medium text-gray-500 mb-1">
+                    LinkedIn Profile
+                  </label>
+                  <input
+                    type="url"
+                    id="linkedin_url"
+                    value={editForm.linkedin_url}
+                    onChange={(e) => handleFormChange('linkedin_url', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
+                    placeholder="https://linkedin.com/in/yourprofile"
+                  />
+                </div>
               </div>
+            </div>
+
+            {/* Preferences */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-4">Preferences</h4>
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-500 mb-1">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={editForm.phone}
-                  onChange={(e) => handleFormChange('phone', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
-                  placeholder="Enter phone number"
-                />
-              </div>
-              <div>
-                <label htmlFor="user_type" className="block text-sm font-medium text-gray-500 mb-1">
-                  User Type
+                <label htmlFor="timezone" className="block text-sm font-medium text-gray-500 mb-1">
+                  Timezone
                 </label>
                 <select
-                  id="user_type"
-                  value={editForm.user_type}
-                  onChange={(e) => handleFormChange('user_type', e.target.value)}
+                  id="timezone"
+                  value={editForm.timezone}
+                  onChange={(e) => handleFormChange('timezone', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-gray-500 focus:border-gray-500 text-sm"
                 >
-                  <option value="buyer">Home Buyer</option>
-                  <option value="realtor">Real Estate Agent</option>
-                  <option value="investor">Real Estate Investor</option>
-                  <option value="wholesaler">Wholesaler</option>
-                  <option value="owner">Property Owner</option>
-                  <option value="lender">Lender</option>
-                  <option value="appraiser">Appraiser</option>
-                  <option value="contractor">Contractor</option>
-                  <option value="other">Other</option>
+                  <option value="UTC">UTC</option>
+                  <option value="America/New_York">Eastern Time (ET)</option>
+                  <option value="America/Chicago">Central Time (CT)</option>
+                  <option value="America/Denver">Mountain Time (MT)</option>
+                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                  <option value="Europe/London">London (GMT)</option>
+                  <option value="Europe/Paris">Paris (CET)</option>
+                  <option value="Asia/Tokyo">Tokyo (JST)</option>
+                  <option value="Asia/Shanghai">Shanghai (CST)</option>
+                  <option value="Australia/Sydney">Sydney (AEST)</option>
                 </select>
               </div>
             </div>
           </div>
         ) : (
-          <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Email address</dt>
-              <dd className="mt-1 text-sm text-gray-900">{user.email}</dd>
+          <div className="space-y-6">
+            {/* Profile Photo */}
+            <div className="flex items-center space-x-4">
+              <ProfilePhoto 
+                profile={profile} 
+                size="lg" 
+                editable={true}
+                onUpdate={setProfile}
+              />
+              <div>
+                <h4 className="text-sm font-medium text-gray-900">Profile Photo</h4>
+                <p className="text-xs text-gray-500">Click to upload or change your profile photo</p>
+              </div>
             </div>
-            {(profile?.first_name || profile?.last_name) && (
+
+            {/* Profile Information */}
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Email address</dt>
+                <dd className="mt-1 text-sm text-gray-900">{user.email}</dd>
+              </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">Full name</dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {[profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Not provided'}
+                  {profile?.first_name || profile?.last_name
+                    ? [profile?.first_name, profile?.last_name].filter(Boolean).join(' ')
+                    : (profile?.full_name || 'Not set')}
                 </dd>
               </div>
-            )}
-            {profile?.phone && (
               <div>
-                <dt className="text-sm font-medium text-gray-500">Phone number</dt>
-                <dd className="mt-1 text-sm text-gray-900">{profile.phone}</dd>
+                <dt className="text-sm font-medium text-gray-500">First name</dt>
+                <dd className="mt-1 text-sm text-gray-900">{profile?.first_name || 'Not set'}</dd>
               </div>
-            )}
-            <div>
-              <dt className="text-sm font-medium text-gray-500">User type</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {profile ? formatUserType(profile.user_type || 'free') : 'Unknown'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Member since</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Last login</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Unknown'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-gray-500">Email verified</dt>
-              <dd className="mt-1">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                  user.email_confirmed_at ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {user.email_confirmed_at ? 'Verified' : 'Pending'}
-                </span>
-              </dd>
-            </div>
-          </dl>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Last name</dt>
+                <dd className="mt-1 text-sm text-gray-900">{profile?.last_name || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Phone</dt>
+                <dd className="mt-1 text-sm text-gray-900">{profile?.phone || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Location</dt>
+                <dd className="mt-1 text-sm text-gray-900">{profile?.location || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Company</dt>
+                <dd className="mt-1 text-sm text-gray-900">{profile?.company || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Job title</dt>
+                <dd className="mt-1 text-sm text-gray-900">{profile?.job_title || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Website</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {profile?.website ? (
+                    <a href={profile.website} className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">
+                      {profile.website}
+                    </a>
+                  ) : 'Not set'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">LinkedIn</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {profile?.linkedin_url ? (
+                    <a href={profile.linkedin_url} className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">
+                      {profile.linkedin_url}
+                    </a>
+                  ) : 'Not set'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Timezone</dt>
+                <dd className="mt-1 text-sm text-gray-900">{profile?.timezone || 'UTC'}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="text-sm font-medium text-gray-500">Bio</dt>
+                <dd className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{profile?.bio || 'Not set'}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Member since</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Last login</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Unknown'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Email verified</dt>
+                <dd className="mt-1">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    user.email_confirmed_at ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {user.email_confirmed_at ? 'Verified' : 'Pending'}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </div>
         )}
       </div>
 
