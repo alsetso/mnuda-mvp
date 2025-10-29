@@ -133,7 +133,6 @@ export class SupabaseSessionService {
         last_accessed_at: session.last_accessed_at,
         metadata: session.metadata,
         is_owned: true,
-        team: null,
       }));
 
       // Remove duplicates and sort by last accessed
@@ -521,7 +520,7 @@ export class SupabaseSessionService {
 
   // Private conversion methods
   private static convertSupabaseSessionToSessionData(
-    session: SupabaseSession & Partial<{ is_owned: boolean; team: { id: string; name: string; description?: string }; shared_at: string; shared_by: string }>
+    session: SupabaseSession & Partial<{ is_owned: boolean; team: { id: string; name: string; description?: string } | null; shared_at: string; shared_by: string }>
   ): SessionData {
     return {
       id: session.id,
