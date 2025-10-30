@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 
 // Types
@@ -70,21 +70,28 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
 
   // Get current user
   const [user, setUser] = useState<{ id: string } | null>(null);
+  const lastLoadedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Get initial user
     const getInitialUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('Initial user loaded:', user);
+      if (user) {
+        lastLoadedUserIdRef.current = user.id;
+      }
       setUser(user);
     };
     
     getInitialUser();
 
-    // Listen for auth state changes
+    // Listen for auth state changes (only update if user ID actually changed)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
-      setUser(session?.user ?? null);
+      const newUserId = session?.user?.id || null;
+      // Only update if user ID actually changed
+      if (newUserId !== lastLoadedUserIdRef.current) {
+        lastLoadedUserIdRef.current = newUserId;
+        setUser(session?.user ?? null);
+      }
     });
 
     return () => {
@@ -102,8 +109,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     try {
       setLoading(true);
       setError(null);
-
-      console.log('Starting to load workspaces for user:', user.id);
       
       // RLS will automatically filter workspaces based on membership
       const { data, error } = await supabase
@@ -116,7 +121,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         throw error;
       }
 
-      console.log('Workspaces loaded:', data);
       setWorkspaces(data || []);
       
       // Set first workspace as current if none selected
@@ -155,31 +159,39 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     }
   }, [currentWorkspace]);
 
-  // Load workspaces when user changes
+  // Track last loaded workspace user ID to prevent unnecessary reloads
+  const lastWorkspaceUserIdRef = useRef<string | null>(null);
+
+  // Load workspaces when user changes (only if user ID actually changed)
   useEffect(() => {
-    console.log('User effect triggered, user:', user);
-    if (user) {
-      console.log('Loading workspaces for user:', user.id);
-      loadWorkspaces();
+    if (user?.id) {
+      // Only reload if user ID changed
+      if (user.id !== lastWorkspaceUserIdRef.current) {
+        lastWorkspaceUserIdRef.current = user.id;
+        loadWorkspaces();
+      }
     } else {
-      console.log('No user, setting loading to false');
-      setLoading(false);
-      setWorkspaces([]);
+      // Clear workspace data if user logged out
+      if (lastWorkspaceUserIdRef.current !== null) {
+        lastWorkspaceUserIdRef.current = null;
+        setLoading(false);
+        setWorkspaces([]);
+        setCurrentWorkspace(null);
+      }
     }
-  }, [user, loadWorkspaces]);
+  }, [user?.id, loadWorkspaces]);
 
   // Load members when workspace changes
   useEffect(() => {
     if (currentWorkspace && user) {
       loadMembers();
     }
-  }, [currentWorkspace?.id, user, loadMembers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentWorkspace?.id, user]); // loadMembers is stable from useCallback, intentionally excluded
 
   // Email sending function
   const sendWorkspaceInvitationEmail = async (email: string, workspace: Workspace) => {
     try {
-      console.log('Sending invitation email to:', email);
-      
       const response = await fetch('/api/send-workspace-invitation', {
         method: 'POST',
         headers: {
@@ -198,9 +210,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         console.error('Email API error:', response.status, errorText);
         throw new Error(`Email API failed: ${response.status}`);
       }
-
-      const result = await response.json();
-      console.log('Email sent successfully:', result);
     } catch (err) {
       console.error('Email sending failed:', err);
       // Don't throw error - invitation was still added to database
@@ -212,8 +221,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
     if (!user) throw new Error('Not authenticated');
 
     try {
-      console.log('Creating workspace with user:', user.id);
-      
       const { data: workspace, error } = await supabase
         .from('workspaces')
         .insert({
@@ -227,8 +234,6 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         console.error('Supabase workspace creation error:', error);
         throw new Error(`Workspace creation failed: ${error.message} (Code: ${error.code})`);
       }
-
-      console.log('Workspace created:', workspace);
 
       // Add creator as owner
       const { error: memberError } = await supabase

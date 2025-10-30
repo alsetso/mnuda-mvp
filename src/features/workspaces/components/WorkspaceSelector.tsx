@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { ChevronDownIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
-import type { Workspace } from '@/types/workspace';
+import type { Workspace as CtxWorkspace } from '../contexts/WorkspaceContext';
+import type { Workspace as ApiWorkspace } from '@/types/workspace';
 
 export function WorkspaceSelector() {
   const {
@@ -21,8 +22,16 @@ export function WorkspaceSelector() {
   // Check if we're on a workspace page
   const isWorkspacePage = pathname.startsWith('/workspace/');
 
-  const handleWorkspaceSelect = (workspace: Workspace) => {
-    setCurrentWorkspace(workspace);
+  const handleWorkspaceSelect = (workspace: CtxWorkspace | ApiWorkspace) => {
+    const normalized: CtxWorkspace = {
+      id: workspace.id,
+      name: workspace.name,
+      emoji: (workspace as Partial<CtxWorkspace>).emoji,
+      description: workspace.description,
+      created_by: (workspace as Partial<CtxWorkspace>).created_by || (workspace as Partial<ApiWorkspace>).owner_id || '',
+      created_at: workspace.created_at,
+    };
+    setCurrentWorkspace(normalized);
     setIsOpen(false);
     // Navigate to the workspace page
     router.push(`/workspace/${workspace.id}`);
@@ -30,7 +39,7 @@ export function WorkspaceSelector() {
 
   const handleBackToDashboard = () => {
     setIsOpen(false);
-    router.push('/dashboard');
+    router.push('/');
   };
 
   if (loading) {

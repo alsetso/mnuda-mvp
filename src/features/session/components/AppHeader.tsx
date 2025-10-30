@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Logo from '@/features/ui/components/Logo';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 // Usage indicator removed
@@ -40,12 +41,12 @@ interface AppHeaderProps {
 }
 
 export default function AppHeader({
-  currentSession,
-  sessions,
-  onNewSession,
-  onSessionSwitch,
-  onSessionRename,
-  onUpdateSession,
+  currentSession: _currentSession,
+  sessions: _sessions,
+  onNewSession: _onNewSession,
+  onSessionSwitch: _onSessionSwitch,
+  onSessionRename: _onSessionRename,
+  onUpdateSession: _onUpdateSession,
   showMobileToggle = false,
   mobileView = 'map',
   onMobileViewToggle,
@@ -55,19 +56,19 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const { user: _user } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
+  const _router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
   
   // Determine page types
   const isMapPage = pathname === '/map';
-  const needsSessionManagement = isMapPage;
+  const _needsSessionManagement = isMapPage;
   const isWorkspacePage = pathname.startsWith('/workspace/');
-  const isDashboardPage = pathname === '/dashboard';
+  const isDashboardPage = pathname === '/';
   
   // Navigation items for core pages
-  const navigationItems = [
-    { href: '/dashboard', label: 'Dashboard' }
+  const _navigationItems = [
+    { href: '/', label: 'Dashboard' }
   ];
 
   return (
@@ -83,22 +84,6 @@ export default function AppHeader({
                 {(isDashboardPage || isWorkspacePage) && (
                   <div className="mr-2">
                     <WorkspaceSelector />
-                  </div>
-                )}
-                
-                {/* Navigation - Show dashboard button when on dashboard */}
-                {isDashboardPage && (
-                  <div className="hidden md:flex items-center space-x-2">
-                    <Link
-                      href="/dashboard"
-                      className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-                        isDashboardPage
-                          ? 'bg-[#014463] text-white shadow-sm'
-                          : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50 hover:scale-105'
-                      }`}
-                    >
-                      Dashboard
-                    </Link>
                   </div>
                 )}
                 
@@ -120,10 +105,7 @@ export default function AppHeader({
             {/* Center Section - Logo (1/3) */}
             <div className="w-1/3 flex items-center justify-center">
               <Link href="/" className="hover:scale-105 transition-all duration-200">
-                <h1 className="text-base sm:text-lg font-bold tracking-tight">
-                  <span className="text-[#014463] drop-shadow-sm">MN</span>
-                  <span className="text-[#1dd1f5] drop-shadow-sm">UDA</span>
-                </h1>
+                <Logo size="md" />
               </Link>
             </div>
             
@@ -199,20 +181,7 @@ export default function AppHeader({
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-gray-200 shadow-sm">
           <div className="px-4 py-2 space-y-1">
-            
-            {/* Dashboard Button for Mobile */}
-            <Link
-              href="/dashboard"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`block px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                isDashboardPage
-                  ? 'bg-[#014463] text-white'
-                  : 'text-gray-700 hover:text-[#014463] hover:bg-gray-50'
-              }`}
-            >
-              Dashboard
-            </Link>
-            
+            {/* Navigation items can be added here */}
           </div>
         </div>
       )}

@@ -40,16 +40,23 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
   const [selectedCoordinates, setSelectedCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [showPropertyPopup, setShowPropertyPopup] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>('Off Market');
+  const [isSaving, setIsSaving] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const onSavePropertyRef = useRef(onSaveProperty);
   
   // Use props if provided, otherwise fall back to defaults
   const currentSession = propsCurrentSession ?? null;
   const addNode = propsAddNode ?? (() => {});
   
   const { withApiToast, success, error } = useToast();
+
+  // Keep ref updated with latest onSaveProperty callback
+  useEffect(() => {
+    onSavePropertyRef.current = onSaveProperty;
+  }, [onSaveProperty]);
 
   // Debounced search for suggestions
   const debouncedSearch = useCallback(async (query: string) => {
@@ -193,15 +200,20 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
 
     // Collapse search input
     setIsExpanded(false);
-  }, [currentSession, addNode, onFlyTo, onSearchComplete]);
+  }, [currentSession, addNode, onFlyTo, onSearchComplete, withApiToast]);
 
   // Handle saving property
   const handleSaveProperty = useCallback(async () => {
+    // Prevent double-clicks
+    if (isSaving) {
+      return;
+    }
+
     // Store values in local variables to avoid stale closure issues
     const addressToSave = selectedAddress;
     const coordinatesToSave = selectedCoordinates;
     const statusToSave = selectedStatus;
-    const saveHandler = onSaveProperty;
+    const saveHandler = onSavePropertyRef.current;
     
     if (!addressToSave || !coordinatesToSave || !saveHandler) {
       console.warn('Cannot save property: missing required data', {
@@ -211,6 +223,8 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
       });
       return;
     }
+
+    setIsSaving(true);
 
     try {
       console.log('FloatingSearchInput: Saving property...', { 
@@ -232,22 +246,29 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
       setShowSuggestions(false); // Close suggestions dropdown
       setSuggestions([]); // Clear suggestions
       setSelectedIndex(-1); // Reset selection index
-      
-      // Focus back on input for next search with slight delay to ensure DOM updates
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 100);
+      setIsExpanded(false); // Collapse search input
       
       // Simple success notification
       success('Property Saved', 'Added to your workspace');
+      
+      // Reset and prepare for next search after a brief delay
+      setTimeout(() => {
+        setIsSaving(false);
+        // Re-expand search input for next search
+        setIsExpanded(true);
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }, 50);
+      }, 300);
     } catch (err) {
       console.error('FloatingSearchInput: Error saving property:', err);
+      setIsSaving(false);
       error('Save Failed', err instanceof Error ? err.message : 'Please try again');
       // Don't clear state on error - let user try again or cancel
     }
-  }, [selectedAddress, selectedCoordinates, selectedStatus, onSaveProperty, success, error]);
+  }, [selectedAddress, selectedCoordinates, selectedStatus, isSaving, success, error]);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -421,11 +442,11 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
                     setSearchQuery('');
                     setShowSuggestions(false);
                     setSuggestions([]);
-                    if (inputRef.current) {
-                      inputRef.current.focus();
-                    }
+                    setIsSaving(false);
+                    setIsExpanded(false);
                   }}
-                  className="text-gray-400 hover:text-gray-600 p-0.5"
+                  disabled={isSaving}
+                  className="text-gray-400 hover:text-gray-600 p-0.5 disabled:opacity-50"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -510,20 +531,30 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
                     setSearchQuery('');
                     setShowSuggestions(false);
                     setSuggestions([]);
-                    if (inputRef.current) {
-                      inputRef.current.focus();
-                    }
+                    setIsSaving(false);
+                    setIsExpanded(false);
                   }}
-                  className="flex-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                  disabled={isSaving}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveProperty}
-                  disabled={!selectedAddress || !selectedCoordinates || !onSaveProperty}
-                  className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  disabled={!selectedAddress || !selectedCoordinates || !onSaveProperty || isSaving}
+                  className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                 >
-                  Save Property
+                  {isSaving ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Property'
+                  )}
                 </button>
               </div>
             </div>

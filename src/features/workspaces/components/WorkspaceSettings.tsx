@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { 
   UsersIcon, 
-  Cog6ToothIcon, 
   TrashIcon, 
   PencilIcon,
   UserPlusIcon,
@@ -34,7 +33,7 @@ export function WorkspaceSettings() {
   });
   const [isInviting, setIsInviting] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<'member'>('member');
+  const [inviteRole] = useState<'member'>('member');
 
   if (!currentWorkspace) return null;
 
@@ -69,7 +68,7 @@ export function WorkspaceSettings() {
     }
   };
 
-  const handleRoleChange = async (profileId: string, newRole: 'owner' | 'member') => {
+  const _handleRoleChange = async (profileId: string, newRole: 'owner' | 'member') => {
     try {
       await updateMemberRole(profileId, newRole);
     } catch (error) {

@@ -35,20 +35,11 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  // Check if user is authenticated
-  const {
-    data: { session: _session },
-  } = await supabase.auth.getSession();
+  // Get session for potential route protection
+  await supabase.auth.getSession();
 
-  // Protect /map route - redirect to login if not authenticated
-  // TEMPORARILY DISABLED FOR TESTING
-  // if (req.nextUrl.pathname.startsWith('/map')) {
-  //   if (!session) {
-  //     const redirectUrl = new URL('/login', req.url);
-  //     redirectUrl.searchParams.set('redirectTo', req.nextUrl.pathname);
-  //     return NextResponse.redirect(redirectUrl);
-  //   }
-  // }
+  // Route protection can be added here if needed
+  // Example: Protect /map route by checking session and redirecting to login
 
   return response;
 }

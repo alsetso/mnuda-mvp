@@ -30,14 +30,14 @@ export const apiConfig: ApiConfig = {
     enabled: true,
     endpoint: 'https://skip-tracing-working-api.p.rapidapi.com/search/byaddress',
     host: 'skip-tracing-working-api.p.rapidapi.com',
-    key: process.env.NEXT_PUBLIC_RAPIDAPI_KEY || 'f4a7d42741mshbc2b95a8fd24074p1cf1a6jsn44343abb32e8',
+    key: apiKey,
     useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' || !hasApiKey
   },
   zillow: {
     enabled: true,
     endpoint: 'https://zillow56.p.rapidapi.com/search_address',
     host: 'zillow56.p.rapidapi.com',
-    key: process.env.NEXT_PUBLIC_RAPIDAPI_KEY || 'f4a7d42741mshbc2b95a8fd24074p1cf1a6jsn44343abb32e8',
+    key: apiKey,
     useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' || !hasApiKey
   }
 };

@@ -161,14 +161,14 @@ export default function ProfilePhoto({
   return (
     <div className={`relative ${className}`}>
       {/* Profile Photo */}
-      <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-200 flex items-center justify-center ${getBackgroundColor()} text-white font-medium border-2 border-gray-300`}>
+      <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-200 flex items-center justify-center ${getBackgroundColor()} text-white font-medium border-2 border-gray-300 relative`}>
         {profile?.avatar_url ? (
           <Image
             src={profile.avatar_url}
             alt={profile.full_name || profile.email}
             fill
             sizes="(max-width: 96px) 100vw, 96px"
-            className="object-cover"
+            className="object-cover rounded-full"
           />
         ) : (
           <span className={`${iconSizes[size]} font-semibold`}>

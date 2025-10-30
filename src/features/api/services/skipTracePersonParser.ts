@@ -50,11 +50,11 @@ export const skipTracePersonParser = {
     
     return {
       source:
-        typeof (response as { source?: unknown }).source === 'string'
-          ? ((response as { source?: unknown }).source as string)
-          : String((response as { source?: unknown }).source ?? 'Unknown'),
+        typeof response.Source === 'string' ? response.Source :
+        typeof response.source === 'string' ? response.source :
+        'Unknown',
       status: (() => {
-        const v = (response as { status?: unknown }).status;
+        const v = response.status;
         if (typeof v === 'number' && !Number.isNaN(v)) return v;
         if (typeof v === 'string') {
           const n = Number(v);
@@ -63,92 +63,140 @@ export const skipTracePersonParser = {
         return 200;
       })(),
       message:
-        typeof (response as { message?: unknown }).message === 'string'
-          ? ((response as { message?: unknown }).message as string)
-          : String((response as { message?: unknown }).message ?? ''),
+        typeof response.message === 'string' ? response.message :
+        typeof response.Message === 'string' ? response.Message :
+        '',
       personDetails: this.parsePersonDetails(
-        (response.personDetails as unknown[]) || (response as Record<string, unknown>).PersonDetails as unknown[] || []
+        (response['Person Details'] as unknown[]) || 
+        (response.PersonDetails as unknown[]) || 
+        (response.personDetails as unknown[]) || 
+        []
       ),
       emails: this.parseEmails(
-        (response.emails as unknown[]) || (response as Record<string, unknown>).Emails as unknown[] || []
+        (response['Email Addresses'] as unknown[]) || 
+        (response.EmailAddresses as unknown[]) || 
+        (response.Emails as unknown[]) || 
+        (response.emails as unknown[]) || 
+        []
       ),
       phones: this.parsePhones(
-        (response.phones as unknown[]) || (response as Record<string, unknown>).Phones as unknown[] || []
+        (response['All Phone Details'] as unknown[]) || 
+        (response.AllPhoneDetails as unknown[]) || 
+        (response.Phones as unknown[]) || 
+        (response.phones as unknown[]) || 
+        []
       ),
       currentAddresses: this.parseAddresses(
-        (response.currentAddresses as unknown[]) || (response as Record<string, unknown>).CurrentAddresses as unknown[] || []
+        (response['Current Address Details List'] as unknown[]) || 
+        (response.CurrentAddressDetailsList as unknown[]) || 
+        (response.CurrentAddresses as unknown[]) || 
+        (response.currentAddresses as unknown[]) || 
+        []
       ),
       previousAddresses: this.parseAddresses(
-        (response.previousAddresses as unknown[]) || (response as Record<string, unknown>).PreviousAddresses as unknown[] || []
+        (response['Previous Address Details'] as unknown[]) || 
+        (response.PreviousAddressDetails as unknown[]) || 
+        (response.PreviousAddresses as unknown[]) || 
+        (response.previousAddresses as unknown[]) || 
+        []
       ),
       relatives: this.parseRelatedPersons(
-        (response.relatives as unknown[]) || (response as Record<string, unknown>).Relatives as unknown[] || []
+        (response['All Relatives'] as unknown[]) || 
+        (response.AllRelatives as unknown[]) || 
+        (response.Relatives as unknown[]) || 
+        (response.relatives as unknown[]) || 
+        []
       ),
       associates: this.parseRelatedPersons(
-        (response.associates as unknown[]) || (response as Record<string, unknown>).Associates as unknown[] || []
+        (response['All Associates'] as unknown[]) || 
+        (response.AllAssociates as unknown[]) || 
+        (response.Associates as unknown[]) || 
+        (response.associates as unknown[]) || 
+        []
       )
     };
   },
 
   parsePersonDetails(details: unknown[]): PersonDetails[] {
+    if (!Array.isArray(details)) return [];
     return details.map((d) => {
       const detail = (d as Record<string, unknown>) || {};
-      const get = (k: string): string => String(detail[k] ?? '');
-      return {
-        age: get('age') || get('Age'),
-        born: get('born') || get('Born'),
-        livesIn: get('livesIn') || get('Lives in') || get('lives_in'),
-        telephone: get('telephone') || get('Telephone'),
-        personName: get('personName') || get('Person_name') || get('person_name')
+      const get = (k: string): string => {
+        const val = detail[k];
+        return val !== undefined && val !== null ? String(val) : '';
       };
-    });
+      return {
+        age: get('Age') || get('age'),
+        born: get('Born') || get('born'),
+        livesIn: get('Lives in') || get('livesIn') || get('lives_in'),
+        telephone: get('Telephone') || get('telephone'),
+        personName: get('Person_name') || get('Person Name') || get('personName') || get('person_name')
+      };
+    }).filter(d => d.personName || d.age || d.born || d.livesIn || d.telephone);
   },
 
   parseEmails(emails: unknown[]): string[] {
-    return emails.map((email) => String(email)).filter(Boolean);
+    if (!Array.isArray(emails)) return [];
+    return emails
+      .map((email) => typeof email === 'string' ? email : String(email))
+      .filter(email => email && email.includes('@'));
   },
 
   parsePhones(phones: unknown[]): PhoneDetails[] {
+    if (!Array.isArray(phones)) return [];
     return phones.map((p) => {
       const phone = (p as Record<string, unknown>) || {};
-      const get = (k: string): string => String(phone[k] ?? '');
+      const get = (k: string): string => {
+        const val = phone[k];
+        return val !== undefined && val !== null ? String(val) : '';
+      };
       return {
         provider: get('provider') || get('Provider'),
-        phoneType: get('phoneType') || get('phone_type') || get('PhoneType'),
-        phoneNumber: get('phoneNumber') || get('phone_number') || get('PhoneNumber'),
-        lastReported: get('lastReported') || get('last_reported') || get('LastReported')
+        phoneType: get('phone_type') || get('phoneType') || get('PhoneType'),
+        phoneNumber: get('phone_number') || get('phoneNumber') || get('PhoneNumber'),
+        lastReported: get('last_reported') || get('lastReported') || get('LastReported')
       };
-    });
+    }).filter(p => p.phoneNumber);
   },
 
   parseAddresses(addresses: unknown[]): Address[] {
+    if (!Array.isArray(addresses)) return [];
     return addresses.map((a) => {
       const addr = (a as Record<string, unknown>) || {};
-      const get = (k: string): string => String(addr[k] ?? '');
-      const getOpt = (k: string): string | undefined =>
-        addr[k] !== undefined ? String(addr[k]) : undefined;
+      const get = (k: string): string => {
+        const val = addr[k];
+        return val !== undefined && val !== null ? String(val) : '';
+      };
+      const getOpt = (k: string): string | undefined => {
+        const val = addr[k];
+        return val !== undefined && val !== null && val !== '' ? String(val) : undefined;
+      };
       return {
         county: get('county') || get('County'),
-        postalCode: get('postalCode') || get('postal_code') || get('PostalCode'),
-        addressRegion: get('addressRegion') || get('address_region') || get('AddressRegion'),
-        streetAddress: get('streetAddress') || get('street_address') || get('StreetAddress'),
-        addressLocality: get('addressLocality') || get('address_locality') || get('AddressLocality'),
-        dateRange: getOpt('dateRange') || getOpt('date_range') || getOpt('DateRange'),
+        postalCode: get('postal_code') || get('postalCode') || get('PostalCode'),
+        addressRegion: get('address_region') || get('addressRegion') || get('AddressRegion'),
+        streetAddress: get('street_address') || get('streetAddress') || get('StreetAddress'),
+        addressLocality: get('address_locality') || get('addressLocality') || get('AddressLocality'),
+        dateRange: getOpt('date_range') || getOpt('dateRange') || getOpt('DateRange'),
         timespan: getOpt('timespan') || getOpt('Timespan')
       };
-    });
+    }).filter(a => a.streetAddress || a.addressLocality);
   },
 
   parseRelatedPersons(persons: unknown[]): RelatedPerson[] {
+    if (!Array.isArray(persons)) return [];
     return persons.map((p) => {
       const person = (p as Record<string, unknown>) || {};
-      const get = (k: string): string => String(person[k] ?? '');
-      return {
-        name: get('name') || get('Name'),
-        age: get('age') || get('Age'),
-        personId: get('personId') || get('Person ID') || get('person_id'),
-        personLink: get('personLink') || get('Person Link') || get('person_link')
+      const get = (k: string): string => {
+        const val = person[k];
+        return val !== undefined && val !== null ? String(val) : '';
       };
-    });
+      return {
+        name: get('Name') || get('name'),
+        age: get('Age') || get('age'),
+        personId: get('Person ID') || get('personId') || get('person_id'),
+        personLink: get('Person Link') || get('personLink') || get('person_link')
+      };
+    }).filter(p => p.name);
   }
 };

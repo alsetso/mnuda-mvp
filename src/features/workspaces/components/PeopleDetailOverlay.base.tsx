@@ -9,7 +9,6 @@ import { peopleRecordsService, PeopleRecord } from '../services/peopleRecordsSer
 import { apiService } from '@/features/api/services/apiService';
 import { skipTracePersonParser, PersonResponse } from '@/features/api/services/skipTracePersonParser';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { formatZillowResponse } from '../services/zillowFormatter';
 
 const STATUS_OPTIONS = [
   'Preforeclosure', 'Foreclosure', 'Foreclosed', 'Auction', 'Redemption',
@@ -24,7 +23,7 @@ interface PropertyDetailOverlayProps {
   isOpen: boolean;
 }
 
-type TabType = 'details' | 'notes' | 'docs' | 'api' | 'zillow' | 'people';
+type TabType = 'details' | 'notes' | 'docs' | 'api' | 'people';
 
 export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: PropertyDetailOverlayProps) {
   const { user } = useAuth();
@@ -55,10 +54,6 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
   const [expandedPersonIds, setExpandedPersonIds] = useState<Set<string>>(new Set());
   const [savedPersonIds, setSavedPersonIds] = useState<Set<string>>(new Set());
   const [savingPersonIds, setSavingPersonIds] = useState<Set<string>>(new Set());
-
-  // Zillow API state
-  const [isFetchingZillow, setIsFetchingZillow] = useState(false);
-  const [zillowError, setZillowError] = useState<string | null>(null);
 
   // People records state
   const [savedPeopleRecords, setSavedPeopleRecords] = useState<import('../services/peopleRecordsService').PeopleRecord[]>([]);
@@ -137,8 +132,7 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
       zipcode: property.zipcode || '',
       latitude: property.latitude || undefined,
       longitude: property.longitude || undefined,
-      status: property.status || 'Off Market',
-      code: property.code || ''
+      status: property.status || 'Off Market'
     });
     setHasChanges(false);
 
@@ -161,12 +155,7 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
     
     setIsSaving(true);
     try {
-      // Normalize code: trim whitespace and convert empty string to null
-      const normalizedData = {
-        ...formData,
-        code: formData.code?.trim() || null
-      };
-      await onSave(property.id, normalizedData);
+      await onSave(property.id, formData);
       setHasChanges(false);
     } catch (error) {
       console.error('Error saving property:', error);
@@ -330,49 +319,6 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
       setPeopleError(error instanceof Error ? error.message : 'Failed to fetch people data');
     } finally {
       setIsFetchingPeople(false);
-    }
-  };
-
-  const handleGetZillowData = async () => {
-    if (!property) return;
-
-    setIsFetchingZillow(true);
-    setZillowError(null);
-
-    try {
-      const response = await fetch(`/api/property/${property.id}/zillow`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Failed to fetch Zillow data';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      const result = await response.json();
-      
-      // Update local property state with new zillow data
-      if (result.property) {
-        // Refresh the property by calling onSave with empty data (triggers refresh)
-        // The parent component will refresh and pass updated property back
-        if (onSave) {
-          await onSave(property.id, {});
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching Zillow data:', error);
-      setZillowError(error instanceof Error ? error.message : 'Failed to fetch Zillow data');
-    } finally {
-      setIsFetchingZillow(false);
     }
   };
 
@@ -600,75 +546,64 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
         flex flex-col
       `}>
         {/* Header - Sticky at top */}
-        <div className="flex items-center justify-between h-14 px-4 border-b border-gray-200 flex-shrink-0 bg-white">
-          <h2 className="text-base font-semibold text-gray-900">Property Details</h2>
+        <div className="flex items-center justify-between h-11 px-3 border-b border-gray-200 flex-shrink-0">
+          <h2 className="text-sm font-semibold text-gray-900">Property Details</h2>
           <button
             onClick={onClose}
-            className="p-1.5 hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Close"
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
           >
-            <XMarkIcon className="w-5 h-5 text-gray-500" />
+            <XMarkIcon className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 flex-shrink-0 bg-white">
+        <div className="flex border-b border-gray-200 flex-shrink-0">
           <button
             onClick={() => setActiveTab('details')}
-            className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-2 text-xs font-medium transition-colors ${
               activeTab === 'details'
-                ? 'text-blue-700 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             Details
           </button>
           <button
             onClick={() => setActiveTab('notes')}
-            className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-2 text-xs font-medium transition-colors ${
               activeTab === 'notes'
-                ? 'text-blue-700 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             Notes {notes.length > 0 && `(${notes.length})`}
           </button>
           <button
             onClick={() => setActiveTab('docs')}
-            className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-2 text-xs font-medium transition-colors ${
               activeTab === 'docs'
-                ? 'text-blue-700 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             Docs {docs.length > 0 && `(${docs.length})`}
           </button>
           <button
             onClick={() => setActiveTab('api')}
-            className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-2 text-xs font-medium transition-colors ${
               activeTab === 'api'
-                ? 'text-blue-700 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             API
           </button>
           <button
-            onClick={() => setActiveTab('zillow')}
-            className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
-              activeTab === 'zillow'
-                ? 'text-blue-700 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-            }`}
-          >
-            Zillow {property?.raw_zillow_response && '✓'}
-          </button>
-          <button
             onClick={() => setActiveTab('people')}
-            className={`px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+            className={`px-4 py-2 text-xs font-medium transition-colors ${
               activeTab === 'people'
-                ? 'text-blue-700 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             People {savedPeopleRecords.length > 0 && `(${savedPeopleRecords.length})`}
@@ -680,18 +615,18 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
           {activeTab === 'details' && (
             <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleSave(); }} id="property-detail-form">
               {/* Address Section */}
-              <div className="space-y-4 pt-2">
-                <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">Address</h3>
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Address</h3>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Full Address *
                   </label>
                   <input
                     type="text"
                     value={formData.full_address || ''}
                     onChange={(e) => handleInputChange('full_address', e.target.value)}
-                    className="w-full px-3 py-2 text-sm border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
@@ -806,75 +741,6 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
                       </option>
                     ))}
                   </select>
-                </div>
-              </div>
-
-              {/* Shareable Link Section */}
-              <div className="space-y-4 pt-4 border-t border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Shareable Link</h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Access Code
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={formData.code || ''}
-                        onChange={(e) => handleInputChange('code', e.target.value)}
-                        placeholder="No code set"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // Generate a random 6-character alphanumeric code
-                          const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-                          const code = Array.from({ length: 6 }, () => 
-                            chars[Math.floor(Math.random() * chars.length)]
-                          ).join('');
-                          handleInputChange('code', code);
-                        }}
-                        className="px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors whitespace-nowrap"
-                      >
-                        Generate
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Set a code to enable shareable link access
-                    </p>
-                  </div>
-
-                  {formData.code && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Shareable Link
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={`${typeof window !== 'undefined' ? window.location.origin : ''}/property/${property.id}`}
-                          readOnly
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(
-                            `${typeof window !== 'undefined' ? window.location.origin : ''}/property/${property.id}`,
-                            'Shareable link'
-                          )}
-                          className="px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors flex items-center gap-1.5 whitespace-nowrap"
-                        >
-                          <ClipboardDocumentIcon className="w-4 h-4" />
-                          Copy Link
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Share this link with the property owner. They&apos;ll need the access code to view.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
 
@@ -1104,33 +970,6 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
                 )}
               </div>
 
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Zillow API</h3>
-                <button
-                  onClick={handleGetZillowData}
-                  disabled={isFetchingZillow || !property?.full_address}
-                  className="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isFetchingZillow ? 'Fetching...' : 'Get Zillow Data'}
-                </button>
-                {!property?.full_address && (
-                  <p className="mt-2 text-xs text-gray-500">Property address required</p>
-                )}
-                {zillowError && (
-                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                    {zillowError}
-                  </div>
-                )}
-                {property?.raw_zillow_response && (
-                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded text-xs">
-                    <div className="text-green-800 font-medium mb-1">✓ Zillow data available</div>
-                    <pre className="text-xs text-gray-600 overflow-auto max-h-64 mt-2">
-                      {JSON.stringify(property.raw_zillow_response, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-
               {peopleError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
                   {peopleError}
@@ -1266,265 +1105,6 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
                     )}
                   </div>
                 );
-              })()}
-            </div>
-          )}
-
-          {activeTab === 'zillow' && (
-            <div className="space-y-4">
-              {!property?.raw_zillow_response ? (
-                <div className="text-center py-8 text-gray-500">
-                  <p className="mb-2">No Zillow data available for this property.</p>
-                  <p className="text-sm">Click &quot;Get Zillow Data&quot; in the API tab to fetch data.</p>
-                </div>
-              ) : (() => {
-                try {
-                  const formatted = formatZillowResponse(property.raw_zillow_response);
-                  
-                  return (
-                    <div className="space-y-6">
-                      {/* Property Image */}
-                      {formatted.image_url && (
-                        <div>
-                          <img 
-                            src={formatted.image_url} 
-                            alt="Property" 
-                            className="w-full h-64 object-cover rounded-lg border border-gray-200"
-                          />
-                        </div>
-                      )}
-
-                      {/* Basic Information */}
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Basic Information</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-xs text-gray-500">ZPID</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.zpid ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Home Status</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.home_status ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Home Type</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.home_type ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Year Built</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.year_built ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Bedrooms</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.bedrooms ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Bathrooms</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.bathrooms ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Living Area</span>
-                            <p className="text-sm text-gray-900 mt-1">
-                              {formatted.living_area ? `${formatted.living_area.toLocaleString()} sqft` : 'N/A'}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Lot Size</span>
-                            <p className="text-sm text-gray-900 mt-1">
-                              {formatted.lot_size ? `${formatted.lot_size.toLocaleString()} sqft` : 'N/A'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Location */}
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Location</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-xs text-gray-500">Street Address</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.street_address ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">City</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.city ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">State</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.state ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">ZIP Code</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.zipcode ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">County</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.county ?? 'N/A'}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Coordinates</span>
-                            <p className="text-sm text-gray-900 mt-1">
-                              {formatted.latitude && formatted.longitude 
-                                ? `${formatted.latitude.toFixed(6)}, ${formatted.longitude.toFixed(6)}`
-                                : 'N/A'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Pricing */}
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Pricing</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-xs text-gray-500">Price</span>
-                            <p className="text-sm text-gray-900 mt-1 font-medium">
-                              {formatted.price ? `$${formatted.price.toLocaleString()}` : 'N/A'}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Zestimate</span>
-                            <p className="text-sm text-gray-900 mt-1 font-medium">
-                              {formatted.zestimate ? `$${formatted.zestimate.toLocaleString()}` : 'N/A'}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Rent Zestimate</span>
-                            <p className="text-sm text-gray-900 mt-1">
-                              {formatted.rent_zestimate ? `$${formatted.rent_zestimate.toLocaleString()}/mo` : 'N/A'}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Last Sold Price</span>
-                            <p className="text-sm text-gray-900 mt-1">
-                              {formatted.last_sold_price ? `$${formatted.last_sold_price.toLocaleString()}` : 'N/A'}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Last Sold Date</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.last_sold_date ?? 'N/A'}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tax Information */}
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Tax Information</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-xs text-gray-500">Assessed Value</span>
-                            <p className="text-sm text-gray-900 mt-1">
-                              {formatted.tax_assessed_value ? `$${formatted.tax_assessed_value.toLocaleString()}` : 'N/A'}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Annual Tax</span>
-                            <p className="text-sm text-gray-900 mt-1">
-                              {formatted.tax_annual_amount ? `$${formatted.tax_annual_amount.toLocaleString()}` : 'N/A'}
-                            </p>
-                          </div>
-                        </div>
-                        {formatted.tax_history.length > 0 && (
-                          <div className="mt-4">
-                            <span className="text-xs text-gray-500 block mb-2">Tax History (Last 5 Years)</span>
-                            <div className="overflow-x-auto">
-                              <table className="min-w-full text-xs">
-                                <thead className="bg-gray-50">
-                                  <tr>
-                                    <th className="px-3 py-2 text-left text-gray-700 font-medium">Year</th>
-                                    <th className="px-3 py-2 text-left text-gray-700 font-medium">Value</th>
-                                    <th className="px-3 py-2 text-left text-gray-700 font-medium">Tax Paid</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                  {formatted.tax_history.map((tax, idx) => (
-                                    <tr key={idx}>
-                                      <td className="px-3 py-2 text-gray-900">{tax.year ?? 'N/A'}</td>
-                                      <td className="px-3 py-2 text-gray-900">
-                                        {tax.value !== null ? `$${tax.value.toLocaleString()}` : 'N/A'}
-                                      </td>
-                                      <td className="px-3 py-2 text-gray-900">
-                                        {tax.taxPaid !== null ? `$${tax.taxPaid.toLocaleString()}` : 'N/A'}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Price History */}
-                      {formatted.price_history.length > 0 && (
-                        <div className="space-y-4">
-                          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Price History</h3>
-                          <div className="overflow-x-auto">
-                            <table className="min-w-full text-xs">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-3 py-2 text-left text-gray-700 font-medium">Date</th>
-                                  <th className="px-3 py-2 text-left text-gray-700 font-medium">Event</th>
-                                  <th className="px-3 py-2 text-left text-gray-700 font-medium">Price</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-200">
-                                {formatted.price_history.map((price, idx) => (
-                                  <tr key={idx}>
-                                    <td className="px-3 py-2 text-gray-900">{price.date ?? 'N/A'}</td>
-                                    <td className="px-3 py-2 text-gray-900">{price.event ?? 'N/A'}</td>
-                                    <td className="px-3 py-2 text-gray-900">
-                                      {price.price !== null ? `$${price.price.toLocaleString()}` : 'N/A'}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Schools */}
-                      {formatted.school_summary && (
-                        <div className="space-y-4">
-                          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Schools</h3>
-                          <p className="text-sm text-gray-900">{formatted.school_summary}</p>
-                        </div>
-                      )}
-
-                      {/* Description */}
-                      {formatted.description && (
-                        <div className="space-y-4">
-                          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Description</h3>
-                          <p className="text-sm text-gray-700 leading-relaxed">{formatted.description}</p>
-                        </div>
-                      )}
-
-                      {/* Engagement Metrics */}
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Engagement</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-xs text-gray-500">Page Views</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.page_view_count.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <span className="text-xs text-gray-500">Favorites</span>
-                            <p className="text-sm text-gray-900 mt-1">{formatted.favorite_count.toLocaleString()}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                } catch (error) {
-                  console.error('Error formatting Zillow data:', error);
-                  return (
-                    <div className="text-center py-8 text-red-500">
-                      <p className="mb-2">Error formatting Zillow data.</p>
-                      <p className="text-sm text-gray-500">Raw data available in API tab.</p>
-                    </div>
-                  );
-                }
               })()}
             </div>
           )}
@@ -2197,27 +1777,12 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
         </div>
 
         {/* Action Buttons - Sticky at bottom, only show on details tab */}
-        {activeTab === 'details' && hasChanges && (
-          <div className="flex items-center justify-end space-x-3 px-4 py-3 border-t border-gray-200 bg-white flex-shrink-0 shadow-lg">
+        {activeTab === 'details' && (
+          <div className="flex items-center justify-end space-x-2 px-3 py-2 border-t border-gray-200 bg-white flex-shrink-0">
             <button
               type="button"
-              onClick={() => {
-                if (property) {
-                  setFormData({
-                    full_address: property.full_address || '',
-                    street_address: property.street_address || '',
-                    city: property.city || '',
-                    state: property.state || '',
-                    zipcode: property.zipcode || '',
-                    latitude: property.latitude || undefined,
-                    longitude: property.longitude || undefined,
-                    status: property.status || 'Off Market',
-                    code: property.code || ''
-                  });
-                  setHasChanges(false);
-                }
-              }}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+              onClick={onClose}
+              className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
@@ -2225,9 +1790,9 @@ export function PropertyDetailOverlay({ property, onClose, onSave, isOpen }: Pro
               type="submit"
               form="property-detail-form"
               disabled={!hasChanges || isSaving}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving ? 'Saving...' : 'Save'}
             </button>
           </div>
         )}

@@ -3,41 +3,78 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Logo from '@/features/ui/components/Logo';
 import { useAuth } from '@/features/auth';
 
+const ALLOWED_EMAIL_DOMAIN = 'mnuda.com';
+
+function isValidUsername(username: string): boolean {
+  // Username should not be empty and should not contain @ symbol
+  if (!username || username.includes('@')) {
+    return false;
+  }
+  // Basic validation: alphanumeric, dots, underscores, hyphens
+  const usernameRegex = /^[a-zA-Z0-9._-]+$/;
+  return usernameRegex.test(username);
+}
+
+function buildFullEmail(username: string): string {
+  return `${username}@${ALLOWED_EMAIL_DOMAIN}`;
+}
+
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
   const router = useRouter();
   const { user, signInWithOtp, verifyOtp, isLoading } = useAuth();
+  
+  const fullEmail = username ? buildFullEmail(username) : '';
 
-  // Redirect to account page if user is already authenticated
-  useEffect(() => {
-    if (!isLoading && user) {
-      router.push('/account');
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUsername = e.target.value;
+    setUsername(newUsername);
+    setEmailError('');
+    setMessage('');
+  };
+
+  const handleUsernameBlur = () => {
+    if (username && !isValidUsername(username)) {
+      setEmailError('Please enter a valid username');
+    } else {
+      setEmailError('');
     }
-  }, [user, isLoading, router]);
+  };
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setMessage('Please enter your email address');
+    
+    if (!username) {
+      setMessage('Please enter your username');
+      setEmailError('Username is required');
       return;
     }
 
+    // Validate username before sending OTP
+    if (!isValidUsername(username)) {
+      setEmailError('Please enter a valid username');
+      setMessage('Please enter a valid username');
+      return;
+    }
+
+    const email = buildFullEmail(username);
+
     setLoading(true);
     setMessage('');
+    setEmailError('');
 
     try {
-      console.log('Attempting to send OTP to:', email);
-      
       // Always use shouldCreateUser: true for signup/login
       // This creates user ONLY when OTP is verified, not when sent
-      const result = await signInWithOtp(email);
-      console.log('OTP result:', result);
+      await signInWithOtp(email);
       setOtpSent(true);
       setMessage('Check your email for the 6-digit code!');
     } catch (error: unknown) {
@@ -59,19 +96,26 @@ export default function LoginPage() {
     setMessage('');
 
     try {
+      const email = buildFullEmail(username);
       await verifyOtp(email, otp, 'email');
       setMessage('Login successful! Redirecting...');
-      setTimeout(() => router.push('/account'), 2000);
+      // Wait for auth state to update - user will be set by auth state change listener
+      // The useEffect below will handle redirect when user is available
     } catch (error: unknown) {
       setMessage(error instanceof Error ? error.message : 'Invalid code');
-    } finally {
       setLoading(false);
     }
   };
 
+  // Redirect if already authenticated (after OTP verification or on page load)
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/account');
+    }
+  }, [isLoading, user, router]);
 
-  // Show loading state while checking authentication
-  if (isLoading) {
+  // Show loading state while checking authentication or verifying OTP
+  if (isLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -82,9 +126,16 @@ export default function LoginPage() {
     );
   }
 
-  // Don't render anything if user is authenticated (will redirect)
+  // Don't render login form if user is authenticated (will redirect)
   if (user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1dd1f5] mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -92,10 +143,7 @@ export default function LoginPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <h1 className="text-2xl font-semibold">
-              <span className="text-[#014463]">MN</span>
-              <span className="text-[#1dd1f5]">UDA</span>
-            </h1>
+            <Logo size="lg" />
           </Link>
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
@@ -121,22 +169,36 @@ export default function LoginPage() {
               )}
 
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                   Email address
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 flex items-center">
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-[#1dd1f5] focus:border-[#1dd1f5] sm:text-sm"
-                    placeholder="Enter your email"
+                    value={username}
+                    onChange={handleUsernameChange}
+                    onBlur={handleUsernameBlur}
+                    className={`appearance-none block flex-1 px-3 py-2 border rounded-l-md rounded-r-none placeholder-gray-400 focus:outline-none focus:ring-[#1dd1f5] focus:border-[#1dd1f5] sm:text-sm ${
+                      emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="yourname"
                   />
+                  <span className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm rounded-r-md">
+                    @{ALLOWED_EMAIL_DOMAIN}
+                  </span>
                 </div>
+                {fullEmail && (
+                  <p className="mt-2 text-sm text-gray-600 font-medium">
+                    {fullEmail}
+                  </p>
+                )}
+                {emailError && (
+                  <p className="mt-1 text-sm text-red-600">{emailError}</p>
+                )}
               </div>
 
               <div>
@@ -189,7 +251,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-500">
-                  Enter the 6-digit code sent to {email}
+                  Enter the 6-digit code sent to {fullEmail}
                 </p>
               </div>
 
@@ -220,6 +282,7 @@ export default function LoginPage() {
                     setOtpSent(false);
                     setOtp('');
                     setMessage('');
+                    setEmailError('');
                   }}
                   className="text-sm text-[#1dd1f5] hover:text-[#014463] transition-colors"
                 >

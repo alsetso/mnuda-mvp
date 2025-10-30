@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, ProfileService } from '@/features/auth';
 import { Profile } from '@/types/supabase';
-import ChangePasswordModal from '@/components/ChangePasswordModal';
 import ProfilePhoto from '@/components/ProfilePhoto';
 
 export default function SettingsPage() {
@@ -31,7 +30,6 @@ export default function SettingsPage() {
     linkedin_url: '',
     timezone: 'UTC'
   });
-  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   const handleSignOutClick = () => {
     setShowSignOutConfirm(true);
@@ -141,14 +139,6 @@ export default function SettingsPage() {
       ...prev,
       [field]: value
     }));
-  };
-
-  const handleChangePasswordClick = () => {
-    setShowChangePasswordModal(true);
-  };
-
-  const handleCloseChangePasswordModal = () => {
-    setShowChangePasswordModal(false);
   };
 
   // Load profile data when user is available
@@ -548,45 +538,6 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Security Settings */}
-      <div className="border-t border-gray-200 pt-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Security Settings</h3>
-        
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 border border-gray-200 rounded">
-            <div>
-              <h4 className="text-sm font-medium text-gray-900">Password</h4>
-              <p className="text-xs text-gray-500">Update your password to keep your account secure</p>
-            </div>
-            <button
-              onClick={handleChangePasswordClick}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1721 9z" />
-              </svg>
-              Change Password
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-3 border border-gray-200 rounded">
-            <div>
-              <h4 className="text-sm font-medium text-gray-900">Two-Factor Authentication</h4>
-              <p className="text-xs text-gray-500">Add an extra layer of security to your account</p>
-            </div>
-            <button
-              disabled
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded cursor-not-allowed"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              Coming Soon
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Account Actions */}
       <div className="border-t border-gray-200 pt-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Account Actions</h3>
@@ -624,22 +575,6 @@ export default function SettingsPage() {
                   Sign Out
                 </>
               )}
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded">
-            <div>
-              <h4 className="text-sm font-medium text-red-900">Delete Account</h4>
-              <p className="text-xs text-red-600">Permanently delete your account and all data</p>
-            </div>
-            <button
-              disabled
-              className="flex items-center px-3 py-2 text-sm font-medium text-red-400 bg-red-100 border border-red-200 rounded cursor-not-allowed"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Coming Soon
             </button>
           </div>
         </div>
@@ -686,13 +621,6 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-
-      {/* Change Password Modal */}
-      <ChangePasswordModal
-        isOpen={showChangePasswordModal}
-        onClose={handleCloseChangePasswordModal}
-        userEmail={user?.email || ''}
-      />
     </div>
   );
 }

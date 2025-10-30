@@ -1,15 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMap } from '@/features/map/hooks/useMap';
-import { useUserLocationTracker } from '@/features/map/hooks/useUserLocationTracker';
 import { FloatingSearchInput } from '@/features/map/components/FloatingSearchInput';
 import { Address } from '@/features/map/types';
 import { useProperties } from '@/features/workspaces/contexts/PropertiesContext';
 import { useWorkspace } from '@/features/workspaces/contexts/WorkspaceContext';
 
 interface WorkspaceMapProps {
-  onMapReady?: (flyToProperty: (property: { latitude?: number; longitude?: number } | null) => void) => void;
   onMarkerClick?: (property: { id: string }) => void;
 }
 
@@ -19,7 +17,7 @@ interface WorkspaceMapProps {
  * - Simplified without session management
  * - Focus on map functionality within workspace context
  */
-export default function WorkspaceMap({ onMapReady, onMarkerClick }: WorkspaceMapProps = {}) {
+export default function WorkspaceMap({ onMarkerClick }: WorkspaceMapProps = {}) {
   const mapContainer = useRef<HTMLDivElement>(null);
 
   // --- UI state ---
@@ -30,16 +28,6 @@ export default function WorkspaceMap({ onMapReady, onMarkerClick }: WorkspaceMap
   
   // --- Workspace context ---
   const { currentWorkspace } = useWorkspace();
-
-  // --- User location tracker ---
-  const {
-    userLocation,
-    isTracking,
-    locationHistory,
-    error: locationError,
-    startTracking,
-    stopTracking,
-  } = useUserLocationTracker({ pollIntervalMs: 0, historyLimit: 200 });
 
   // --- Map hooks ---
   const {
@@ -164,100 +152,75 @@ export default function WorkspaceMap({ onMapReady, onMarkerClick }: WorkspaceMap
 
   // Handle saving property from search
   const handleSaveProperty = useCallback(async (address: Address, coordinates: { lat: number; lng: number }, status: string = 'Off Market') => {
-    console.log('handleSaveProperty called', { address, coordinates, status, workspaceId: currentWorkspace?.id });
-    
-    try {
-      if (!currentWorkspace?.id) {
-        throw new Error('No workspace selected');
-      }
-
-      // Create property data
-      const propertyData = {
-        full_address: `${address.street}, ${address.city}, ${address.state} ${address.zip}`,
-        street_address: address.street,
-        city: address.city,
-        state: address.state,
-        zipcode: address.zip,
-        latitude: coordinates.lat,
-        longitude: coordinates.lng,
-        status: (status || 'Off Market') as 'Preforeclosure' | 'Foreclosure' | 'Foreclosed' | 'Auction' | 'Redemption' | 'Bank Owned' | 'Short Sale' | 'Subject To' | 'Deed In Lieu' | 'Leaseback' | 'For Sale By Owner' | 'Listed On MLS' | 'Under Contract' | 'Sold' | 'Off Market'
-      };
-
-      console.log('Creating property with data:', propertyData);
-      
-      // Create the property
-      const newProperty = await createProperty(currentWorkspace.id, propertyData);
-      console.log('Property created:', newProperty);
-      
-      // Add marker to map for the newly created property
-      if (map && newProperty.latitude && newProperty.longitude) {
-        console.log('Adding marker for property:', newProperty.id);
-        const markerElement = document.createElement('div');
-        markerElement.className = 'cursor-pointer';
-        markerElement.style.width = '12px';
-        markerElement.style.height = '12px';
-        markerElement.style.borderRadius = '50%';
-        markerElement.style.backgroundColor = '#10B981';
-        markerElement.style.border = '2px solid white';
-        markerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-        
-        // Store reference to property ID for click handler
-        const propertyId = newProperty.id;
-        markerElement.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (onMarkerClick) {
-            onMarkerClick({ id: propertyId });
-          }
-        });
-        
-        await addMarker(`property-${newProperty.id}`, {
-          lat: newProperty.latitude,
-          lng: newProperty.longitude
-        }, {
-          color: '#10B981',
-          element: markerElement,
-          popupContent: `
-            <div class="p-2">
-              <h3 class="font-semibold text-gray-900 text-sm">${newProperty.full_address}</h3>
-              <p class="text-xs text-gray-600">${newProperty.city}, ${newProperty.state} ${newProperty.zipcode}</p>
-              <p class="text-xs text-gray-500 mt-1">Status: ${newProperty.status}</p>
-              <button class="w-full mt-2 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200 transition-colors" data-property-id="${newProperty.id}">
-                View Details →
-              </button>
-            </div>
-          `
-        });
-        console.log('Marker added successfully');
-      } else {
-        console.warn('Cannot add marker: missing map or coordinates', { hasMap: !!map, hasCoords: !!(newProperty.latitude && newProperty.longitude) });
-      }
-      
-      console.log('Property saved successfully:', newProperty);
-      return newProperty;
-    } catch (error) {
-      console.error('Error saving property:', error);
-      throw error;
+    if (!currentWorkspace?.id) {
+      throw new Error('No workspace selected');
     }
+
+    if (!map) {
+      throw new Error('Map not initialized');
+    }
+
+    // Create property data
+    const propertyData = {
+      full_address: `${address.street}, ${address.city}, ${address.state} ${address.zip}`,
+      street_address: address.street,
+      city: address.city,
+      state: address.state,
+      zipcode: address.zip,
+      latitude: coordinates.lat,
+      longitude: coordinates.lng,
+      status: (status || 'Off Market') as 'Preforeclosure' | 'Foreclosure' | 'Foreclosed' | 'Auction' | 'Redemption' | 'Bank Owned' | 'Short Sale' | 'Subject To' | 'Deed In Lieu' | 'Leaseback' | 'For Sale By Owner' | 'Listed On MLS' | 'Under Contract' | 'Sold' | 'Off Market'
+    };
+    
+    // Create the property
+    const newProperty = await createProperty(currentWorkspace.id, propertyData);
+    
+    // Add marker to map for the newly created property
+    if (newProperty.latitude && newProperty.longitude) {
+      const markerElement = document.createElement('div');
+      markerElement.className = 'cursor-pointer';
+      markerElement.style.width = '12px';
+      markerElement.style.height = '12px';
+      markerElement.style.borderRadius = '50%';
+      markerElement.style.backgroundColor = '#10B981';
+      markerElement.style.border = '2px solid white';
+      markerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+      
+      // Store reference to property ID for click handler
+      const propertyId = newProperty.id;
+      markerElement.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (onMarkerClick) {
+          onMarkerClick({ id: propertyId });
+        }
+      });
+      
+      await addMarker(`property-${newProperty.id}`, {
+        lat: newProperty.latitude,
+        lng: newProperty.longitude
+      }, {
+        color: '#10B981',
+        element: markerElement,
+        popupContent: `
+          <div class="p-2">
+            <h3 class="font-semibold text-gray-900 text-sm">${newProperty.full_address}</h3>
+            <p class="text-xs text-gray-600">${newProperty.city}, ${newProperty.state} ${newProperty.zipcode}</p>
+            <p class="text-xs text-gray-500 mt-1">Status: ${newProperty.status}</p>
+            <button class="w-full mt-2 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded border border-blue-200 transition-colors" data-property-id="${newProperty.id}">
+              View Details →
+            </button>
+          </div>
+        `
+      });
+      
+      // Track that this marker has been added
+      addedMarkersRef.current.add(newProperty.id);
+    }
+    
+    return newProperty;
   }, [createProperty, currentWorkspace, map, addMarker, onMarkerClick]);
 
-  // Handle flying to a specific property
-  const flyToProperty = useCallback((property: { latitude?: number; longitude?: number } | null) => {
-    if (property && property.latitude && property.longitude && map) {
-      map.flyTo({
-        center: [property.longitude, property.latitude],
-        zoom: 18, // Closer zoom for individual properties
-        duration: 2000,
-        essential: true,
-      });
-    }
-  }, [map]);
 
-  // Expose flyToProperty function to parent component when map is ready
-  useEffect(() => {
-    if (mapLoaded && onMapReady && flyToProperty) {
-      onMapReady(flyToProperty);
-    }
-  }, [mapLoaded, onMapReady, flyToProperty]);
 
   return (
     <div className="relative w-full h-full" style={{ margin: 0, padding: 0 }}>
@@ -275,29 +238,6 @@ export default function WorkspaceMap({ onMapReady, onMarkerClick }: WorkspaceMap
           onFlyTo={handleFlyTo}
           onSaveProperty={handleSaveProperty}
         />
-      </div>
-
-      {/* Location Tracking Controls */}
-      <div className="absolute bottom-4 left-4 z-10">
-        <div className="bg-white rounded-lg shadow-lg p-3">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={isTracking ? stopTracking : startTracking}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isTracking 
-                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-              }`}
-            >
-              {isTracking ? 'Stop Tracking' : 'Start Tracking'}
-            </button>
-            {userLocation && (
-              <div className="text-sm text-gray-600">
-                {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Map Status Indicator */}

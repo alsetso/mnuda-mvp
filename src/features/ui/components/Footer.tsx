@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Logo from './Logo';
 
 export default function Footer() {
   return (
@@ -9,10 +10,7 @@ export default function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <h2 className="text-lg font-semibold">
-              <span className="text-[#014463]">MN</span>
-              <span className="text-[#1dd1f5]">UDA</span>
-            </h2>
+            <Logo size="md" />
           </div>
           
           {/* Disclaimer */}

@@ -76,6 +76,7 @@ export default function PageLayout({
   const heightClass = showFooter === false && contentPadding === '' ? 'h-screen' : '';
   const overflowClass = showFooter === false && contentPadding === '' ? 'overflow-hidden' : '';
   const minHeightClass = showFooter !== false || contentPadding !== '' ? 'min-h-screen' : '';
+  const mainOverflowClass = showFooter === false && contentPadding === '' ? 'overflow-hidden' : 'overflow-visible';
 
   return (
     <div className={`flex flex-col ${backgroundColor} ${heightClass} ${overflowClass} ${minHeightClass}`} style={{ 
@@ -113,7 +114,7 @@ export default function PageLayout({
       )}
 
       {/* Main Content - Flex grow to push footer down */}
-      <main className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'} overflow-hidden`} style={{ 
+      <main className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'} ${mainOverflowClass}`} style={{ 
         maxWidth: '100vw', 
         margin: 0, 
         padding: 0, 

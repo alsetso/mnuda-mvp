@@ -70,13 +70,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="h-full w-full" style={{ margin: 0, padding: 0, overflow: 'hidden' }}>
-      <body className="h-full w-full" style={{ margin: 0, padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <html lang="en" className="h-full w-full">
+      <body className="min-h-screen w-full" style={{ display: 'flex', flexDirection: 'column' }}>
         <AuthProvider>
           <WorkspaceProvider>
             <ToastProvider>
               {/* Pages handle their own header/footer via PageLayout component */}
-              <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', margin: 0, padding: 0 }}>
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
                 {children}
               </div>
               <ToastContainer />

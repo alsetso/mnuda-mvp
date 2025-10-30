@@ -78,7 +78,7 @@ class PropertyDocsService {
     const filePath = `properties/${propertyId}/${timestamp}_${sanitizedFileName}`;
 
     // Upload file to storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(filePath, file, {
         contentType: 'application/pdf',

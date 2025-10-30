@@ -11,6 +11,8 @@ export interface Property {
   latitude?: number;
   longitude?: number;
   status: 'Preforeclosure' | 'Foreclosure' | 'Foreclosed' | 'Auction' | 'Redemption' | 'Bank Owned' | 'Short Sale' | 'Subject To' | 'Deed In Lieu' | 'Leaseback' | 'For Sale By Owner' | 'Listed On MLS' | 'Under Contract' | 'Sold' | 'Off Market';
+  code?: string;
+  raw_zillow_response?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +37,7 @@ export interface UpdatePropertyData {
   latitude?: number;
   longitude?: number;
   status?: Property['status'];
+  code?: string | null;
 }
 
 class PropertiesService {

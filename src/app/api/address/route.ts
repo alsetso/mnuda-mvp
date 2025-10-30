@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiHeaders } from '@/features/api/config/apiConfig';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,10 +21,7 @@ export async function POST(request: NextRequest) {
     
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'x-rapidapi-host': 'skip-tracing-working-api.p.rapidapi.com',
-        'x-rapidapi-key': 'f4a7d42741mshbc2b95a8fd24074p1cf1a6jsn44343abb32e8'
-      }
+      headers: getApiHeaders('skipTrace')
     });
 
     if (!response.ok) {

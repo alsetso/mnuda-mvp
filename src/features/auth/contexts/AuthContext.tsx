@@ -28,21 +28,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   useEffect(() => {
-    // Get initial session
+    let mounted = true;
+    let timeoutId: NodeJS.Timeout;
+
+    // Get initial session with timeout
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Set a timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          if (mounted) {
+            console.warn('Session check timeout, assuming no session');
+            setUser(null);
+            setIsLoading(false);
+          }
+        }, 3000); // 3 second timeout
+
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        clearTimeout(timeoutId);
+        
+        if (!mounted) return;
+
+        if (error) {
+          console.error('Error getting initial session:', error);
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
         
         if (session?.user) {
           setUser(session.user);
         } else {
           setUser(null);
         }
-      } catch (error) {
-        console.error('Error getting initial session:', error);
-        setUser(null);
-      } finally {
         setIsLoading(false);
+      } catch (error) {
+        clearTimeout(timeoutId);
+        console.error('Error getting initial session:', error);
+        if (mounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
       }
     };
 
@@ -51,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
         
         if (session?.user) {
           setUser(session.user);
@@ -70,7 +97,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []); // Empty dependency array to prevent infinite re-renders
 
   const signIn = async (email: string, password: string) => {
@@ -198,7 +229,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (error) throw error;
       
-      // User will be set by the auth state change listener
+      // Wait for session to be established
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+      }
+      // Auth state change listener will also fire, but we set user here for immediate update
     } catch (error) {
       console.error('Verify OTP error:', error);
       throw error;

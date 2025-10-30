@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { PlusIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, FunnelIcon, ArrowTopRightOnSquareIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 export interface DataRecord {
   id: string;
@@ -156,14 +156,27 @@ export function DataTable({
 
   if (loading) {
     return (
-      <div className="bg-white">
-        <div className="px-6 py-4">
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded"></div>
-              <div className="h-4 bg-gray-200 rounded"></div>
+      <div className="bg-white h-full w-full flex flex-col">
+        <div className="flex-1 overflow-auto">
+          <div className="px-4 py-6">
+            {/* Skeleton Table */}
+            <div className="space-y-3">
+              {/* Header skeleton */}
+              <div className="flex space-x-4 pb-2 border-b border-gray-200">
+                <div className="h-4 w-12 bg-gray-200 rounded animate-pulse"></div>
+                {columns.slice(0, 4).map((_, i) => (
+                  <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" style={{ width: `${columns[i]?.width || 120}px` }}></div>
+                ))}
+              </div>
+              {/* Row skeletons */}
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="flex space-x-4 py-3 border-b border-gray-100">
+                  <div className="h-4 w-12 bg-gray-100 rounded animate-pulse"></div>
+                  {columns.slice(0, 4).map((col, colIdx) => (
+                    <div key={colIdx} className="h-4 bg-gray-100 rounded animate-pulse" style={{ width: `${col.width || 120}px` }}></div>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -212,32 +225,38 @@ export function DataTable({
 
 
       {/* Table */}
-      <div className="flex-1 overflow-auto scrollable-hidden">
+      <div className="flex-1 overflow-auto scrollable-hidden relative">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 sticky top-0 z-10 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+              <th className="px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider w-12 bg-gray-50">
                   <input
                     type="checkbox"
                     checked={selectedRows.size === sortedData.length && sortedData.length > 0}
                     onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
                   />
               </th>
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${
+                  className={`px-4 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100/80 bg-gray-50 transition-colors ${
                     column.width ? `w-${column.width}` : ''
                   }`}
                   onClick={() => handleSort(column.key)}
                 >
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-2">
                     <span>{column.label}</span>
-                    {sortColumn === column.key && (
-                      <span className="text-blue-600">
-                        {sortDirection === 'asc' ? '↑' : '↓'}
-                      </span>
+                    {sortColumn === column.key ? (
+                      sortDirection === 'asc' ? (
+                        <ChevronUpIcon className="w-4 h-4 text-blue-600" />
+                      ) : (
+                        <ChevronDownIcon className="w-4 h-4 text-blue-600" />
+                      )
+                    ) : (
+                      <div className="w-4 h-4 opacity-0 group-hover:opacity-30">
+                        <ChevronUpIcon className="w-4 h-4 text-gray-400" />
+                      </div>
                     )}
                   </div>
                 </th>
@@ -254,9 +273,9 @@ export function DataTable({
                   key={record.id} 
                   onClick={() => onView?.(record)}
                   className={`
-                    hover:bg-gray-50 transition-colors duration-200 cursor-pointer
-                    ${isSelected ? 'bg-blue-50' : ''}
-                    ${isHighlighted ? 'bg-green-50 border-l-4 border-green-400 animate-pulse' : ''}
+                    hover:bg-gray-50/50 transition-colors duration-150 cursor-pointer
+                    ${isSelected ? 'bg-blue-50/50' : ''}
+                    ${isHighlighted ? 'bg-green-50 border-l-4 border-green-500' : ''}
                   `}
                 >
                 <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
@@ -267,17 +286,44 @@ export function DataTable({
                       e.stopPropagation();
                       handleSelectRow(record.id);
                     }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
                   />
                 </td>
-                {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    className="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
-                  >
-                    {formatValue(record[column.key], column.type)}
-                  </td>
-                ))}
+                {columns.map((column) => {
+                  // Special rendering for full_address column when property has a code
+                  if (column.key === 'full_address' && record.property_code && record.property_id) {
+                    return (
+                      <td
+                        key={column.key}
+                        className="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{formatValue(record[column.key], column.type)}</span>
+                          <a
+                            href={`/property/${record.property_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            title="Open property page in new window"
+                          >
+                            <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </td>
+                    );
+                  }
+                  
+                  return (
+                    <td
+                      key={column.key}
+                      className="px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                    >
+                      {formatValue(record[column.key], column.type)}
+                    </td>
+                  );
+                })}
                 </tr>
               );
             })}
@@ -287,22 +333,23 @@ export function DataTable({
 
       {/* Empty State */}
       {displayData.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        <div className="text-center py-16 px-4">
+          <div className="text-gray-300 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No records found</h3>
-          <p className="text-gray-500 mb-4">
-            {searchTerm ? 'Try adjusting your search terms' : 'Get started by adding your first record'}
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No records found</h3>
+          <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+            {searchTerm ? 'Try adjusting your search terms to find what you\'re looking for.' : 'Get started by adding your first record to begin organizing your data.'}
           </p>
           {onAdd && !searchTerm && (
             <button
               onClick={onAdd}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             >
-              Add Record
+              <PlusIcon className="w-4 h-4" />
+              <span>Add Record</span>
             </button>
           )}
         </div>
