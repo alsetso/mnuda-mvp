@@ -8,7 +8,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Use SSR-compatible browser client for proper auth handling in Next.js App Router
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+// Configure with auto-refresh to prevent token expiration issues
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 export const getCurrentUser = async () => {
   const { data: { user }, error } = await supabase.auth.getUser();

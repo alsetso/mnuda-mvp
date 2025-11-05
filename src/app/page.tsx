@@ -1,224 +1,307 @@
 'use client';
 
-import Link from 'next/link';
-import { useAuth } from '@/features/auth';
-import { useWorkspace } from '@/features/workspaces';
-import { PlusIcon, ArrowRightIcon, UsersIcon, HomeModernIcon } from '@heroicons/react/24/outline';
+import { useMemo } from 'react';
 import PageLayout from '@/components/PageLayout';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-
-interface WorkspaceWithCounts {
-  id: string;
-  name: string;
-  description?: string;
-  emoji?: string;
-  created_at: string;
-  memberCount: number;
-  propertyCount: number;
-}
+import { useAuth } from '@/features/auth';
+import Link from 'next/link';
+import { 
+  ArrowRightIcon,
+  BuildingOffice2Icon,
+  ChartBarIcon,
+  LightBulbIcon
+} from '@heroicons/react/24/outline';
+import { navItems, getNavItemsByCategory } from '@/config/navigation';
 
 export default function Home() {
   const { user, isLoading: authLoading } = useAuth();
-  const { workspaces, loading: workspacesLoading } = useWorkspace();
-  const [workspacesWithCounts, setWorkspacesWithCounts] = useState<WorkspaceWithCounts[]>([]);
-  const [loadingCounts, setLoadingCounts] = useState(false);
 
-  // Fetch counts for all workspaces
-  useEffect(() => {
-    const fetchCounts = async () => {
-      if (!workspaces.length) {
-        setWorkspacesWithCounts([]);
-        return;
-      }
+  // Filter nav items to exclude Home and Settings from the directory
+  // Must be called unconditionally (hooks rules)
+  const directoryItems = useMemo(() => {
+    return navItems.filter(item => item.href !== '/' && item.href !== '/settings');
+  }, []);
 
-      setLoadingCounts(true);
-      try {
-        const workspacesWithCountsData = await Promise.all(
-          workspaces.map(async (workspace) => {
-            // Get member count - fetch data instead of just count to work with RLS
-            const { data: members, error: memberError } = await supabase
-              .from('workspace_members')
-              .select('id')
-              .eq('workspace_id', workspace.id);
-
-            if (memberError) {
-              console.error('Error fetching members for workspace:', workspace.id, memberError);
-            }
-
-            // Get property count
-            const { count: propertyCount, error: propertyError } = await supabase
-              .from('properties')
-              .select('*', { count: 'exact', head: true })
-              .eq('workspace_id', workspace.id);
-
-            if (propertyError) {
-              console.error('Error fetching properties count for workspace:', workspace.id, propertyError);
-            }
-
-            return {
-              id: workspace.id,
-              name: workspace.name,
-              description: workspace.description,
-              emoji: workspace.emoji,
-              created_at: workspace.created_at,
-              memberCount: members?.length || 0,
-              propertyCount: propertyCount || 0,
-            };
-          })
-        );
-
-        setWorkspacesWithCounts(workspacesWithCountsData);
-      } catch (error) {
-        console.error('Error fetching workspace counts:', error);
-      } finally {
-        setLoadingCounts(false);
-      }
-    };
-
-    if (user && workspaces.length > 0) {
-      fetchCounts();
-    }
-  }, [workspaces, user]);
+  const categorizedItems = useMemo(() => {
+    return getNavItemsByCategory();
+  }, []);
 
   // Show loading state while checking auth
-  if (authLoading || (user && workspacesLoading)) {
+  if (authLoading) {
     return (
-      <PageLayout>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <PageLayout showFooter={false}>
+        <div className="min-h-screen bg-gold-100 flex items-center justify-center">
           <div className="text-center">
-            <div className="w-8 h-8 border-4 border-[#014463] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <div className="text-gray-600">Loading...</div>
+            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="text-gray-600 font-medium">Loading...</div>
           </div>
         </div>
       </PageLayout>
     );
   }
 
-  // If user is logged in, show workspaces dashboard
+  // If user is logged in, show mission header and directory page
   if (user) {
     return (
-      <PageLayout>
-        {/* Compact Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Workspaces</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Select a workspace to view properties and data</p>
-          </div>
-          <Link
-            href="/workspace/new"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#014463] text-white text-sm rounded-lg font-medium hover:bg-[#013347] transition-colors"
-          >
-            <PlusIcon className="w-4 h-4" />
-            <span>New</span>
-          </Link>
-        </div>
-
-        {/* Workspaces Grid */}
-        {workspaces.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-            <div className="text-5xl mb-3">🏢</div>
-            <h3 className="text-base font-medium text-gray-900 mb-1">No workspaces yet</h3>
-            <p className="text-sm text-gray-500 mb-4">Create your first workspace to get started</p>
-            <Link
-              href="/workspace/new"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#014463] text-white text-sm rounded-lg font-medium hover:bg-[#013347] transition-colors"
-            >
-              <PlusIcon className="w-4 h-4" />
-              <span>Create Workspace</span>
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {workspacesWithCounts.map((workspace) => (
-              <Link
-                key={workspace.id}
-                href={`/workspace/${workspace.id}`}
-                className="group bg-white rounded-lg border border-gray-200 p-4 hover:border-[#014463] hover:shadow-sm transition-all"
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-xl flex-shrink-0">{workspace.emoji || '🏢'}</span>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-medium text-gray-900 group-hover:text-[#014463] transition-colors truncate text-sm">
-                        {workspace.name}
-                      </h3>
-                      {workspace.description && (
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{workspace.description}</p>
-                      )}
+      <PageLayout showHeader={true} showFooter={false} containerMaxWidth="7xl" backgroundColor="bg-gold-100">
+        <div className="min-h-screen py-12">
+          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Mission Header Section */}
+            <div className="mb-16">
+              <div className="bg-black text-white rounded-2xl p-8 md:p-12 lg:p-16 mb-8">
+                <div className="max-w-4xl mx-auto text-center">
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.05em] mb-6 font-libre-baskerville italic">
+                    For the Love of Minnesota
+                  </h1>
+                  <p className="text-xl sm:text-2xl text-gray-300 mb-8 leading-relaxed max-w-3xl mx-auto">
+                    Every business we develop, every asset we acquire, and every community we support is part of our commitment to making Minnesota a better place to live, work, and invest.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                      <div className="text-2xl font-black text-gold-400 mb-2">Growth</div>
+                      <p className="text-gray-300 text-sm">Building sustainable businesses that strengthen our economic foundation</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                      <div className="text-2xl font-black text-gold-400 mb-2">Impact</div>
+                      <p className="text-gray-300 text-sm">Creating value that benefits communities and investors alike</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                      <div className="text-2xl font-black text-gold-400 mb-2">Vision</div>
+                      <p className="text-gray-300 text-sm">Transforming opportunities into lasting contributions to Minnesota</p>
                     </div>
                   </div>
-                  <ArrowRightIcon className="w-4 h-4 text-gray-400 group-hover:text-[#014463] group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-0.5" />
                 </div>
-                
-                {/* Stats */}
-                <div className="flex items-center gap-4 text-xs text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <UsersIcon className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="font-medium">{loadingCounts ? '...' : workspace.memberCount}</span>
-                    <span className="text-gray-500">member{workspace.memberCount !== 1 ? 's' : ''}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <HomeModernIcon className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="font-medium">{loadingCounts ? '...' : workspace.propertyCount}</span>
-                    <span className="text-gray-500">propert{workspace.propertyCount !== 1 ? 'ies' : 'y'}</span>
+              </div>
+            </div>
+
+            {/* Directory Section */}
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-black mb-4 text-center">
+                Explore Features
+              </h2>
+              <p className="text-gray-600 text-center mb-8 max-w-2xl mx-auto">
+                Choose a feature to get started. Each tool is designed to help you accomplish specific tasks.
+              </p>
+
+              {/* Grouped by Category */}
+              <div className="space-y-12">
+                {Array.from(categorizedItems.entries())
+                  .filter(([category]) => category !== 'Main' && category !== 'Account')
+                  .map(([category, items]) => (
+                    <div key={category}>
+                      <h3 className="text-xl font-bold text-black mb-4 pb-2 border-b border-gray-300">
+                        {category}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {items.map((item) => {
+                          const Icon = item.icon;
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className="group bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
+                            >
+                              <div className="flex items-start gap-4">
+                                <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
+                                  <Icon className="w-6 h-6 text-gold-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-lg font-bold text-black mb-2 group-hover:text-gold-600 transition-colors">
+                                    {item.name}
+                                  </h4>
+                                  <p className="text-sm text-gray-600 leading-relaxed">
+                                    {item.description}
+                                  </p>
+                                </div>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Unlisted items (if any) */}
+              {directoryItems.filter(item => !item.category || item.category === 'Other').length > 0 && (
+                <div className="mt-12">
+                  <h3 className="text-xl font-bold text-black mb-4 pb-2 border-b border-gray-300">
+                    Other
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {directoryItems
+                      .filter(item => !item.category || item.category === 'Other')
+                      .map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="group bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
+                          >
+                            <div className="flex items-start gap-4">
+                              <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
+                                <Icon className="w-6 h-6 text-gold-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-lg font-bold text-black mb-2 group-hover:text-gold-600 transition-colors">
+                                  {item.name}
+                                </h4>
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                  {item.description}
+                                </p>
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
                   </div>
                 </div>
-              </Link>
-            ))}
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </PageLayout>
     );
   }
 
   // If user is not logged in, show landing page
   return (
-    <PageLayout showHeader={true} showFooter={true} containerMaxWidth="7xl" backgroundColor="bg-white" contentPadding="px-4 sm:px-6 lg:px-8 py-10">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-b from-[#0144630F] to-white">
-        <div className="absolute inset-0 -z-10" style={{ backgroundImage: "url('/bg.png')", backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.12 }} />
-        <div className="px-6 py-16 sm:py-20 lg:py-24">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#01446333] bg-white/70 px-3 py-1 text-sm text-[#014463]">
-              <span className="h-2 w-2 rounded-full bg-[#014463]" />
-              Minnesota-first skip tracing
+    <PageLayout showHeader={true} showFooter={true} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
+      {/* Hero Section */}
+      <section className="min-h-screen flex items-center bg-gradient-to-b from-gold-100 via-gold-50 to-gold-100 py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="text-center max-w-5xl mx-auto">
+            <div className="inline-block mb-6">
+              <span className="text-xs font-bold tracking-widest uppercase text-gold-600 bg-gold-200/50 px-4 py-2 rounded-full">
+                Under Dev & Acq
+              </span>
             </div>
-            <h1 className="mt-6 text-4xl sm:text-5xl font-bold tracking-tight text-gray-900">
-              Find people and properties in Minnesota. Fast.
-            </h1>
-            <p className="mt-4 text-lg text-gray-600">
-              A modern, free skip tracing experience with clean results and actionable data for Minnesota. Built for speed, clarity, and accuracy.
+            <h1 className="text-7xl sm:text-8xl lg:text-9xl font-medium tracking-[-0.105em] text-black mb-8 leading-tight font-libre-baskerville italic">
+              For the Love of
+              <span className="block text-gold-600 mt-2">Minnesota</span>
+              </h1>
+            <p className="text-xl sm:text-2xl text-gray-700 max-w-3xl mx-auto mb-12 leading-relaxed">
+              We combine technology, capital, and strategy to acquire and develop high-value real estate and business opportunities that strengthen our state&apos;s economic foundation.
             </p>
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <Link href="/login" className="inline-flex items-center justify-center rounded-lg bg-[#014463] px-6 py-3 text-white font-medium hover:bg-[#013347] transition-colors">
-                Get started free
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center gap-2 bg-black text-white px-8 py-4 text-lg font-bold rounded-lg hover:bg-gray-900 transition-all shadow-lg hover:shadow-xl"
+              >
+                Get Started
+                <ArrowRightIcon className="w-5 h-5" />
               </Link>
-              <Link href="/login" className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-6 py-3 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-                Explore features
+              <Link
+                href="/workspace"
+                className="inline-flex items-center justify-center gap-2 bg-gold-500 text-black px-8 py-4 text-lg font-bold rounded-lg hover:bg-gold-600 transition-all"
+              >
+                View Workspaces
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Value Props */}
-      <section className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 p-6">
-          <div className="h-10 w-10 rounded-lg bg-[#0144631A] text-[#014463] flex items-center justify-center">🔎</div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">Clean, focused results</h3>
-          <p className="mt-2 text-gray-600">Only the data you need. No clutter. Names, phones, emails, properties—clearly grouped and easy to action.</p>
+      {/* What We Do Section */}
+      <section className="min-h-screen flex items-center bg-white py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl sm:text-5xl font-black text-black mb-4">
+              What We Do
+            </h2>
+            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
+              Technology, capital, and strategic execution for real estate and business opportunities that strengthen Minnesota&apos;s economic foundation
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-gold-100 rounded-xl p-8 border border-gold-200 hover:shadow-lg transition-all">
+              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
+                <BuildingOffice2Icon className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-black text-black mb-4">Development</h3>
+              <p className="text-gray-700 leading-relaxed">
+                Transform underutilized assets into strategic developments that drive economic growth and create lasting value for communities across Minnesota.
+              </p>
+            </div>
+
+            <div className="bg-gold-100 rounded-xl p-8 border border-gold-200 hover:shadow-lg transition-all">
+              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
+                <ChartBarIcon className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-black text-black mb-4">Acquisition</h3>
+              <p className="text-gray-700 leading-relaxed">
+                Leverage advanced analytics and market intelligence to identify and execute on high-value real estate and business acquisitions with precision and efficiency.
+              </p>
+            </div>
+
+            <div className="bg-gold-100 rounded-xl p-8 border border-gold-200 hover:shadow-lg transition-all">
+              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
+                <LightBulbIcon className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-black text-black mb-4">Strategy</h3>
+              <p className="text-gray-700 leading-relaxed">
+                Combine technology infrastructure, capital deployment, and strategic execution to build sustainable business models that strengthen Minnesota&apos;s economic ecosystem.
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="rounded-xl border border-gray-200 p-6">
-          <div className="h-10 w-10 rounded-lg bg-[#0144631A] text-[#014463] flex items-center justify-center">⚡</div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">Fast and reliable</h3>
-          <p className="mt-2 text-gray-600">Optimized for performance across Minnesota sources. Results stream quickly with minimal friction.</p>
+      </section>
+
+      {/* Mission Section */}
+      <section className="min-h-screen flex items-center bg-black text-white py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-6xl sm:text-7xl lg:text-8xl font-medium tracking-[-0.105em] mb-8 font-libre-baskerville italic">
+              For the Love of Minnesota
+            </h2>
+            <p className="text-xl sm:text-2xl text-gray-300 mb-12 leading-relaxed">
+              Every business we develop, every asset we acquire, and every community we support is part of our commitment to making Minnesota a better place to live, work, and invest.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="text-3xl font-black text-gold-400 mb-2">Growth</div>
+                <p className="text-gray-300">Building sustainable businesses that strengthen our economic foundation</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="text-3xl font-black text-gold-400 mb-2">Impact</div>
+                <p className="text-gray-300">Creating value that benefits communities and investors alike</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <div className="text-3xl font-black text-gold-400 mb-2">Vision</div>
+                <p className="text-gray-300">Transforming opportunities into lasting contributions to Minnesota</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="rounded-xl border border-gray-200 p-6">
-          <div className="h-10 w-10 rounded-lg bg-[#0144631A] text-[#014463] flex items-center justify-center">🗺️</div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">Minnesota-first coverage</h3>
-          <p className="mt-2 text-gray-600">Built for Minneapolis, Saint Paul, Rochester, Duluth—every city and county in Minnesota.</p>
+      </section>
+
+      {/* CTA Section */}
+      <section className="min-h-screen flex items-center bg-gold-100 py-16 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-4xl sm:text-5xl font-black text-black mb-6">
+              Ready to Build with Us?
+            </h2>
+            <p className="text-xl text-gray-700 mb-10 leading-relaxed">
+              Join us in transforming Minnesota&apos;s real estate landscape through technology, strategy, and community-focused development.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center gap-2 bg-black text-white px-8 py-4 text-lg font-bold rounded-lg hover:bg-gray-900 transition-all shadow-lg"
+              >
+                Get Started
+                <ArrowRightIcon className="w-5 h-5" />
+              </Link>
+              <Link
+                href="/workspace"
+                className="inline-flex items-center justify-center gap-2 bg-gold-500 text-black px-8 py-4 text-lg font-bold rounded-lg hover:bg-gold-600 transition-all"
+              >
+                Explore Workspaces
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </PageLayout>

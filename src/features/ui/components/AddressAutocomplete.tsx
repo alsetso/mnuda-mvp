@@ -176,14 +176,14 @@ export default function AddressAutocomplete({
         aria-autocomplete="list"
         role="combobox"
         aria-controls="address-suggestions"
-        className={className || `w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white touch-manipulation`}
+        className={className || `w-full px-3 py-3 sm:py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-gold-500 focus:border-gold-500 outline-none bg-white touch-manipulation`}
         autoComplete="off"
       />
       
       {/* Loading indicator */}
       {isLoading && (
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-4 h-4 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
 
@@ -219,7 +219,7 @@ export default function AddressAutocomplete({
               role="option"
               aria-selected={index === selectedIndex}
               className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 focus:bg-gray-50 focus:outline-none ${
-                index === selectedIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                index === selectedIndex ? 'bg-gold-50 text-gold-600' : 'text-gray-700'
               } ${index === 0 ? 'rounded-t-lg' : ''} ${
                 index === suggestions.length - 1 ? 'rounded-b-lg' : 'border-b border-gray-100'
               }`}

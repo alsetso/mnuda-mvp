@@ -1,9 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 @import 'mapbox-gl/dist/mapbox-gl.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Hide scrollbar for seamless scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-in-out;
+}
 
 html, body {
   margin: 0;
@@ -11,6 +37,7 @@ html, body {
   overflow-x: hidden;
   height: 100%;
   width: 100%;
+  background-color: #F5F1E9; /* gold-100 */
 }
 
 #__next {
@@ -55,6 +82,16 @@ body {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Scroll-snap utilities */
+.scroll-snap-container {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+
+.scroll-snap-section {
+  scroll-snap-align: start;
 }
 
 /* Scrollable content with hidden scrollbar */
@@ -157,12 +194,12 @@ body {
 }
 
 .document-editor a {
-  color: #2563eb;
+  color: #C2B289; /* gold-500 from Tailwind config */
   text-decoration: underline;
 }
 
 .document-editor a:hover {
-  color: #1d4ed8;
+  color: #9F8E6E; /* gold-600 from Tailwind config */
 }
 
 .document-editor img {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { UseMapReturn, Coordinates, PropertyDetails } from '../types';
+import { UseMapReturn, Coordinates } from '../types';
 import { MAP_CONFIG } from '../config';
 import { mapPerformanceService } from '../services/mapPerformanceService';
 
@@ -19,7 +19,6 @@ interface UseMapProps {
   mapContainer: React.RefObject<HTMLDivElement | null>;
   onMapReady?: (map: import('mapbox-gl').Map) => void;
   onMapClick?: (coordinates: { lat: number; lng: number }) => void;
-  onPropertyClick?: (property: PropertyDetails) => void;
 }
 
 /**
@@ -29,7 +28,7 @@ interface UseMapProps {
  * - Popup system baked in
  * - Interaction locks, cursor, flyTo helpers
  */
-export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }: UseMapProps): UseMapReturn {
+export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): UseMapReturn {
   const map = useRef<import('mapbox-gl').Map | null>(null);
 
   // Dedicated marker registry keyed by string IDs
@@ -38,7 +37,6 @@ export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }
   // Store callbacks in refs to prevent infinite re-renders
   const onMapReadyRef = useRef(onMapReady);
   const onMapClickRef = useRef(onMapClick);
-  const onPropertyClickRef = useRef(onPropertyClick);
 
   // Update refs when callbacks change
   useEffect(() => {
@@ -49,9 +47,6 @@ export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
 
-  useEffect(() => {
-    onPropertyClickRef.current = onPropertyClick;
-  }, [onPropertyClick]);
 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
@@ -713,12 +708,6 @@ export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }
     }
   }, []);
 
-  // Show property details in the property panel
-  const showPropertyDetails = useCallback((property: PropertyDetails) => {
-    if (onPropertyClickRef.current) {
-      onPropertyClickRef.current(property);
-    }
-  }, []);
 
   // ---------------------------------------------------------------------------
   return {
@@ -751,9 +740,6 @@ export function useMap({ mapContainer, onMapReady, onMapClick, onPropertyClick }
     flyFromGlobeToMinnesota,
     zoomToStrategic,
     changeMapStyle,
-
-    // Property panel
-    showPropertyDetails,
 
     // Map instance
     map: map.current,

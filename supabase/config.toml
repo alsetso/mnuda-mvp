@@ -194,9 +194,10 @@ otp_expiry = 3600
 # sender_name = "Admin"
 
 # Custom email hook for OTP emails
-[auth.hook.send_email]
-enabled = true
-uri = "pg-functions://postgres/send_email"
+# Configure in Dashboard: Authentication -> Hooks
+# [auth.hook.send_email]
+# enabled = true
+# uri = "http://127.0.0.1:54321/functions/v1/resend"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

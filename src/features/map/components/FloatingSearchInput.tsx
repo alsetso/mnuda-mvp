@@ -22,7 +22,7 @@ const STATUS_OPTIONS = [
 ];
 
 interface FloatingSearchInputProps {
-  onSearchComplete?: (address: Address) => void;
+  onSearchComplete?: (address: Address, coordinates?: { lat: number; lng: number }) => void;
   onFlyTo?: (coordinates: { lat: number; lng: number }, zoom?: number) => void;
   onSaveProperty?: (address: Address, coordinates: { lat: number; lng: number }, status: string) => void;
   currentSession?: { id: string; name: string; nodes: unknown[] } | null;
@@ -46,6 +46,7 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const onSavePropertyRef = useRef(onSaveProperty);
+  const isMountedRef = useRef(true);
   
   // Use props if provided, otherwise fall back to defaults
   const currentSession = propsCurrentSession ?? null;
@@ -57,6 +58,14 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
   useEffect(() => {
     onSavePropertyRef.current = onSaveProperty;
   }, [onSaveProperty]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Debounced search for suggestions
   const debouncedSearch = useCallback(async (query: string) => {
@@ -169,33 +178,46 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
     setSelectedCoordinates(coordinates);
     setShowPropertyPopup(true);
 
-    // Perform search actions
-    try {
-      // Create search history node IMMEDIATELY when search starts
-      if (currentSession) {
-        await addNode({
-          type: 'start' as const,
-          status: 'completed',
-          customTitle: `Search: ${suggestion.place_name}`,
-          addressData: {
-            ...address,
-            coordinates: { latitude: coordinates.lat, longitude: coordinates.lng }
-          },
-          apiName: 'Search History',
-          timestamp: new Date().toISOString(),
-          mnNodeId: `search-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          hasCompleted: true, // Search is immediately completed
-          metadata: {}
-        });
-      }
+    // Perform search actions (non-blocking)
+    // Fly to location immediately
+    onFlyTo?.(coordinates, 16);
 
-      // Fly to location
-      onFlyTo?.(coordinates, 16);
+    // Notify parent component immediately with coordinates for pin creation
+    onSearchComplete?.(address, coordinates);
 
-      // Notify parent component
-      onSearchComplete?.(address);
-    } catch (error) {
-      console.error('Search error:', error);
+    // Add session node asynchronously (fire-and-forget, don't block main flow)
+    if (currentSession) {
+      // Fire and forget - don't await or let errors block the main flow
+      // Wrap in async IIFE to handle both sync and async addNode functions
+      (async () => {
+        try {
+          const nodeData = {
+            type: 'start' as const,
+            status: 'completed' as const,
+            customTitle: `Search: ${suggestion.place_name}`,
+            addressData: {
+              ...address,
+              coordinates: { latitude: coordinates.lat, longitude: coordinates.lng }
+            },
+            apiName: 'Search History',
+            timestamp: new Date().toISOString(),
+            mnNodeId: `search-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            hasCompleted: true,
+            metadata: {}
+          };
+          
+          // Call addNode - it may return void or a promise
+          const result: unknown = addNode(nodeData);
+          
+          // If it returns a promise, await it; otherwise ignore
+          if (result && typeof result === 'object' && 'then' in result) {
+            await (result as Promise<unknown>);
+          }
+        } catch (error) {
+          // Silently log session node errors - don't interrupt user flow
+          console.warn('Failed to add session node (non-critical):', error);
+        }
+      })();
     }
 
     // Collapse search input
@@ -235,7 +257,15 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
       
       await saveHandler(addressToSave, coordinatesToSave, statusToSave);
       
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        return;
+      }
+      
       console.log('FloatingSearchInput: Property saved successfully, clearing state');
+      
+      // Reset loading state immediately before state changes
+      setIsSaving(false);
       
       // Clear all state to allow immediate new search
       setShowPropertyPopup(false);
@@ -251,21 +281,23 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
       // Simple success notification
       success('Property Saved', 'Added to your workspace');
       
-      // Reset and prepare for next search after a brief delay
+      // Re-expand search input for next search after a brief delay
       setTimeout(() => {
-        setIsSaving(false);
-        // Re-expand search input for next search
+        if (!isMountedRef.current) return;
         setIsExpanded(true);
         setTimeout(() => {
-          if (inputRef.current) {
+          if (isMountedRef.current && inputRef.current) {
             inputRef.current.focus();
           }
         }, 50);
       }, 300);
     } catch (err) {
       console.error('FloatingSearchInput: Error saving property:', err);
-      setIsSaving(false);
-      error('Save Failed', err instanceof Error ? err.message : 'Please try again');
+      // Always reset loading state on error (only if still mounted)
+      if (isMountedRef.current) {
+        setIsSaving(false);
+        error('Save Failed', err instanceof Error ? err.message : 'Please try again');
+      }
       // Don't clear state on error - let user try again or cancel
     }
   }, [selectedAddress, selectedCoordinates, selectedStatus, isSaving, success, error]);
@@ -366,7 +398,7 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
                 className="flex-1 outline-none text-sm placeholder-gray-400 bg-transparent"
               />
               {isLoading && (
-                <div className="w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin ml-2" />
+                <div className="w-3 h-3 border-2 border-gray-300 border-t-gold-500 rounded-full animate-spin ml-2" />
               )}
               <button
                 onClick={() => {
@@ -416,7 +448,7 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
                 key={suggestion.id}
                 onClick={() => handleSuggestionSelect(suggestion)}
                 className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${
-                  index === selectedIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                  index === selectedIndex ? 'bg-gold-50 text-gold-600' : 'text-gray-700'
                 }`}
               >
                 <div className="font-medium truncate">
@@ -461,7 +493,7 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
                   <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 bg-white"
                   >
                     {STATUS_OPTIONS.map((status) => (
                       <option key={status} value={status}>
@@ -542,7 +574,7 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
                 <button
                   onClick={handleSaveProperty}
                   disabled={!selectedAddress || !selectedCoordinates || !onSaveProperty || isSaving}
-                  className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                  className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-black rounded hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                 >
                   {isSaving ? (
                     <>

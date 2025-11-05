@@ -2,19 +2,18 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import { ProfileService } from '@/features/auth';
-import { Profile } from '@/types/supabase';
+import { MemberService, Member } from '@/features/auth';
 
 interface ProfilePhotoProps {
   profile: {
     id: string;
     avatar_url?: string | null;
-    full_name?: string | null;
+    name?: string | null;
     email: string;
   } | null;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   editable?: boolean;
-  onUpdate?: (updatedProfile: Profile) => void;
+  onUpdate?: (updatedMember: Member) => void;
   className?: string;
 }
 
@@ -44,8 +43,8 @@ export default function ProfilePhoto({
   };
 
   const getInitials = (): string => {
-    if (profile?.full_name) {
-      const names = profile.full_name.split(' ');
+    if (profile?.name) {
+      const names = profile.name.trim().split(/\s+/);
       if (names.length >= 2) {
         return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
       }
@@ -63,14 +62,14 @@ export default function ProfilePhoto({
     // Generate a consistent color based on user ID or email
     const seed = profile?.id || profile?.email || 'default';
     const colors = [
-      'bg-blue-500',
+      'bg-gold-500',
       'bg-green-500', 
-      'bg-purple-500',
-      'bg-pink-500',
-      'bg-indigo-500',
+      'bg-gray-500',
+      'bg-orange-500',
+      'bg-amber-500',
       'bg-yellow-500',
       'bg-red-500',
-      'bg-teal-500'
+      'bg-stone-500'
     ];
     
     let hash = 0;
@@ -107,16 +106,13 @@ export default function ProfilePhoto({
         try {
           const base64Data = e.target?.result as string;
           
-          // Update profile with new avatar URL
-          if (!profile?.id) {
-            throw new Error('Profile ID is required');
-          }
-          const updatedProfile = await ProfileService.updateCurrentProfile(profile.id, {
+          // Update member with new avatar URL
+          const updatedMember = await MemberService.updateCurrentMember({
             avatar_url: base64Data
           });
 
-          if (updatedProfile && onUpdate) {
-            onUpdate(updatedProfile);
+          if (updatedMember && onUpdate) {
+            onUpdate(updatedMember);
           }
         } catch (error) {
           console.error('Error updating avatar:', error);
@@ -134,21 +130,16 @@ export default function ProfilePhoto({
   };
 
   const handleRemovePhoto = async () => {
-    if (!profile) return;
-
     setIsUploading(true);
     setUploadError('');
 
     try {
-      if (!profile?.id) {
-        throw new Error('Profile ID is required');
-      }
-      const updatedProfile = await ProfileService.updateCurrentProfile(profile.id, {
+      const updatedMember = await MemberService.updateCurrentMember({
         avatar_url: null
       });
 
-      if (updatedProfile && onUpdate) {
-        onUpdate(updatedProfile);
+      if (updatedMember && onUpdate) {
+        onUpdate(updatedMember);
       }
     } catch (error) {
       console.error('Error removing avatar:', error);
@@ -165,7 +156,7 @@ export default function ProfilePhoto({
         {profile?.avatar_url ? (
           <Image
             src={profile.avatar_url}
-            alt={profile.full_name || profile.email}
+            alt={profile.name || profile.email}
             fill
             sizes="(max-width: 96px) 100vw, 96px"
             className="object-cover rounded-full"

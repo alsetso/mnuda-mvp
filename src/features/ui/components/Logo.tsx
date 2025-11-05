@@ -1,25 +1,34 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  variant?: 'default' | 'light';
 }
 
-const sizeToTextClass: Record<NonNullable<LogoProps['size']>, string> = {
-  sm: 'text-sm',
-  md: 'text-lg',
-  lg: 'text-2xl',
+const sizeToHeightClass: Record<NonNullable<LogoProps['size']>, string> = {
+  sm: 'h-6',
+  md: 'h-8',
+  lg: 'h-12',
 };
 
-export default function Logo({ size = 'md', className = '' }: LogoProps) {
-  const textClass = sizeToTextClass[size];
+export default function Logo({ size = 'md', className = '', variant = 'default' }: LogoProps) {
+  const heightClass = sizeToHeightClass[size];
+  
   return (
-    <span className={`${textClass} font-semibold tracking-tight ${className}`}>
-      <span className="text-[#014463]">MN</span>
-      <span className="text-[#1dd1f5]">UDA</span>
-    </span>
+    <div className={`relative ${heightClass} ${className}`} style={{ width: 'auto' }}>
+      <Image
+        src="/MNUDA-2.svg"
+        alt="MNUDA Logo"
+        width={250}
+        height={50}
+        className={`h-full w-auto object-contain ${variant === 'light' ? 'opacity-90' : ''}`}
+        priority
+      />
+    </div>
   );
 }
 

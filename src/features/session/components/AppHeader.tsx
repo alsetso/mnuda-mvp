@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import Logo from '@/features/ui/components/Logo';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 // Usage indicator removed
 import ProfileDropdown from './ProfileDropdown';
 import { SessionData } from '../services/sessionStorage';
 import { useAuth } from '@/features/auth';
-import { WorkspaceSelector, WorkspaceSettingsModal } from '@/features/workspaces';
-import { Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import GlobalSearchOverlay from '@/features/ui/components/GlobalSearchOverlay';
 
 interface AppHeaderProps {
   currentSession: SessionData | null;
@@ -54,63 +54,63 @@ export default function AppHeader({
   isSidebarOpen = true,
   onSidebarToggle,
 }: AppHeaderProps) {
-  const { user: _user } = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname();
   const _router = useRouter();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isWorkspaceSettingsOpen, setIsWorkspaceSettingsOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  
+  // Keyboard shortcut to open search (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   
   // Determine page types
-  const isMapPage = pathname === '/map';
+  const isMapPage = pathname === '/community';
   const _needsSessionManagement = isMapPage;
-  const isWorkspacePage = pathname.startsWith('/workspace/');
-  const isDashboardPage = pathname === '/';
-  
-  // Navigation items for core pages
-  const _navigationItems = [
-    { href: '/', label: 'Dashboard' }
-  ];
+  const _isDashboardPage = pathname === '/';
 
   return (
     <>
       {/* Header */}
-      <div className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm backdrop-blur-sm">
+      <div className="sticky top-0 left-0 right-0 z-[100] bg-black backdrop-blur-md">
         <div className="w-full px-3 sm:px-4 lg:px-8">
-          <div className="flex items-center h-14 sm:h-16">
-            {/* Left Section - Workspace Selector + Navigation (1/3) */}
+          <div className="flex items-center h-12">
+            {/* Left Section - Search Icon (1/3) */}
             <div className="w-1/3 flex items-center justify-start pr-1 sm:pr-4">
-              <div className="flex items-center space-x-1 sm:space-x-2 w-full min-w-0">
-                {/* Workspace Selector - Show on dashboard and workspace pages */}
-                {(isDashboardPage || isWorkspacePage) && (
-                  <div className="mr-2">
-                    <WorkspaceSelector />
-                  </div>
-                )}
-                
-                {/* Mobile Menu Button - Show on mobile */}
-                <div className="md:hidden">
                   <button
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="p-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 rounded-lg transition-colors"
-                    title="Navigation Menu"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2 text-gray-300 hover:text-gold-400 hover:bg-gray-800/60 rounded-lg transition-all duration-200 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-400/50 focus:ring-offset-2 focus:ring-offset-black"
+                title="Search"
+                aria-label="Open search"
+              >
+                <MagnifyingGlassIcon className="w-5 h-5" />
                   </button>
-                </div>
-              </div>
             </div>
             
             {/* Center Section - Logo (1/3) */}
             <div className="w-1/3 flex items-center justify-center">
-              <Link href="/" className="hover:scale-105 transition-all duration-200">
-                <Logo size="md" />
+              <Link 
+                href="/" 
+                className="group relative inline-block transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold-400/50 focus:ring-offset-2 focus:ring-offset-black rounded-lg p-1 -m-1"
+                aria-label="Go to homepage"
+              >
+                <div className="absolute inset-0 bg-gold-500/0 group-hover:bg-gold-500/10 rounded-lg transition-colors duration-300 blur-sm group-hover:blur-none" />
+                <div className="relative">
+                  <Logo size="md" variant="light" />
+                </div>
               </Link>
             </div>
             
             {/* Right Section - Unified controls (1/3) */}
-            <div className="w-1/3 flex items-center justify-end space-x-1 sm:space-x-2 pl-2 sm:pl-4">
+            <div className="w-1/3 flex items-center justify-end space-x-1.5 sm:space-x-3 pl-2 sm:pl-4">
 
               {/* Map-specific controls */}
               {isMapPage && (
@@ -120,13 +120,14 @@ export default function AppHeader({
                     <div className="md:hidden">
                       <button
                         onClick={onMobileViewToggle}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#014463] focus:ring-offset-2 ${
-                          mobileView === 'results' ? 'bg-[#014463]' : 'bg-gray-200'
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gold-500/50 focus:ring-offset-2 focus:ring-offset-black shadow-lg ${
+                          mobileView === 'results' ? 'bg-gold-500 shadow-gold-500/50' : 'bg-gray-700 hover:bg-gray-600'
                         }`}
                         title={`Switch to ${mobileView === 'map' ? 'Results' : 'Map'} view`}
+                        aria-label={`Switch to ${mobileView === 'map' ? 'Results' : 'Map'} view`}
                       >
                         <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-all duration-200 ${
                             mobileView === 'results' ? 'translate-x-6' : 'translate-x-1'
                           }`}
                         />
@@ -139,15 +140,16 @@ export default function AppHeader({
                     <div className="hidden md:block">
                       <button
                         onClick={onSidebarToggle}
-                        className="p-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 border border-gray-200 rounded-lg transition-colors touch-manipulation"
+                        className="p-2.5 text-gray-300 hover:text-gold-400 hover:bg-gray-800/60 border border-gray-700/50 hover:border-gray-600 rounded-lg transition-all duration-200 touch-manipulation active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-400/50 focus:ring-offset-2 focus:ring-offset-black"
                         title={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+                        aria-label={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
                       >
                         {isSidebarOpen ? (
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                           </svg>
                         ) : (
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                           </svg>
                         )}
@@ -159,37 +161,26 @@ export default function AppHeader({
 
               {/* Usage indicator removed */}
               
-              {/* Workspace Settings - Show on workspace pages */}
-              {isWorkspacePage && (
-                <button
-                  onClick={() => setIsWorkspaceSettingsOpen(true)}
-                  className="p-2 text-gray-500 hover:text-[#014463] hover:bg-gray-50 rounded-lg transition-colors"
-                  title="Workspace Settings"
+              {/* Profile Dropdown - Show only when logged in, Login button when logged out */}
+              {user ? (
+                <ProfileDropdown />
+              ) : (
+                <Link
+                  href="/login"
+                  className="px-4 py-2 text-sm font-semibold text-black bg-gold-500 hover:bg-gold-400 rounded-lg transition-all duration-200 shadow-md hover:shadow-gold-500/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-400/50 focus:ring-offset-2 focus:ring-offset-black"
                 >
-                  <Cog6ToothIcon className="w-5 h-5" />
-                </button>
+                  Sign In
+                </Link>
               )}
-              
-              {/* Profile Dropdown - Always show */}
-              <ProfileDropdown />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation Menu - Show on all pages */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-gray-200 shadow-sm">
-          <div className="px-4 py-2 space-y-1">
-            {/* Navigation items can be added here */}
-          </div>
-        </div>
-      )}
-      
-      {/* Workspace Settings Modal */}
-      <WorkspaceSettingsModal 
-        isOpen={isWorkspaceSettingsOpen}
-        onClose={() => setIsWorkspaceSettingsOpen(false)}
+      {/* Global Search Overlay */}
+      <GlobalSearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
       />
     </>
   );

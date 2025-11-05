@@ -3,7 +3,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { ProfileService } from '../services/profileService';
 
 type AuthUser = User;
 
@@ -31,8 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
     let timeoutId: NodeJS.Timeout;
 
-    // Get initial session with timeout
-    const getInitialSession = async () => {
+    // Get initial user - getUser() validates token server-side and triggers auto-refresh if needed
+    const getInitialUser = async () => {
       try {
         // Set a timeout to prevent infinite loading
         timeoutId = setTimeout(() => {
@@ -41,30 +40,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setIsLoading(false);
           }
-        }, 3000); // 3 second timeout
+        }, 10000); // 10 second timeout
 
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Use getUser() instead of getSession() - validates token and triggers refresh if needed
+        const { data: { user }, error } = await supabase.auth.getUser();
         
         clearTimeout(timeoutId);
         
         if (!mounted) return;
 
         if (error) {
-          console.error('Error getting initial session:', error);
+          // AuthSessionMissingError is expected on public pages, don't log it as an error
+          const errorMessage = error.message || '';
+          const errorName = (error as { name?: string })?.name || '';
+          const isSessionMissingError = 
+            errorMessage.includes('Auth session missing') || 
+            errorMessage.includes('session') ||
+            errorName === 'AuthSessionMissingError';
+          
+          if (!isSessionMissingError) {
+            console.error('Error getting initial user:', error);
+          }
           setUser(null);
           setIsLoading(false);
           return;
         }
         
-        if (session?.user) {
-          setUser(session.user);
-        } else {
-          setUser(null);
-        }
+        setUser(user);
         setIsLoading(false);
       } catch (error) {
         clearTimeout(timeoutId);
-        console.error('Error getting initial session:', error);
+        // AuthSessionMissingError is expected on public pages, don't log it as an error
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorName = (error as { name?: string })?.name || '';
+        const isSessionMissingError = 
+          errorMessage.includes('Auth session missing') || 
+          errorMessage.includes('session') ||
+          errorName === 'AuthSessionMissingError';
+        
+        if (!isSessionMissingError) {
+          console.error('Error getting initial user:', error);
+        }
         if (mounted) {
           setUser(null);
           setIsLoading(false);
@@ -72,24 +88,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    getInitialSession();
+    getInitialUser();
 
-    // Listen for auth changes
+    // Listen for auth changes - Supabase handles automatic token refresh via autoRefreshToken
+    // The TOKEN_REFRESHED event will fire automatically when tokens are refreshed
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
         
+        // Handle all auth state changes
         if (session?.user) {
           setUser(session.user);
           
-          // Link invited user to workspaces if they just signed up
-          if (event === 'SIGNED_IN' && session.user.email) {
-            try {
-              await ProfileService.linkInvitedUserToWorkspaces(session.user.id, session.user.email);
-            } catch (error) {
-              console.error('Error linking user to workspaces:', error);
-            }
-          }
         } else {
           setUser(null);
         }
@@ -129,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/account`,
+          emailRedirectTo: `${window.location.origin}/settings`,
         },
       });
       if (error) throw error;
@@ -188,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: email,
         options: {
           shouldCreateUser: false, // Only existing users
-          emailRedirectTo: `${window.location.origin}/account`,
+          emailRedirectTo: `${window.location.origin}/settings`,
         }
       });
       if (error) throw error;
@@ -207,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: email,
         options: {
           shouldCreateUser: true, // Create account if doesn't exist
-          emailRedirectTo: `${window.location.origin}/account`,
+          emailRedirectTo: `${window.location.origin}/settings`,
         }
       });
       if (error) throw error;
@@ -229,10 +239,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       if (error) throw error;
       
-      // Wait for session to be established
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
+      // Wait for user to be established - getUser() validates and refreshes token
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
       }
       // Auth state change listener will also fire, but we set user here for immediate update
     } catch (error) {

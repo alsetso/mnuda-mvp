@@ -3,6 +3,8 @@
 import React from 'react';
 import AppHeader from '@/features/session/components/AppHeader';
 import Footer from '@/features/ui/components/Footer';
+import IconBar from '@/components/IconBar';
+import { useAuth } from '@/features/auth';
 import { SessionData } from '@/features/session/services/sessionStorage';
 
 interface PageLayoutProps {
@@ -60,9 +62,10 @@ export default function PageLayout({
   showFooter = true,
   headerProps = {},
   containerMaxWidth = '7xl',
-  backgroundColor = 'bg-gray-50',
+  backgroundColor = 'bg-gold-100',
   contentPadding = 'px-4 sm:px-6 lg:px-8 py-8',
 }: PageLayoutProps) {
+  const { user } = useAuth();
   const maxWidthClass = {
     sm: 'max-w-screen-sm',
     md: 'max-w-screen-md',
@@ -76,13 +79,13 @@ export default function PageLayout({
   const heightClass = showFooter === false && contentPadding === '' ? 'h-screen' : '';
   const overflowClass = showFooter === false && contentPadding === '' ? 'overflow-hidden' : '';
   const minHeightClass = showFooter !== false || contentPadding !== '' ? 'min-h-screen' : '';
-  const mainOverflowClass = showFooter === false && contentPadding === '' ? 'overflow-hidden' : 'overflow-visible';
+  const hasIconBar = user && showHeader;
 
   return (
-    <div className={`flex flex-col ${backgroundColor} ${heightClass} ${overflowClass} ${minHeightClass}`} style={{ 
+    <div className={`flex flex-col ${backgroundColor} ${heightClass} ${overflowClass} ${minHeightClass} ${hasIconBar ? 'h-screen' : ''}`} style={{ 
       margin: 0, 
       padding: 0, 
-      height: showFooter === false && contentPadding === '' ? '100vh' : undefined,
+      height: showFooter === false && contentPadding === '' ? '100vh' : (hasIconBar ? '100vh' : undefined),
       width: '100%',
       maxWidth: '100vw',
       position: 'relative'
@@ -113,23 +116,33 @@ export default function PageLayout({
         </div>
       )}
 
-      {/* Main Content - Flex grow to push footer down */}
-      <main className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'} ${mainOverflowClass}`} style={{ 
-        maxWidth: '100vw', 
-        margin: 0, 
-        padding: 0, 
-        width: '100%',
-        minHeight: 0,
-        flexShrink: 1,
-        position: 'relative'
-      }}>
-        <div className={contentPadding || ''} style={contentPadding ? { margin: 0, width: '100%' } : { height: '100%', width: '100%', margin: 0, padding: 0, display: 'flex', flexDirection: 'column' }}>
-          {children}
-        </div>
-      </main>
+      {/* Main Content with Icon Bar if authenticated */}
+      <div className="flex flex-1 min-h-0 overflow-hidden" style={{ margin: 0, padding: 0 }}>
+        {/* Icon Bar - Always on left for authenticated users, fixed height */}
+        {hasIconBar && (
+          <div className="flex-shrink-0" style={{ margin: 0, padding: 0 }}>
+            <IconBar />
+          </div>
+        )}
 
-      {/* Footer - Auto at bottom */}
-      {showFooter && (
+        {/* Main Content - Scrollable area */}
+        <main className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'} overflow-y-auto`} style={{ 
+          maxWidth: '100vw', 
+          margin: 0, 
+          padding: 0, 
+          width: '100%',
+          minHeight: 0,
+          flexShrink: 1,
+          position: 'relative'
+        }}>
+          <div className={contentPadding || ''} style={contentPadding ? { margin: 0, width: '100%' } : { width: '100%', margin: 0, padding: 0 }}>
+            {children}
+          </div>
+        </main>
+      </div>
+
+      {/* Footer - Auto at bottom - Hidden when icon sidebar is shown */}
+      {showFooter && !hasIconBar && (
         <div className="flex-shrink-0">
           <Footer />
         </div>

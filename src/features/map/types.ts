@@ -118,8 +118,6 @@ export interface MapActions {
   zoomToStrategic: (level: 'state' | 'region' | 'local') => void;
   changeMapStyle: (styleKey: 'streets' | 'satellite' | 'light' | 'dark' | 'outdoors') => Promise<void>;
   
-  // Property panel
-  showPropertyDetails: (property: PropertyDetails) => void;
 }
 
 export interface UseMapReturn extends MapState, MapActions {
@@ -157,31 +155,3 @@ export interface UserLocationTrackerActions {
 
 export interface UseUserLocationTrackerReturn extends UserLocationTrackerState, UserLocationTrackerActions {}
 
-// Property panel types
-export interface PropertyPerson {
-  name: string;
-  age?: number;
-  relationship?: string;
-  id: string;
-}
-
-export interface PropertyDetails {
-  address: string;
-  city: string;
-  state: string;
-  zip?: string;
-  ownerCount: number;
-  acreage?: string;
-  people: PropertyPerson[];
-}
-
-export interface PropertyPanelState {
-  property: PropertyDetails | null;
-  isVisible: boolean;
-}
-
-export interface PropertyPanelActions {
-  showProperty: (property: PropertyDetails) => void;
-  hideProperty: () => void;
-  onPersonClick: (person: PropertyPerson) => void;
-}

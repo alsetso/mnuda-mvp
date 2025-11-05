@@ -9,7 +9,7 @@ interface ChangePasswordModalProps {
   userEmail: string;
 }
 
-export default function ChangePasswordModal({ isOpen, onClose, userEmail }: ChangePasswordModalProps) {
+export default function ChangePasswordModal({ isOpen, onClose, userEmail: _userEmail }: ChangePasswordModalProps) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,7 +51,7 @@ export default function ChangePasswordModal({ isOpen, onClose, userEmail }: Chan
       // For now, we'll use the password reset flow since Supabase doesn't have
       // a direct "change password with current password" method
       // In a real implementation, you might want to verify the current password first
-      const result = await PasswordResetService.updatePassword(newPassword, userEmail);
+      const result = await PasswordResetService.updatePassword(newPassword);
       
       if (result.success) {
         setSuccess(true);
@@ -113,7 +113,7 @@ export default function ChangePasswordModal({ isOpen, onClose, userEmail }: Chan
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Password updated successfully! You will receive a confirmation email.
+                Password updated successfully!
               </div>
             </div>
           )}
@@ -142,7 +142,7 @@ export default function ChangePasswordModal({ isOpen, onClose, userEmail }: Chan
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 disabled={isLoading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#1dd1f5] focus:border-[#1dd1f5] text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent-blue-light focus:border-accent-blue-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter your current password"
                 required
               />
@@ -158,7 +158,7 @@ export default function ChangePasswordModal({ isOpen, onClose, userEmail }: Chan
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 disabled={isLoading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#1dd1f5] focus:border-[#1dd1f5] text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent-blue-light focus:border-accent-blue-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter your new password"
                 required
                 minLength={6}
@@ -176,7 +176,7 @@ export default function ChangePasswordModal({ isOpen, onClose, userEmail }: Chan
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isLoading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#1dd1f5] focus:border-[#1dd1f5] text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-accent-blue-light focus:border-accent-blue-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Confirm your new password"
                 required
               />
@@ -195,7 +195,7 @@ export default function ChangePasswordModal({ isOpen, onClose, userEmail }: Chan
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-[#1dd1f5] border border-transparent rounded-md hover:bg-[#014463] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1dd1f5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-accent-blue-light border border-transparent rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-blue-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -213,14 +213,14 @@ export default function ChangePasswordModal({ isOpen, onClose, userEmail }: Chan
           </form>
 
           {/* Security Notice */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="mt-4 p-3 bg-gold-50 border border-gold-200 rounded-md">
             <div className="flex items-start">
-              <svg className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gold-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div className="text-sm text-blue-800">
+              <div className="text-sm text-gold-700">
                 <p className="font-medium mb-1">Security Notice</p>
-                <p>You will receive a confirmation email when your password is successfully updated. If you didn&apos;t make this change, please contact support immediately.</p>
+                <p>If you didn&apos;t make this change, please contact support immediately.</p>
               </div>
             </div>
           </div>

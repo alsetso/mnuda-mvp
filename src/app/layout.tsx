@@ -1,17 +1,16 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { ToastProvider } from '@/features/ui/contexts/ToastContext'
 import { ToastContainer } from '@/features/ui/components/Toast'
-import { AuthProvider } from '@/features/auth'
-import { WorkspaceProvider } from '@/features/workspaces'
+import { Providers } from '@/components/Providers'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 // Removed usage/billing context and modals after simplifying app
 // Footer moved to PageLayout component for consistent page structure
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://mnuda.com'),
-  title: 'Minnesota Skip Trace Tool - Free People & Property Search | MNUDA',
-  description: 'Free Minnesota skip tracing tool to find people, properties, and data instantly. No sign-up required. Professional skip tracing capabilities for everyone. Search Minneapolis, Saint Paul, Rochester, Duluth and all Minnesota cities.',
-  keywords: 'Minnesota skip trace, find people Minnesota, property search Minnesota, skip tracing free, Minnesota people search, property records Minnesota, address lookup Minnesota, phone number search Minnesota',
+  title: 'MNUDA - Minnesota Under Distress and Acquisition | Distressed Property Solutions',
+  description: "Minnesota's first organized network of real estate investors, professionals, and developers working together to identify, acquire, and redevelop high-value opportunities.",
+  keywords: 'Minnesota distressed properties, foreclosure prevention Minnesota, probate property Minnesota, right of redemption Minnesota, subject-to Minnesota, distressed property acquisition, Minnesota real estate investors, foreclosure alternatives Minnesota, probate real estate Minnesota, tax default Minnesota, code violations Minnesota, vacant property Minnesota, short sale Minnesota, off-market properties Minnesota, assignment sales Minnesota, Hennepin County distressed property, Ramsey County foreclosure, Anoka County probate, Dakota County real estate, Wright County property, Twin Cities distressed property, Minnesota property rights, ethical property acquisition Minnesota',
   authors: [{ name: 'MNUDA' }],
   creator: 'MNUDA',
   publisher: 'MNUDA',
@@ -35,8 +34,8 @@ export const metadata: Metadata = {
     apple: [{ url: '/favicon.svg' }],
   },
   openGraph: {
-    title: 'Minnesota Skip Trace Tool - Free People & Property Search',
-    description: 'Free Minnesota skip tracing tool to find people, properties, and data instantly. No sign-up required. Professional skip tracing capabilities for everyone.',
+    title: 'MNUDA - Minnesota Under Distress and Acquisition | Distressed Property Solutions',
+    description: "Minnesota's first organized network of real estate investors, professionals, and developers working together to identify, acquire, and redevelop high-value opportunities.",
     url: 'https://mnuda.com',
     siteName: 'MNUDA',
     images: [
@@ -45,7 +44,7 @@ export const metadata: Metadata = {
         width: 1200,
         height: 630,
         type: 'image/png',
-        alt: 'Minnesota Skip Trace Tool - Free People & Property Search',
+        alt: 'MNUDA - Minnesota Under Distress and Acquisition',
       },
     ],
     locale: 'en_US',
@@ -53,15 +52,15 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Minnesota Skip Trace Tool - Free People & Property Search',
-    description: 'Free Minnesota skip tracing tool to find people, properties, and data instantly. No sign-up required.',
+    title: 'MNUDA - Minnesota Under Distress and Acquisition',
+    description: "Minnesota's first organized network of real estate investors, professionals, and developers working together to identify, acquire, and redevelop high-value opportunities.",
     images: ['/MN.png'],
     creator: '@mnuda',
   },
   alternates: {
     canonical: 'https://mnuda.com',
   },
-  category: 'Technology',
+  category: 'Real Estate',
 }
 
 export default function RootLayout({
@@ -72,17 +71,15 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full w-full">
       <body className="min-h-screen w-full" style={{ display: 'flex', flexDirection: 'column' }}>
-        <AuthProvider>
-          <WorkspaceProvider>
-            <ToastProvider>
+        <ErrorBoundary>
+          <Providers>
               {/* Pages handle their own header/footer via PageLayout component */}
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column' }}>
                 {children}
               </div>
               <ToastContainer />
-            </ToastProvider>
-          </WorkspaceProvider>
-        </AuthProvider>
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   )

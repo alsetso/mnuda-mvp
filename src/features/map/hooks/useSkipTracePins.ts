@@ -170,7 +170,7 @@ export function useSkipTracePins({
           );
           const hasChildResults = personChildNodes.length > 0;
           
-          return `<div class="px-2 py-2 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-blue-50 person-item transition-colors" 
+          return `<div class="px-2 py-2 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gold-50 person-item transition-colors" 
              data-person-id="${person.mnEntityId || ''}" 
              data-person-name="${person.name}" 
              data-person-data='${JSON.stringify(person)}'>
@@ -259,7 +259,7 @@ export function useSkipTracePins({
               <div>${address.city}, ${address.state} ${address.zip}</div>
             </div>
             <div class="flex items-center space-x-2">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gold-100 text-gold-700">
                 ${peopleData.totalRecords} person${peopleData.totalRecords !== 1 ? 's' : ''}
               </span>
               <span class="text-xs text-gray-500 truncate">${address.apiName}</span>

@@ -43,7 +43,7 @@ export function Toast({ toast }: ToastProps) {
       case 'error':
         return 'bg-red-500 text-white border-red-400';
       case 'loading':
-        return 'bg-blue-500 text-white border-blue-400';
+        return 'bg-gold-500 text-white border-gold-400';
       case 'info':
         return 'bg-slate-500 text-white border-slate-400';
       default:

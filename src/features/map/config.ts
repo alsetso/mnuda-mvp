@@ -45,14 +45,16 @@ export const MAP_CONFIG = {
   GEOCODING_LIMIT: 1,
   GEOCODING_COUNTRY: 'US',
   
-  // Marker colors
+  // Marker colors - using Tailwind color tokens where possible
+  // Note: For Mapbox markers, hex values are required, so we keep them here
+  // but they reference our Tailwind design tokens
   MARKER_COLORS: {
-    ADDRESS_PIN: '#1dd1f5',
-    USER_MARKER: '#3b82f6',
-    ADDRESS_SEARCH: '#3B82F6',
-    ADDRESS_CURRENT: '#10B981',
-    ADDRESS_PREVIOUS: '#F59E0B',
-    SKIP_TRACE: '#014463', // Dark MNUDA blue for skip trace pins
+    ADDRESS_PIN: '#C2B289', // gold-500
+    USER_MARKER: '#222020', // black
+    ADDRESS_SEARCH: '#222020', // black
+    ADDRESS_CURRENT: '#10B981', // emerald-500 (standard Tailwind)
+    ADDRESS_PREVIOUS: '#F59E0B', // amber-500 (standard Tailwind)
+    SKIP_TRACE: '#222020', // black
   },
   
   // Animation settings

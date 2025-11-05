@@ -35,11 +35,12 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  // Get session for potential route protection
-  await supabase.auth.getSession();
+  // Get session and refresh if needed (getUser triggers refresh, getSession does not)
+  // This helps keep sessions alive across requests
+  await supabase.auth.getUser();
 
   // Route protection can be added here if needed
-  // Example: Protect /map route by checking session and redirecting to login
+  // Example: Protect /community route by checking session and redirecting to login
 
   return response;
 }

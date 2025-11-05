@@ -7,7 +7,37 @@ module.exports = {
     './src/features/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        'libre-baskerville': ['Libre Baskerville', 'serif'],
+      },
+      colors: {
+        gold: {
+          50: '#FAF8F4',
+          100: '#F5F1E9',
+          200: '#EBE3D3',
+          300: '#E1D5BD',
+          400: '#D7C7A7',
+          500: '#C2B289',
+          600: '#9F8E6E',
+          700: '#7C6B53',
+          800: '#594838',
+          900: '#36251D',
+        },
+        black: '#222020',
+        dark: {
+          DEFAULT: '#242222',
+          gray: '#242222',
+        },
+        accent: {
+          DEFAULT: '#014463',
+          blue: '#014463',
+          'blue-dark': '#013347',
+          'blue-hover': '#013347',
+          'blue-light': '#1dd1f5',
+        },
+      },
+    },
   },
   plugins: [],
 }
