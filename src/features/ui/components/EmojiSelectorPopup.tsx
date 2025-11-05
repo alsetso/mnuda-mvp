@@ -46,10 +46,10 @@ export function EmojiSelectorPopup({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
   }, [isOpen]);
 
   const handleEmojiSelect = (emoji: string) => {
