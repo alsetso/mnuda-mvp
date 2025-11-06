@@ -14,7 +14,9 @@ interface PageLayoutProps {
    */
   showHeader?: boolean;
   /**
-   * Show footer - defaults to true for authenticated pages
+   * Show footer
+   * - When user is NOT logged in: Footer always shows (ignores this prop)
+   * - When user IS logged in: Respects this prop (defaults to false for authenticated pages)
    */
   showFooter?: boolean;
   /**
@@ -76,16 +78,21 @@ export default function PageLayout({
     full: 'max-w-full',
   }[containerMaxWidth];
 
-  const heightClass = showFooter === false && contentPadding === '' ? 'h-screen' : '';
-  const overflowClass = showFooter === false && contentPadding === '' ? 'overflow-hidden' : '';
-  const minHeightClass = showFooter !== false || contentPadding !== '' ? 'min-h-screen' : '';
+  // Footer logic:
+  // - Always show footer when user is NOT logged in (public pages)
+  // - When logged in, respect the showFooter prop (default false for authenticated pages)
+  const shouldShowFooter = !user ? true : showFooter;
   const hasIconBar = user && showHeader;
+
+  const heightClass = shouldShowFooter === false && contentPadding === '' ? 'h-screen' : '';
+  const overflowClass = shouldShowFooter === false && contentPadding === '' ? 'overflow-hidden' : '';
+  const minHeightClass = shouldShowFooter !== false || contentPadding !== '' ? 'min-h-screen' : '';
 
   return (
     <div className={`flex flex-col ${backgroundColor} ${heightClass} ${overflowClass} ${minHeightClass} ${hasIconBar ? 'h-screen' : ''}`} style={{ 
       margin: 0, 
       padding: 0, 
-      height: showFooter === false && contentPadding === '' ? '100vh' : (hasIconBar ? '100vh' : undefined),
+      height: shouldShowFooter === false && contentPadding === '' ? '100vh' : (hasIconBar ? '100vh' : undefined),
       width: '100%',
       maxWidth: '100vw',
       position: 'relative'
@@ -141,8 +148,13 @@ export default function PageLayout({
         </main>
       </div>
 
-      {/* Footer - Auto at bottom - Hidden when icon sidebar is shown */}
-      {showFooter && !hasIconBar && (
+      {/* Footer - Auto at bottom 
+          Logic:
+          - Always shows when user is NOT logged in (public pages)
+          - When logged in, shows only if showFooter={true} AND no icon bar
+          - Hidden when icon sidebar is shown (authenticated dashboard view)
+      */}
+      {shouldShowFooter && !hasIconBar && (
         <div className="flex-shrink-0">
           <Footer />
         </div>

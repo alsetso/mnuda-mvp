@@ -191,12 +191,6 @@ export default function Home() {
                 Get Started
                 <ArrowRightIcon className="w-5 h-5" />
               </Link>
-              <Link
-                href="/workspace"
-                className="inline-flex items-center justify-center gap-2 bg-gold-500 text-black px-8 py-4 text-lg font-bold rounded-lg hover:bg-gold-600 transition-all"
-              >
-                View Workspaces
-              </Link>
             </div>
           </div>
         </div>
@@ -293,12 +287,6 @@ export default function Home() {
               >
                 Get Started
                 <ArrowRightIcon className="w-5 h-5" />
-              </Link>
-              <Link
-                href="/workspace"
-                className="inline-flex items-center justify-center gap-2 bg-gold-500 text-black px-8 py-4 text-lg font-bold rounded-lg hover:bg-gold-600 transition-all"
-              >
-                Explore Workspaces
               </Link>
             </div>
           </div>

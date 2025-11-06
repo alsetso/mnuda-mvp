@@ -196,34 +196,30 @@ export default function SkipTracingPage() {
   const SelectedIcon = selectedOption?.icon || UserIcon;
 
   return (
-    <PageLayout showHeader={true} showFooter={false} containerMaxWidth="7xl" backgroundColor="bg-gold-100">
-      {/* Hero Section */}
-      <section className="py-16 lg:py-24">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full mb-6 border border-gold-200">
-            <BoltIcon className="w-5 h-5 text-gold-600" />
-            <span className="text-sm font-semibold text-gold-700">AI-Powered Skip Tracing</span>
-          </div>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-medium tracking-[-0.105em] text-black mb-6 leading-tight font-libre-baskerville italic">
-            Skip Tracing
-            <span className="block text-gold-600 mt-2">Search</span>
-          </h1>
-          <p className="text-xl sm:text-2xl text-gray-700 max-w-3xl mx-auto mb-12 leading-relaxed">
-            Find people and property information using advanced skip tracing technology. Search by name, email, phone, or address.
-          </p>
+    <PageLayout showHeader={true} showFooter={false} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="px-2 sm:px-4 lg:px-6 py-4 lg:py-6">
+      {/* Header */}
+      <div className="mb-4 lg:mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-full mb-3 border border-gold-200">
+          <BoltIcon className="w-4 h-4 text-gold-600" />
+          <span className="text-xs sm:text-sm font-semibold text-gold-700">AI-Powered Skip Tracing</span>
         </div>
-      </section>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.05em] text-black mb-2 leading-tight font-libre-baskerville italic">
+          Skip Tracing
+          <span className="block text-gold-600">Search</span>
+        </h1>
+        <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+          Find people and property information using advanced skip tracing technology.
+        </p>
+      </div>
 
       {/* Search Interface */}
-      <section className="py-8 lg:py-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 lg:p-12">
-            {/* Search Type Selector */}
-            <div className="mb-8">
-              <label className="block text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-                Search Type
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="space-y-4 lg:space-y-6">
+        {/* Search Type Selector */}
+        <div className="mb-4">
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+              Search Type
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {searchTypeOptions.map((option) => {
                   const Icon = option.icon;
                   const isActive = searchType === option.value;
@@ -232,59 +228,59 @@ export default function SkipTracingPage() {
                       key={option.value}
                       onClick={() => setSearchType(option.value)}
                       className={`
-                        flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200
+                        flex flex-col items-center gap-1.5 p-2.5 sm:p-3 rounded-lg border-2 transition-all duration-200
                         ${isActive
-                          ? 'border-gold-500 bg-gold-50 text-gold-700 shadow-md'
+                          ? 'border-gold-500 bg-gold-50 text-gold-700'
                           : 'border-gray-200 bg-white text-gray-600 hover:border-gold-300 hover:bg-gold-50/50'
                         }
                       `}
                     >
-                      <Icon className={`w-6 h-6 ${isActive ? 'text-gold-600' : 'text-gray-400'}`} />
-                      <span className="text-sm font-semibold">{option.label}</span>
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-gold-600' : 'text-gray-400'}`} />
+                      <span className="text-xs sm:text-sm font-semibold">{option.label}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* AI-Style Search Input */}
-            <form onSubmit={handleSearch} className="space-y-6">
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                  <SelectedIcon className="w-6 h-6 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={`Enter ${selectedOption?.label.toLowerCase()}...`}
-                  className="w-full pl-14 pr-32 py-5 text-lg bg-gray-50 border-2 border-gray-200 rounded-2xl text-black placeholder-gray-400 focus:outline-none focus:border-gold-500 focus:ring-4 focus:ring-gold-500/20 transition-all"
-                />
-                <button
-                  type="submit"
-                  disabled={!searchQuery.trim() || isSearching}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2 shadow-lg"
-                >
-                  {isSearching ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Searching...</span>
-                    </>
-                  ) : (
-                    <>
-                      <MagnifyingGlassIcon className="w-5 h-5" />
-                      <span>Search</span>
-                    </>
-                  )}
+        {/* Search Input */}
+        <form onSubmit={handleSearch} className="space-y-3">
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
+                <SelectedIcon className="w-5 h-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Enter ${selectedOption?.label.toLowerCase()}...`}
+                className="w-full pl-11 pr-24 sm:pr-28 py-3 sm:py-4 text-base bg-white border-2 border-gray-200 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 transition-all"
+              />
+              <button
+                type="submit"
+                disabled={!searchQuery.trim() || isSearching}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-black text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+              >
+                {isSearching ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="hidden sm:inline">Searching...</span>
+                  </>
+                ) : (
+                  <>
+                    <MagnifyingGlassIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">Search</span>
+                  </>
+                )}
                 </button>
               </div>
 
-              {/* AI Helper Text */}
-              <div className="flex items-start gap-3 p-4 bg-gold-50 rounded-xl border border-gold-200">
-                <BoltIcon className="w-5 h-5 text-gold-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gold-900 mb-1">AI-Powered Search</p>
-                  <p className="text-sm text-gold-700">
+            {/* Helper Text */}
+            <div className="flex items-start gap-2 p-3 bg-gold-50 rounded-lg border border-gold-200">
+              <BoltIcon className="w-4 h-4 text-gold-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-medium text-gold-900 mb-1">AI-Powered Search</p>
+                <p className="text-xs text-gold-700">
                     {searchType === 'name' && 'Enter a full name or partial name to find associated information.'}
                     {searchType === 'email' && 'Enter an email address to find associated contact information and locations.'}
                     {searchType === 'phone' && 'Enter a phone number to find associated names, addresses, and more.'}
@@ -294,11 +290,11 @@ export default function SkipTracingPage() {
               </div>
             </form>
 
-            {/* Coming Soon Message */}
-            {showComingSoon && (
-              <div className="mt-6 p-6 bg-gold-50 rounded-xl border-2 border-gold-200">
-                <h3 className="text-lg font-bold text-gold-900 mb-2">Service Coming Soon</h3>
-                <p className="text-gold-800 mb-3">
+        {/* Coming Soon Message */}
+        {showComingSoon && (
+            <div className="p-4 bg-gold-50 rounded-lg border-2 border-gold-200">
+              <h3 className="text-base font-bold text-gold-900 mb-2">Service Coming Soon</h3>
+              <p className="text-sm text-gold-800 mb-3">
                   We&apos;re working on finalizing this service. In the meantime, please reach out to us at{' '}
                   <a 
                     href="mailto:support@mnuda.com" 
@@ -317,30 +313,30 @@ export default function SkipTracingPage() {
               </div>
             )}
 
-            {/* Error Message (non-subscription errors) */}
-            {error && !showComingSoon && (
-              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                <ExclamationTriangleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-red-900 mb-1">Search Error</p>
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
+        {/* Error Message */}
+        {error && !showComingSoon && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+              <ExclamationTriangleIcon className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs font-medium text-red-900 mb-1">Search Error</p>
+                <p className="text-xs text-red-700">{error}</p>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Success Result */}
-            {result && (
-              <div className="mt-6 p-6 bg-white border-2 border-gold-200 rounded-xl">
-                <div className="flex items-center gap-2 mb-4">
-                  <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Search Results</h3>
-                  <span className="ml-auto text-xs text-gray-500">
-                    {new Date(result.created_at).toLocaleString()}
-                  </span>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+        {/* Success Result */}
+        {result && (
+            <div className="p-4 border-2 border-gold-200 rounded-lg bg-white">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                <h3 className="text-base font-semibold text-gray-900">Search Results</h3>
+                <span className="ml-auto text-xs text-gray-500">
+                  {new Date(result.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
                     <div>
                       <span className="font-medium text-gray-700">Search Type:</span>
                       <span className="ml-2 text-gray-900 capitalize">{result.api_type}</span>
@@ -351,67 +347,61 @@ export default function SkipTracingPage() {
                     </div>
                   </div>
 
-                  {/* Developer Data */}
-                  {result.developer_data && (
-                    <div className="mt-4">
-                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Structured Data</h4>
-                      <pre className="bg-gray-50 p-4 rounded-lg text-xs overflow-auto max-h-96 border border-gray-200">
-                        {JSON.stringify(result.developer_data, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-
-                  {/* Raw Response */}
-                  <div className="mt-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Raw API Response</h4>
-                    <pre className="bg-gray-50 p-4 rounded-lg text-xs overflow-auto max-h-96 border border-gray-200">
-                      {JSON.stringify(result.raw_response, null, 2)}
+                {/* Developer Data */}
+                {result.developer_data && (
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-700 mb-2">Structured Data</h4>
+                    <pre className="bg-gray-50 p-2 rounded text-xs overflow-auto max-h-64 border border-gray-200">
+                      {JSON.stringify(result.developer_data, null, 2)}
                     </pre>
                   </div>
+                )}
+
+                {/* Raw Response */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Raw API Response</h4>
+                  <pre className="bg-gray-50 p-2 rounded text-xs overflow-auto max-h-64 border border-gray-200">
+                    {JSON.stringify(result.raw_response, null, 2)}
+                  </pre>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Previous Results List */}
-          <div className="mt-8 bg-white rounded-3xl shadow-xl border border-gray-100 p-8 lg:p-12">
-            <h2 className="text-2xl font-bold text-black mb-6">Previous Searches</h2>
+        {/* Previous Results List */}
+        <div>
+            <h2 className="text-lg sm:text-xl font-bold text-black mb-4">Previous Searches</h2>
             {isLoadingResults ? (
-              <div className="text-center py-8 text-gray-500">Loading previous results...</div>
+              <div className="text-center py-4 text-gray-500 text-sm">Loading...</div>
             ) : previousResults.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No previous searches</div>
+              <div className="text-center py-4 text-gray-500 text-sm">No previous searches</div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {previousResults.map((result) => (
                   <div
                     key={result.id}
-                    className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-gold-300 transition-colors"
+                    className="flex flex-col gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-gold-300 transition-colors"
                   >
-                    <div className="flex-shrink-0 sm:w-1/3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-gray-500 uppercase">
-                          {result.api_type}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {new Date(result.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="text-sm font-medium text-gray-900 break-words">
-                        {result.search_query}
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-500 uppercase">
+                        {result.api_type}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {new Date(result.created_at).toLocaleDateString()}
+                      </span>
                     </div>
-                    <div className="flex-1 sm:w-2/3">
-                      <div className="text-sm text-gray-700 break-words">
-                        {formatResponse(result)}
-                      </div>
+                    <div className="text-sm font-medium text-gray-900 break-words">
+                      {result.search_query}
+                    </div>
+                    <div className="text-xs text-gray-700 break-words">
+                      {formatResponse(result)}
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-        </div>
-      </section>
+      </div>
     </PageLayout>
   );
 }

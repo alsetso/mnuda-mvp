@@ -2,7 +2,7 @@
 
 import PageLayout from '@/components/PageLayout';
 import Link from 'next/link';
-import { ArrowRightIcon, BuildingOffice2Icon, ChartBarIcon, LightBulbIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon, BuildingOffice2Icon, ChartBarIcon, LightBulbIcon } from '@heroicons/react/24/outline';
 
 export default function AboutPageClient() {
   return (
@@ -14,91 +14,42 @@ export default function AboutPageClient() {
             For the Love of
             <span className="block text-gold-600 mt-2">Minnesota</span>
           </h1>
-          <p className="text-xl sm:text-2xl text-gray-700 max-w-3xl mx-auto mb-8 leading-relaxed">
-            Minnesota&apos;s first organized network of real estate investors, professionals, and developers working together to identify, acquire, and redevelop high-value opportunities.
-          </p>
+          <div className="mb-8">
+            <p className="text-lg sm:text-xl text-gray-600 mb-4">
+              <strong className="text-black">MNUDA</strong> — Minnesota Under Dev & Acq
+            </p>
+            <p className="text-xl sm:text-2xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+              We combine technology, capital, and strategy to acquire and develop high-value real estate and business opportunities that strengthen our state&apos;s economic foundation.
+            </p>
+          </div>
         </div>
       </section>
 
       {/* Mission Section */}
       <section className="py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-4xl sm:text-5xl font-black text-black mb-6 text-center">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl sm:text-5xl font-black text-black mb-6">
               Our Mission
             </h2>
-            <div className="space-y-6 text-lg text-gray-700 leading-relaxed">
-              <p>
-                MNUDA (Minnesota Under Distress and Acquisition) represents a collaborative approach to real estate investment in Minnesota. We combine technology, capital, and strategic execution to transform distressed properties into valuable assets that strengthen our state&apos;s economic foundation.
-              </p>
-              <p>
-                Every business we develop, every asset we acquire, and every community we support is part of our commitment to making Minnesota a better place to live, work, and invest.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Values Section */}
-      <section className="py-16 lg:py-24 bg-gold-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-black text-black mb-4">
-              Our Values
-            </h2>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-              Principles that guide everything we do
+            <p className="text-xl sm:text-2xl text-gray-700 leading-relaxed max-w-3xl mx-auto">
+              Every business we develop, every asset we acquire, and every community we support is part of our commitment to making Minnesota a better place to live, work, and invest.
             </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-xl p-8 border border-gold-200">
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
-                <HeartIcon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-black text-black mb-4">Community First</h3>
-              <p className="text-gray-700 leading-relaxed">
-                We believe in building sustainable businesses that create value for communities, investors, and stakeholders alike.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-8 border border-gold-200">
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
-                <ChartBarIcon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-black text-black mb-4">Data-Driven</h3>
-              <p className="text-gray-700 leading-relaxed">
-                We leverage advanced analytics and market intelligence to make informed decisions and identify high-value opportunities.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl p-8 border border-gold-200">
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
-                <LightBulbIcon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-black text-black mb-4">Innovation</h3>
-              <p className="text-gray-700 leading-relaxed">
-                We combine cutting-edge technology with proven real estate expertise to transform opportunities into lasting value.
-              </p>
-            </div>
           </div>
         </div>
       </section>
 
       {/* What We Do Section */}
-      <section className="py-16 lg:py-24 bg-white">
+      <section className="py-16 lg:py-24 bg-gold-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-black text-black mb-4">
               What We Do
             </h2>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-              Technology, capital, and strategic execution for real estate and business opportunities
-            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-gold-100 rounded-xl p-8 border border-gold-200">
+            <div className="bg-white rounded-xl p-8 border border-gold-200">
               <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
                 <BuildingOffice2Icon className="w-6 h-6 text-white" />
               </div>
@@ -108,7 +59,7 @@ export default function AboutPageClient() {
               </p>
             </div>
 
-            <div className="bg-gold-100 rounded-xl p-8 border border-gold-200">
+            <div className="bg-white rounded-xl p-8 border border-gold-200">
               <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
                 <ChartBarIcon className="w-6 h-6 text-white" />
               </div>
@@ -118,7 +69,7 @@ export default function AboutPageClient() {
               </p>
             </div>
 
-            <div className="bg-gold-100 rounded-xl p-8 border border-gold-200">
+            <div className="bg-white rounded-xl p-8 border border-gold-200">
               <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
                 <LightBulbIcon className="w-6 h-6 text-white" />
               </div>
@@ -148,16 +99,9 @@ export default function AboutPageClient() {
               Get Started
               <ArrowRightIcon className="w-5 h-5" />
             </Link>
-            <Link
-              href="/workspace"
-              className="inline-flex items-center justify-center gap-2 border-2 border-white text-white px-8 py-4 text-lg font-bold rounded-lg hover:bg-white/10 transition-all"
-            >
-              View Workspaces
-            </Link>
           </div>
         </div>
       </section>
     </PageLayout>
   );
 }
-
