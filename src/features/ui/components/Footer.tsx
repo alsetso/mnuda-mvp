@@ -3,11 +3,19 @@
 import Link from 'next/link';
 import Logo from './Logo';
 
-export default function Footer() {
+interface FooterProps {
+  fixed?: boolean;
+}
+
+export default function Footer({ fixed = false }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
+  const footerClasses = fixed
+    ? 'fixed bottom-0 left-0 right-0 bg-gold-50 text-gray-700 border-t border-gold-200 z-10'
+    : 'bg-gold-50 text-gray-700 mt-auto border-t border-gold-200';
+
   return (
-    <footer className="bg-gold-50 text-gray-700 mt-auto border-t border-gold-200" role="contentinfo">
+    <footer className={footerClasses} role="contentinfo">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-12 mb-10">
           {/* Brand Section */}
@@ -16,14 +24,14 @@ export default function Footer() {
               <Logo size="lg" variant="default" />
             </div>
             <p className="text-sm text-gray-600 mb-6 max-w-md leading-relaxed">
-              We combine technology, capital, and strategy to acquire and develop high-value real estate and business opportunities that strengthen our state&apos;s economic foundation.
+              MNUDA: Homes Bought. Projects Managed.
             </p>
             <div className="space-y-2">
               <p className="text-xs text-gray-500">
-                <strong>MNUDA Network</strong>
+                <strong>MNUDA</strong>
               </p>
               <p className="text-xs text-gray-500">
-                Minnesota Real Estate Investment Network
+                Homes Bought. Projects Managed.
               </p>
             </div>
           </div>
@@ -37,105 +45,11 @@ export default function Footer() {
               <ul className="space-y-3">
                 <li>
                   <Link 
-                    href="/skip-tracing" 
+                    href="/map" 
                     className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Skip Tracing - Find people by name, email, phone, or address"
+                    title="Map - Interactive map with community pins and property search"
                   >
-                    Skip Tracing
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    href="/community" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Community - Interactive map with community pins and property search"
-                  >
-                    Community
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    href="/directory" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Directory - Browse Minnesota counties and location data"
-                  >
-                    Directory
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    href="/assets" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Assets - Manage your real estate assets and properties"
-                  >
-                    Assets
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          </div>
-
-          {/* Tools */}
-          <div>
-            <h3 className="text-sm font-semibold text-black uppercase tracking-wider mb-4">
-              Tools
-            </h3>
-            <nav aria-label="Tools navigation">
-              <ul className="space-y-3">
-                <li>
-                  <Link 
-                    href="/workflow" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Workflow - Transform and process bulk data lists"
-                  >
-                    Workflow
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    href="/advertising" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Advertising - Create and manage Facebook and Instagram ads"
-                  >
-                    Advertising
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    href="/print" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Print - Print documents and reports"
-                  >
-                    Print
-                  </Link>
-                </li>
-              </ul>
-            </nav>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h3 className="text-sm font-semibold text-black uppercase tracking-wider mb-4">
-              Company
-            </h3>
-            <nav aria-label="Company navigation">
-              <ul className="space-y-3">
-                <li>
-                  <Link 
-                    href="/about" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="About MNUDA - Learn about our mission and values"
-                  >
-                    About
-                  </Link>
-                </li>
-                <li>
-                  <Link 
-                    href="/brand" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Brand Standards - View our brand guidelines"
-                  >
-                    Brand Standards
+                    Map
                   </Link>
                 </li>
               </ul>
@@ -185,7 +99,7 @@ export default function Footer() {
         <div className="pt-8 border-t border-gold-200">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-gray-600 text-center md:text-left">
-              © {currentYear} MNUDA Network. All rights reserved. Minnesota Real Estate Investment Network
+              © {currentYear} MNUDA. All rights reserved. Homes Bought. Projects Managed.
             </p>
             <div className="flex items-center gap-6 text-xs text-gray-500">
               <span>Minnesota, United States</span>

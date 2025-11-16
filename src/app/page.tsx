@@ -1,16 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/features/auth';
-import Link from 'next/link';
-import { 
-  ArrowRightIcon,
-  BuildingOffice2Icon,
-  ChartBarIcon,
-  LightBulbIcon
-} from '@heroicons/react/24/outline';
 import { navItems, getNavItemsByCategory } from '@/config/navigation';
+import Link from 'next/link';
+import { ArrowRightIcon, CheckIcon } from '@heroicons/react/24/outline';
 
 export default function Home() {
   const { user, isLoading: authLoading } = useAuth();
@@ -39,38 +34,22 @@ export default function Home() {
     );
   }
 
-  // If user is logged in, show mission header and directory page
+  // If user is logged in, show directory page
   if (user) {
     return (
-      <PageLayout showHeader={true} showFooter={false} containerMaxWidth="7xl" backgroundColor="bg-gold-100">
-        <div className="min-h-screen py-12">
+      <PageLayout showHeader={true} showFooter={false} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
+        <div className="min-h-screen py-12 bg-gold-100">
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Mission Header Section */}
-            <div className="mb-16">
-              <div className="bg-black text-white rounded-2xl p-8 md:p-12 lg:p-16 mb-8">
-                <div className="max-w-4xl mx-auto text-center">
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.05em] mb-6 font-libre-baskerville italic">
-                    For the Love of Minnesota
-                  </h1>
-                  <p className="text-xl sm:text-2xl text-gray-300 mb-8 leading-relaxed max-w-3xl mx-auto">
-                    Every business we develop, every asset we acquire, and every community we support is part of our commitment to making Minnesota a better place to live, work, and invest.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                      <div className="text-2xl font-black text-gold-400 mb-2">Growth</div>
-                      <p className="text-gray-300 text-sm">Building sustainable businesses that strengthen our economic foundation</p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                      <div className="text-2xl font-black text-gold-400 mb-2">Impact</div>
-                      <p className="text-gray-300 text-sm">Creating value that benefits communities and investors alike</p>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                      <div className="text-2xl font-black text-gold-400 mb-2">Vision</div>
-                      <p className="text-gray-300 text-sm">Transforming opportunities into lasting contributions to Minnesota</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
+            {/* Value Proposition Section */}
+            <div className="mb-12 text-center">
+              <h1 className="text-4xl sm:text-5xl font-bold text-black mb-4">
+                Minnesota Platform for Under Development & Acquisition
+              </h1>
+              <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed mb-6">
+                Connect with real estate professionals across Minnesota. Discover development opportunities, 
+                property acquisitions, and build your network of developers, investors, and service providers.
+              </p>
             </div>
 
             {/* Directory Section */}
@@ -79,7 +58,7 @@ export default function Home() {
                 Explore Features
               </h2>
               <p className="text-gray-600 text-center mb-8 max-w-2xl mx-auto">
-                Choose a feature to get started. Each tool is designed to help you accomplish specific tasks.
+                Connect, discover, and collaborate with tools designed for real estate development and acquisition.
               </p>
 
               {/* Grouped by Category */}
@@ -164,132 +143,307 @@ export default function Home() {
     );
   }
 
-  // If user is not logged in, show landing page
+  // If user is not logged in, show landing page with stepper form
+  return <HomepageStepperForm />;
+}
+
+// Stepper Form Component
+function HomepageStepperForm() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [formData, setFormData] = useState({
+    serviceType: '',
+    projectType: '',
+    timeline: '',
+    propertyType: '',
+    name: '',
+    email: '',
+    phone: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const steps = [
+    {
+      question: 'What are you looking for?',
+      options: [
+        { value: 'development', label: 'Real Estate Development Opportunities' },
+        { value: 'acquisition', label: 'Property Acquisition & Investment' },
+        { value: 'network', label: 'Connect with Real Estate Professionals' },
+      ],
+    },
+    {
+      question: 'What type of development opportunity?',
+      options: [
+        { value: 'residential', label: 'Residential Development' },
+        { value: 'commercial', label: 'Commercial Development' },
+        { value: 'mixed', label: 'Mixed-Use Development' },
+        { value: 'land', label: 'Land Acquisition' },
+        { value: 'other', label: 'Other' },
+    ],
+      condition: (data: typeof formData) => data.serviceType === 'development',
+    },
+    {
+      question: 'What is your timeline?',
+      options: [
+        { value: 'asap', label: 'Immediate Opportunity' },
+        { value: 'month', label: 'Within 30 Days' },
+        { value: 'quarter', label: 'Within 90 Days' },
+        { value: 'flexible', label: 'Exploring Options' },
+      ],
+      condition: (data: typeof formData) => data.serviceType === 'development' || data.serviceType === 'acquisition',
+    },
+    {
+      question: 'What type of property?',
+      options: [
+        { value: 'single', label: 'Single Family Home' },
+        { value: 'multi', label: 'Multi-Family' },
+        { value: 'condo', label: 'Condo' },
+        { value: 'commercial', label: 'Commercial' },
+      ],
+    },
+  ];
+
+  const getVisibleSteps = () => {
+    return steps.filter((step, index) => {
+      if (step.condition) {
+        return step.condition(formData);
+      }
+      // Show property type step for acquisition or development
+      if (index === 3) {
+        return formData.serviceType === 'acquisition' || formData.serviceType === 'development';
+      }
+      return true;
+    });
+  };
+
+  const handleOptionSelect = (value: string) => {
+    const visibleSteps = getVisibleSteps();
+    const currentVisibleStep = visibleSteps[currentStep];
+    
+    // Map step to form data key
+    let stepKey = '';
+    if (currentVisibleStep?.question === 'What are you looking for?') {
+      stepKey = 'serviceType';
+    } else if (currentVisibleStep?.question === 'What type of development opportunity?') {
+      stepKey = 'projectType';
+    } else if (currentVisibleStep?.question === 'What is your timeline?') {
+      stepKey = 'timeline';
+    } else if (currentVisibleStep?.question === 'What type of property?') {
+      stepKey = 'propertyType';
+    }
+    
+    setFormData(prev => ({ ...prev, [stepKey]: value }));
+    
+    // Auto-advance to next step
+    setTimeout(() => {
+      setCurrentStep(prev => prev + 1);
+    }, 300);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Submit form data to API
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setIsSubmitted(true);
+      } else {
+        const errorMessage = data.error || 'Submission failed';
+        console.error('Form submission error:', errorMessage);
+        alert(`Error: ${errorMessage}`);
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      alert('There was an error submitting your form. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const visibleSteps = getVisibleSteps();
+  const totalSteps = visibleSteps.length + 1; // +1 for contact info step
+  const isContactStep = currentStep >= visibleSteps.length;
+
   return (
     <PageLayout showHeader={true} showFooter={true} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
-      {/* Hero Section */}
-      <section className="min-h-screen flex items-center bg-gradient-to-b from-gold-100 via-gold-50 to-gold-100 py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="text-center max-w-5xl mx-auto">
-            <div className="inline-block mb-6">
-              <span className="text-xs font-bold tracking-widest uppercase text-gold-600 bg-gold-200/50 px-4 py-2 rounded-full">
-                Under Dev & Acq
-              </span>
-            </div>
-            <h1 className="text-7xl sm:text-8xl lg:text-9xl font-medium tracking-[-0.105em] text-black mb-8 leading-tight font-libre-baskerville italic">
-              For the Love of
-              <span className="block text-gold-600 mt-2">Minnesota</span>
-              </h1>
-            <p className="text-xl sm:text-2xl text-gray-700 max-w-3xl mx-auto mb-12 leading-relaxed">
-              We combine technology, capital, and strategy to acquire and develop high-value real estate and business opportunities that strengthen our state&apos;s economic foundation.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center gap-2 bg-black text-white px-8 py-4 text-lg font-bold rounded-lg hover:bg-gray-900 transition-all shadow-lg hover:shadow-xl"
-              >
-                Get Started
-                <ArrowRightIcon className="w-5 h-5" />
-              </Link>
-            </div>
-          </div>
+      <section className="min-h-screen flex items-center bg-black text-white py-12 sm:py-16 md:py-20 lg:py-24 xl:py-32 relative overflow-hidden">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
+            backgroundSize: '40px 40px'
+          }}></div>
         </div>
-      </section>
-
-      {/* What We Do Section */}
-      <section className="min-h-screen flex items-center bg-white py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-black text-black mb-4">
-              What We Do
-            </h2>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-              Technology, capital, and strategic execution for real estate and business opportunities that strengthen Minnesota&apos;s economic foundation
+        
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 w-full relative z-10">
+          {/* Progress Indicator */}
+          <div className="mb-8 sm:mb-12">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              {Array.from({ length: totalSteps }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    index <= currentStep
+                      ? 'bg-gold-500 w-8'
+                      : 'bg-white/20 w-2'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-center text-sm text-gray-400">
+              Step {currentStep + 1} of {totalSteps}
             </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-gold-100 rounded-xl p-8 border border-gold-200 hover:shadow-lg transition-all">
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
-                <BuildingOffice2Icon className="w-6 h-6 text-white" />
+
+          {isSubmitted ? (
+            <div className="text-center">
+              <div className="w-20 h-20 bg-gold-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckIcon className="w-12 h-12 text-black" />
               </div>
-              <h3 className="text-2xl font-black text-black mb-4">Development</h3>
-              <p className="text-gray-700 leading-relaxed">
-                Transform underutilized assets into strategic developments that drive economic growth and create lasting value for communities across Minnesota.
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4">
+                Thank You!
+              </h2>
+              <p className="text-lg sm:text-xl text-gray-300 mb-4">
+                Your information has been sent to our team.
+              </p>
+              <p className="text-base sm:text-lg text-gray-400">
+                We'll be in touch shortly. If you have any questions, reach out to{' '}
+                <a 
+                  href="mailto:support@mnuda.com" 
+                  className="text-gold-400 hover:text-gold-300 underline"
+                >
+                  support@mnuda.com
+                </a>
               </p>
             </div>
+          ) : isContactStep ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-8 text-center">
+                Let's Get Started
+              </h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold-500 transition-all"
+                    placeholder="Your full name"
+                  />
+                </div>
 
-            <div className="bg-gold-100 rounded-xl p-8 border border-gold-200 hover:shadow-lg transition-all">
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
-                <ChartBarIcon className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-2xl font-black text-black mb-4">Acquisition</h3>
-              <p className="text-gray-700 leading-relaxed">
-                Leverage advanced analytics and market intelligence to identify and execute on high-value real estate and business acquisitions with precision and efficiency.
-              </p>
-            </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold-500 transition-all"
+                    placeholder="your@email.com"
+                  />
+                </div>
 
-            <div className="bg-gold-100 rounded-xl p-8 border border-gold-200 hover:shadow-lg transition-all">
-              <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
-                <LightBulbIcon className="w-6 h-6 text-white" />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold-500 transition-all"
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
               </div>
-              <h3 className="text-2xl font-black text-black mb-4">Strategy</h3>
-              <p className="text-gray-700 leading-relaxed">
-                Combine technology infrastructure, capital deployment, and strategic execution to build sustainable business models that strengthen Minnesota&apos;s economic ecosystem.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Mission Section */}
-      <section className="min-h-screen flex items-center bg-black text-white py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-6xl sm:text-7xl lg:text-8xl font-medium tracking-[-0.105em] mb-8 font-libre-baskerville italic">
-              For the Love of Minnesota
-            </h2>
-            <p className="text-xl sm:text-2xl text-gray-300 mb-12 leading-relaxed">
-              Every business we develop, every asset we acquire, and every community we support is part of our commitment to making Minnesota a better place to live, work, and invest.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="text-3xl font-black text-gold-400 mb-2">Growth</div>
-                <p className="text-gray-300">Building sustainable businesses that strengthen our economic foundation</p>
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(prev => prev - 1)}
+                  className="flex-1 px-6 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white font-bold hover:bg-white/20 transition-all"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 px-6 py-3 bg-gold-500 text-black font-bold rounded-lg hover:bg-gold-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                  {!isSubmitting && <ArrowRightIcon className="w-5 h-5" />}
+                </button>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="text-3xl font-black text-gold-400 mb-2">Impact</div>
-                <p className="text-gray-300">Creating value that benefits communities and investors alike</p>
+            </form>
+          ) : (
+            <div className="text-center">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 sm:mb-12 leading-tight">
+                {visibleSteps[currentStep]?.question}
+              </h2>
+              
+              <div className="space-y-3 sm:space-y-4 max-w-2xl mx-auto">
+                {visibleSteps[currentStep]?.options.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleOptionSelect(option.value)}
+                    className="w-full px-6 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 rounded-lg text-white text-lg sm:text-xl font-semibold hover:bg-white/20 hover:border-gold-500 transition-all text-left group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{option.label}</span>
+                      <ArrowRightIcon className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                ))}
+                
+                {/* Community button - show below options */}
+                {currentStep === 0 && (
+                  <Link
+                    href="/map"
+                    className="block w-full px-6 py-4 bg-gold-500/20 backdrop-blur-sm border-2 border-gold-500/50 rounded-lg text-white text-lg sm:text-xl font-semibold hover:bg-gold-500/30 hover:border-gold-500 transition-all text-center group mt-4"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <span>Explore Minnesota Development & Acquisition Map</span>
+                      <ArrowRightIcon className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </Link>
+                )}
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="text-3xl font-black text-gold-400 mb-2">Vision</div>
-                <p className="text-gray-300">Transforming opportunities into lasting contributions to Minnesota</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="min-h-screen flex items-center bg-gold-100 py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-4xl sm:text-5xl font-black text-black mb-6">
-              Ready to Build with Us?
-            </h2>
-            <p className="text-xl text-gray-700 mb-10 leading-relaxed">
-              Join us in transforming Minnesota&apos;s real estate landscape through technology, strategy, and community-focused development.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center gap-2 bg-black text-white px-8 py-4 text-lg font-bold rounded-lg hover:bg-gray-900 transition-all shadow-lg"
-              >
-                Get Started
-                <ArrowRightIcon className="w-5 h-5" />
-              </Link>
+              {/* Back button for steps after the first */}
+              {currentStep > 0 && (
+                <div className="mt-8">
+                  <button
+                    onClick={() => setCurrentStep(prev => prev - 1)}
+                    className="px-6 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white font-bold hover:bg-white/20 transition-all"
+                  >
+                    Back
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </section>
     </PageLayout>

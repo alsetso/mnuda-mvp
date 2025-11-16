@@ -108,6 +108,7 @@ export interface MapActions {
   flyTo: (coordinates: { lat: number; lng: number }, zoom?: number) => void;
   followUser: (enabled: boolean) => void;
   updateUserLocation: (coordinates: Coordinates | null) => void;
+  triggerGeolocate: () => void;
   addMarker: (id: string, coordinates: { lat: number; lng: number }, options?: { element?: HTMLElement; color?: string; popupContent?: string }) => void;
   removeMarker: (id: string) => void;
   clearMarkers: () => void;

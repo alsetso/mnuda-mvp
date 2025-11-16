@@ -1,77 +1,42 @@
-// Map configuration and environment settings
+// Map configuration
 export const MAP_CONFIG = {
-  // Geocoding cache settings
-  GEOCODE_CACHE_TTL: parseInt(process.env.NEXT_PUBLIC_GEOCODE_CACHE_TTL || '86400000'), // 24 hours default
+  MAPBOX_TOKEN: (() => {
+    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
+    if (!token || token === 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw') {
+      console.error('Mapbox token not configured');
+      return '';
+    }
+    return token;
+  })(),
+  MAPBOX_STYLE: process.env.NEXT_PUBLIC_MAPBOX_STYLE || 'mapbox://styles/mapbox/dark-v11',
   
-  // Mapbox settings
-  MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
-  MAPBOX_STYLE: process.env.NEXT_PUBLIC_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12',
-  
-  // Strategic map styles for different use cases
   STRATEGIC_STYLES: {
     streets: 'mapbox://styles/mapbox/streets-v12',
-    satellite: 'mapbox://styles/mapbox/satellite-v9',
+    satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
     light: 'mapbox://styles/mapbox/light-v11',
     dark: 'mapbox://styles/mapbox/dark-v11',
     outdoors: 'mapbox://styles/mapbox/outdoors-v12',
   },
   
-  // Map defaults - Start with reasonable view
-  DEFAULT_CENTER: [-93.2650, 44.9778] as [number, number], // Minneapolis, MN
-  DEFAULT_ZOOM: 10, // Start at zoom 10 for city view
-  GLOBE_ZOOM: 0, // Globe view zoom level
-  MAX_ZOOM: 22, // Maximum zoom level (Mapbox default)
+  DEFAULT_CENTER: [-93.2650, 44.9778] as [number, number],
+  DEFAULT_ZOOM: 10,
+  MAX_ZOOM: 22,
   ADDRESS_ZOOM: 16,
-  USER_LOCATION_ZOOM: 15,
   
-  // Minnesota bounds for validation
+  MARKER_COLORS: {
+    ADDRESS_PIN: '#C2B289',
+    USER_MARKER: '#222020',
+    ADDRESS_SEARCH: '#222020',
+    ADDRESS_CURRENT: '#10B981',
+    ADDRESS_PREVIOUS: '#F59E0B',
+    SKIP_TRACE: '#222020',
+  },
+  
   MINNESOTA_BOUNDS: {
     north: 49.5,
     south: 43.5,
     east: -89.5,
-    west: -97.5
-  },
-  
-  // User location tracking
-  TRACKING_INTERVAL_MS: parseInt(process.env.NEXT_PUBLIC_TRACKING_INTERVAL_MS || '1000'),
-  GEOLOCATION_OPTIONS: {
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 0, // Don't cache location for real-time updates
-  },
-  
-  // Geocoding API settings
-  GEOCODING_BASE_URL: 'https://api.mapbox.com/geocoding/v5/mapbox.places',
-  GEOCODING_LIMIT: 1,
-  GEOCODING_COUNTRY: 'US',
-  
-  // Marker colors - using Tailwind color tokens where possible
-  // Note: For Mapbox markers, hex values are required, so we keep them here
-  // but they reference our Tailwind design tokens
-  MARKER_COLORS: {
-    ADDRESS_PIN: '#C2B289', // gold-500
-    USER_MARKER: '#222020', // black
-    ADDRESS_SEARCH: '#222020', // black
-    ADDRESS_CURRENT: '#10B981', // emerald-500 (standard Tailwind)
-    ADDRESS_PREVIOUS: '#F59E0B', // amber-500 (standard Tailwind)
-    SKIP_TRACE: '#222020', // black
-  },
-  
-  // Animation settings
-  FLY_TO_DURATION: 1000,
-  PULSE_ANIMATION_DURATION: 2000,
-  
-  // Performance optimizations
-  PERFORMANCE: {
-    // Reduce tile cache for faster loading
-    MAX_TILE_CACHE_SIZE: 50,
-    // Disable unnecessary features
-    RENDER_WORLD_COPIES: false,
-    // Optimize rendering
-    PRESERVE_DRAWING_BUFFER: true,
-    ANTIALIAS: false,
-    // Faster text rendering
-    LOCAL_IDEOGRAPH_FONT_FAMILY: false,
+    west: -97.5,
   },
 } as const;
 

@@ -40,7 +40,7 @@ export async function middleware(req: NextRequest) {
   await supabase.auth.getUser();
 
   // Route protection can be added here if needed
-  // Example: Protect /community route by checking session and redirecting to login
+  // Example: Protect /map route by checking session and redirecting to login
 
   return response;
 }

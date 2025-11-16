@@ -1,4 +1,17 @@
 import { supabase } from '@/lib/supabase';
+import { withAuthRetry } from '@/lib/authHelpers';
+
+export interface PinCategory {
+  id: string;
+  slug: string;
+  label: string;
+  emoji: string;
+  description: string | null;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Pin {
   id: string;
@@ -10,6 +23,8 @@ export interface Pin {
   address: string;
   lat: number;
   long: number;
+  category_id: string | null;
+  subcategory: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +37,8 @@ export interface CreatePinData {
   address: string;
   lat: number;
   long: number;
+  category_id?: string | null;
+  subcategory?: string | null;
 }
 
 export interface UpdatePinData {
@@ -32,23 +49,51 @@ export interface UpdatePinData {
   address?: string;
   lat?: number;
   long?: number;
+  category_id?: string | null;
+  subcategory?: string | null;
+}
+
+export class PinCategoryService {
+  /**
+   * Get all active pin categories
+   */
+  static async getCategories(): Promise<PinCategory[]> {
+    const { data, error } = await supabase
+      .from('pins_categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching pin categories:', error);
+      throw new Error(`Failed to fetch categories: ${error.message}`);
+    }
+
+    return data || [];
+  }
 }
 
 export class PinService {
   /**
-   * Get all public pins and user's own pins
+   * Get all public pins and user's own pins (if authenticated)
+   * For anonymous users, returns only public pins
    */
   static async getAllPins(): Promise<Pin[]> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
+
+    let query = supabase
+      .from('pins')
+      .select('*');
+
+    if (user) {
+      // Authenticated users can see public pins OR their own pins
+      query = query.or(`visibility.eq.public,user_id.eq.${user.id}`);
+    } else {
+      // Anonymous users can only see public pins
+      query = query.eq('visibility', 'public');
     }
 
-    const { data, error } = await supabase
-      .from('pins')
-      .select('*')
-      .or(`visibility.eq.public,user_id.eq.${user.id}`)
-      .order('created_at', { ascending: false });
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching pins:', error);
@@ -101,6 +146,8 @@ export class PinService {
         address: data.address,
         lat: data.lat,
         long: data.long,
+        category_id: data.category_id || null,
+        subcategory: data.subcategory || null,
       })
       .select()
       .single();
@@ -165,19 +212,25 @@ export class PinService {
 
   /**
    * Get a pin by ID
+   * For anonymous users, returns pin only if it's public
    */
   static async getPinById(pinId: string): Promise<Pin | null> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('pins')
       .select('*')
-      .eq('id', pinId)
-      .or(`visibility.eq.public,user_id.eq.${user.id}`)
-      .single();
+      .eq('id', pinId);
+
+    if (user) {
+      // Authenticated users can see public pins OR their own pins
+      query = query.or(`visibility.eq.public,user_id.eq.${user.id}`);
+    } else {
+      // Anonymous users can only see public pins
+      query = query.eq('visibility', 'public');
+    }
+
+    const { data, error } = await query.single();
 
     if (error) {
       if (error.code === 'PGRST116') {

@@ -3,7 +3,6 @@
 import React from 'react';
 import AppHeader from '@/features/session/components/AppHeader';
 import Footer from '@/features/ui/components/Footer';
-import IconBar from '@/components/IconBar';
 import { useAuth } from '@/features/auth';
 import { SessionData } from '@/features/session/services/sessionStorage';
 
@@ -82,17 +81,16 @@ export default function PageLayout({
   // - Always show footer when user is NOT logged in (public pages)
   // - When logged in, respect the showFooter prop (default false for authenticated pages)
   const shouldShowFooter = !user ? true : showFooter;
-  const hasIconBar = user && showHeader;
 
   const heightClass = shouldShowFooter === false && contentPadding === '' ? 'h-screen' : '';
   const overflowClass = shouldShowFooter === false && contentPadding === '' ? 'overflow-hidden' : '';
   const minHeightClass = shouldShowFooter !== false || contentPadding !== '' ? 'min-h-screen' : '';
 
   return (
-    <div className={`flex flex-col ${backgroundColor} ${heightClass} ${overflowClass} ${minHeightClass} ${hasIconBar ? 'h-screen' : ''}`} style={{ 
+    <div className={`flex flex-col ${backgroundColor} ${heightClass} ${overflowClass} ${minHeightClass}`} style={{ 
       margin: 0, 
       padding: 0, 
-      height: shouldShowFooter === false && contentPadding === '' ? '100vh' : (hasIconBar ? '100vh' : undefined),
+      height: shouldShowFooter === false && contentPadding === '' ? '100vh' : undefined,
       width: '100%',
       maxWidth: '100vw',
       position: 'relative'
@@ -123,26 +121,21 @@ export default function PageLayout({
         </div>
       )}
 
-      {/* Main Content with Icon Bar if authenticated */}
-      <div className="flex flex-1 min-h-0 overflow-hidden" style={{ margin: 0, padding: 0 }}>
-        {/* Icon Bar - Always on left for authenticated users, fixed height */}
-        {hasIconBar && (
-          <div className="flex-shrink-0" style={{ margin: 0, padding: 0 }}>
-            <IconBar />
-          </div>
-        )}
-
+      {/* Main Content */}
+      <div className="flex flex-1 min-h-0 overflow-hidden" style={{ margin: 0, padding: 0, marginTop: showHeader ? '3rem' : '0' }}>
         {/* Main Content - Scrollable area */}
-        <main className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'} overflow-y-auto`} style={{ 
+        <main className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'} ${contentPadding ? 'overflow-y-auto' : 'overflow-hidden'}`} style={{ 
           maxWidth: '100vw', 
           margin: 0, 
           padding: 0, 
+          paddingTop: showHeader && contentPadding ? '0' : '0',
           width: '100%',
           minHeight: 0,
           flexShrink: 1,
-          position: 'relative'
+          position: 'relative',
+          height: contentPadding ? undefined : '100%'
         }}>
-          <div className={contentPadding || ''} style={contentPadding ? { margin: 0, width: '100%' } : { width: '100%', margin: 0, padding: 0 }}>
+          <div className={contentPadding || ''} style={contentPadding ? { margin: 0, width: '100%' } : { width: '100%', margin: 0, padding: 0, height: '100%' }}>
             {children}
           </div>
         </main>
@@ -151,10 +144,9 @@ export default function PageLayout({
       {/* Footer - Auto at bottom 
           Logic:
           - Always shows when user is NOT logged in (public pages)
-          - When logged in, shows only if showFooter={true} AND no icon bar
-          - Hidden when icon sidebar is shown (authenticated dashboard view)
+          - When logged in, shows only if showFooter={true}
       */}
-      {shouldShowFooter && !hasIconBar && (
+      {shouldShowFooter && (
         <div className="flex-shrink-0">
           <Footer />
         </div>

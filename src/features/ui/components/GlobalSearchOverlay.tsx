@@ -5,17 +5,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import { 
   XMarkIcon,
   HomeIcon,
-  BuildingOffice2Icon,
   DocumentTextIcon,
-  InformationCircleIcon,
   ArrowRightOnRectangleIcon,
-  MagnifyingGlassIcon,
   MapIcon,
-  RectangleStackIcon,
-  BriefcaseIcon,
-  ArrowPathIcon,
-  MegaphoneIcon,
-  PrinterIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/features/auth';
@@ -43,62 +35,14 @@ export default function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOve
     ? [
         { 
           href: '/', 
-          label: 'Dashboard', 
-          description: 'View your dashboard and workspaces',
+          label: 'Home', 
+          description: 'View your dashboard and features',
           icon: <HomeIcon className="w-5 h-5" />
-        },
-        { 
-          href: '/workspace', 
-          label: 'Workspaces', 
-          description: 'Manage your workspaces and properties',
-          icon: <BuildingOffice2Icon className="w-5 h-5" />
-        },
-        { 
-          href: '/skip-tracing', 
-          label: 'Skip Tracing', 
-          description: 'Find property owners and contacts',
-          icon: <MagnifyingGlassIcon className="w-5 h-5" />
-        },
-        { 
-          href: '/community', 
-          label: 'Community', 
-          description: 'Browse community posts and discussions',
-          icon: <MapIcon className="w-5 h-5" />
-        },
-        { 
-          href: '/directory', 
-          label: 'Directory', 
-          description: 'View and manage directory listings',
-          icon: <RectangleStackIcon className="w-5 h-5" />
-        },
-        { 
-          href: '/assets', 
-          label: 'Assets', 
-          description: 'Manage your assets and properties',
-          icon: <BriefcaseIcon className="w-5 h-5" />
-        },
-        { 
-          href: '/workflow', 
-          label: 'Workflow', 
-          description: 'Manage your workflows and processes',
-          icon: <ArrowPathIcon className="w-5 h-5" />
-        },
-        { 
-          href: '/advertising', 
-          label: 'Advertising', 
-          description: 'Manage advertising campaigns',
-          icon: <MegaphoneIcon className="w-5 h-5" />
-        },
-        { 
-          href: '/print', 
-          label: 'Print', 
-          description: 'Print documents and reports',
-          icon: <PrinterIcon className="w-5 h-5" />
         },
         { 
           href: '/map', 
           label: 'Map', 
-          description: 'View properties on the map',
+          description: 'Interactive map with community pins',
           icon: <MapIcon className="w-5 h-5" />
         },
         { 
@@ -107,12 +51,6 @@ export default function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOve
           description: 'Account settings and profile',
           icon: <Cog6ToothIcon className="w-5 h-5" />
         },
-        { 
-          href: '/brand', 
-          label: 'Brand Standards', 
-          description: 'View brand guidelines and components',
-          icon: <DocumentTextIcon className="w-5 h-5" />
-        },
       ]
     : [
         { 
@@ -120,12 +58,6 @@ export default function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOve
           label: 'Home', 
           description: 'Go to homepage',
           icon: <HomeIcon className="w-5 h-5" />
-        },
-        { 
-          href: '/about', 
-          label: 'About', 
-          description: 'Learn about MNUDA',
-          icon: <InformationCircleIcon className="w-5 h-5" />
         },
         { 
           href: '/login', 
@@ -210,9 +142,6 @@ export default function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOve
                 let isActive = false;
                 if (item.href === '/') {
                   isActive = pathname === '/';
-                } else if (item.href === '/workspace') {
-                  // Only match exact /workspace, not /workspace/[id]
-                  isActive = pathname === '/workspace' || pathname === '/workspace/';
                 } else {
                   isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
                 }

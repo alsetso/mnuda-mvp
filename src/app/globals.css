@@ -111,6 +111,34 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+/* Pin popup styling - transparent with backdrop blur */
+.pin-popup-container .mapboxgl-popup-content {
+  background: transparent !important;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+  padding: 12px;
+}
+
+.pin-popup-container .mapboxgl-popup-tip {
+  border-top-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Area popup styling - transparent with backdrop blur */
+.area-popup-container .mapboxgl-popup-content {
+  background: transparent !important;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+  padding: 12px;
+}
+
+.area-popup-container .mapboxgl-popup-tip {
+  border-top-color: rgba(255, 255, 255, 0.3) !important;
+}
+
 .mapboxgl-popup-close-button {
   font-size: 18px;
   color: #6b7280;
@@ -130,14 +158,49 @@ body {
   transform: translate(-50%, -50%) scale(1.1);
 }
 
-/* Ensure Mapbox markers are properly positioned */
+/* Ensure Mapbox markers are properly positioned and appear above area layers */
 .mapboxgl-marker {
   position: absolute;
   transform: translate(-50%, -50%);
+  z-index: 1000 !important;
+}
+
+/* Ensure pin markers specifically are on top */
+.pin-marker {
+  z-index: 1000 !important;
+}
+
+/* Ensure popups appear above everything */
+.mapboxgl-popup {
+  z-index: 2000 !important;
+}
+
+.mapboxgl-popup-content {
+  z-index: 2000 !important;
 }
 
 /* Hide Mapbox attribution (including "Improve this map" text) */
 .mapboxgl-ctrl-attrib {
+  display: none !important;
+}
+
+/* Hide default GeolocateControl button - we control it from floating menu */
+.mapboxgl-ctrl-geolocate,
+.mapboxgl-ctrl .mapboxgl-ctrl-geolocate,
+.mapboxgl-ctrl-group .mapboxgl-ctrl-geolocate,
+button.mapboxgl-ctrl-geolocate {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Hide control group if it only contains geolocate */
+.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-geolocate:only-child) {
   display: none !important;
 }
 

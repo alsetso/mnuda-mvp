@@ -109,25 +109,15 @@ const nextConfig: NextConfig = {
         destination: '/',
         permanent: true,
       },
-      // Redirect marketplace routes to home page
+      // Redirect old marketplace routes to new market routes
       {
-        source: '/marketplace/for-sale',
-        destination: '/',
+        source: '/marketplace/:path*',
+        destination: '/market/:path*',
         permanent: true,
       },
       {
-        source: '/marketplace/for-rent',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/marketplace/for-sale/:slug',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/marketplace/for-rent/:slug',
-        destination: '/',
+        source: '/marketplace',
+        destination: '/market',
         permanent: true,
       },
     ];

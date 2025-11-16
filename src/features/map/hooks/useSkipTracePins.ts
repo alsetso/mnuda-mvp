@@ -350,7 +350,6 @@ export function useSkipTracePins({
       flex-direction: column;
       align-items: center;
       cursor: pointer;
-      transform: translate(-50%, -50%);
     `;
 
     // Create the purple circle

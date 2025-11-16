@@ -112,7 +112,7 @@ export default function NewsSidebar({ items = defaultItems }: NewsSidebarProps) 
         <h3 className="text-sm font-black text-black mb-3">Quick Links</h3>
         <div className="space-y-2">
           <Link
-            href="/community"
+            href="/map"
             className="flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-black transition-colors group"
           >
             <span>Community Forum</span>

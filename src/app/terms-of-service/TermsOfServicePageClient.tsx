@@ -41,7 +41,7 @@ export default function TermsOfServicePageClient() {
             <h2 className="text-2xl font-bold text-black mb-4">2. Definitions</h2>
             <div className="space-y-3 text-gray-700 leading-relaxed">
               <p>
-                <strong>&quot;Services&quot;</strong> means all products, services, websites, applications, tools, features, and functionality provided by MNUDA, including but not limited to skip tracing services, property search and mapping tools, asset management systems, workflow automation tools, advertising services, print services, community features, and any related software or technology.
+                <strong>&quot;Services&quot;</strong> means all products, services, websites, applications, tools, features, and functionality provided by MNUDA, including but not limited to property search and mapping tools, community features, and any related software or technology.
               </p>
               <p>
                 <strong>&quot;User Content&quot;</strong> means any data, information, text, graphics, photos, or other materials uploaded, posted, transmitted, or otherwise made available by you through the Services.
@@ -59,14 +59,10 @@ export default function TermsOfServicePageClient() {
                 MNUDA provides a technology platform that combines software tools, data services, and business resources to facilitate real estate investment activities in Minnesota. The Services include, but are not limited to:
               </p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Skip tracing and people search services</li>
                 <li>Interactive property mapping and geocoding tools</li>
-                <li>Real estate asset management and tracking systems</li>
-                <li>Data processing and workflow automation tools</li>
-                <li>Digital advertising campaign management</li>
-                <li>Print and direct mail services</li>
                 <li>Community features and networking tools</li>
-                <li>Minnesota property and location data directories</li>
+                <li>Project management services</li>
+                <li>Home acquisition services</li>
               </ul>
               <p>
                 MNUDA reserves the right to modify, suspend, or discontinue any aspect of the Services at any time, with or without notice, and without liability to you or any third party.
@@ -106,11 +102,11 @@ export default function TermsOfServicePageClient() {
                 <li>Attempt to gain unauthorized access to the Services, other accounts, computer systems, or networks connected to the Services</li>
                 <li>Interfere with or disrupt the integrity or performance of the Services or the data contained therein</li>
                 <li>Use the Services to collect, store, or process personal information in violation of applicable privacy laws, including the Minnesota Government Data Practices Act and federal privacy regulations</li>
+                <li>Use the Services for stalking, harassment, or any unlawful purpose</li>
                 <li>Use automated systems, bots, scrapers, or crawlers to access the Services without express written permission</li>
                 <li>Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of any software component of the Services</li>
                 <li>Use the Services for any commercial purpose without MNUDA&apos;s express written consent, except as expressly permitted herein</li>
                 <li>Impersonate any person or entity or falsely state or misrepresent your affiliation with any person or entity</li>
-                <li>Use skip tracing or people search services for stalking, harassment, or any unlawful purpose</li>
               </ul>
             </div>
           </section>
@@ -155,7 +151,7 @@ export default function TermsOfServicePageClient() {
                 MNUDA does not endorse, warrant, or assume responsibility for any Third-Party Services or the content, accuracy, or opinions expressed therein. MNUDA expressly disclaims all liability for any loss or damage arising from your use of or reliance on any Third-Party Services.
               </p>
               <p>
-                When using skip tracing or people search services, you acknowledge that such services may utilize third-party data providers and that the accuracy, completeness, or timeliness of such data is not guaranteed. You agree to use such services in compliance with the Fair Credit Reporting Act (FCRA), the Telephone Consumer Protection Act (TCPA), and all other applicable federal and state laws.
+                When using third-party services integrated with our platform, you acknowledge that such services may utilize third-party data providers and that the accuracy, completeness, or timeliness of such data is not guaranteed. You agree to use such services in compliance with all applicable federal and state laws.
               </p>
             </div>
           </section>
@@ -185,7 +181,7 @@ export default function TermsOfServicePageClient() {
                 MNUDA DOES NOT WARRANT THAT: (a) THE SERVICES WILL BE UNINTERRUPTED, TIMELY, SECURE, OR ERROR-FREE; (b) THE RESULTS THAT MAY BE OBTAINED FROM THE USE OF THE SERVICES WILL BE ACCURATE OR RELIABLE; (c) THE QUALITY OF ANY PRODUCTS, SERVICES, INFORMATION, OR OTHER MATERIAL PURCHASED OR OBTAINED BY YOU THROUGH THE SERVICES WILL MEET YOUR EXPECTATIONS; OR (d) ANY ERRORS IN THE SERVICES WILL BE CORRECTED.
               </p>
               <p>
-                MNUDA MAKES NO WARRANTIES REGARDING THE ACCURACY, RELIABILITY, COMPLETENESS, OR TIMELINESS OF ANY DATA, INFORMATION, OR CONTENT PROVIDED THROUGH THE SERVICES, INCLUDING BUT NOT LIMITED TO PROPERTY DATA, SKIP TRACING RESULTS, GEOCODING DATA, OR THIRD-PARTY CONTENT.
+                MNUDA MAKES NO WARRANTIES REGARDING THE ACCURACY, RELIABILITY, COMPLETENESS, OR TIMELINESS OF ANY DATA, INFORMATION, OR CONTENT PROVIDED THROUGH THE SERVICES, INCLUDING BUT NOT LIMITED TO PROPERTY DATA, GEOCODING DATA, OR THIRD-PARTY CONTENT.
               </p>
             </div>
           </section>

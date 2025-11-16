@@ -3,10 +3,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 const EMOJI_OPTIONS = [
-  '🏢', '🏠', '🏭', '🏪', '🏬', '🏨', '🏩', '🏫', '🏯', '🏰',
-  '💼', '📊', '📈', '📋', '📁', '🗂️', '📂', '📄', '📃', '📑',
-  '🎯', '🚀', '⭐', '💡', '🔧', '⚙️', '🎭', '🎪', '🎨', '🎬',
-  '👥', '👤', '🤝', '💬', '📞', '📧', '💻', '📱', '⌨️', '🖥️'
+  '🏠', // House
+  '🏚️', // Rundown House
+  '🏢', // Apartment
+  '🚗', // Car
+  '📦', // Box
+  '💰', // Money Bag
 ];
 
 interface EmojiSelectorPopupProps {
@@ -62,12 +64,12 @@ export function EmojiSelectorPopup({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`${sizeClasses[buttonSize]} rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center bg-white ${
-          isOpen ? 'border-gold-500 bg-gold-50' : ''
+        className={`${sizeClasses[buttonSize]} rounded-xl border-2 border-white/20 hover:border-white/40 transition-all flex items-center justify-center bg-white/10 backdrop-blur-sm ${
+          isOpen ? 'border-blue-500/50 bg-blue-500/20' : ''
         }`}
-        title="Click to select emoji"
+        title="Select emoji"
       >
-        {value || '🏢'}
+        {value || '🏠'}
       </button>
 
       {isOpen && (
@@ -81,7 +83,7 @@ export function EmojiSelectorPopup({
           {/* Popup */}
           <div
             ref={popupRef}
-            className="absolute z-50 mt-2 p-3 bg-white rounded-lg border border-gray-200 shadow-lg"
+            className="absolute z-50 mt-2 p-3 bg-white/95 backdrop-blur-md rounded-xl border border-white/50 shadow-2xl"
             style={{
               minWidth: '280px',
               maxWidth: '320px',
@@ -89,19 +91,16 @@ export function EmojiSelectorPopup({
               top: '100%'
             }}
           >
-            <div className="text-xs font-medium text-gray-700 mb-2 px-1">
-              Select emoji
-            </div>
-            <div className="grid grid-cols-8 gap-1.5 max-h-64 overflow-y-auto">
+            <div className="grid grid-cols-6 gap-2">
               {EMOJI_OPTIONS.map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => handleEmojiSelect(emoji)}
-                  className={`w-8 h-8 text-lg rounded transition-colors hover:bg-gray-100 flex items-center justify-center ${
+                  className={`w-10 h-10 text-xl rounded-lg transition-all hover:bg-white/20 flex items-center justify-center ${
                     value === emoji
-                      ? 'bg-gold-100 border-2 border-gold-500'
-                      : 'border border-transparent'
+                      ? 'bg-blue-500/20 border-2 border-blue-500/50'
+                      : 'border border-transparent hover:border-white/30'
                   }`}
                 >
                   {emoji}
