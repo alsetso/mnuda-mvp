@@ -82,18 +82,20 @@ export default function MarketPage() {
   return (
     <PageLayout showHeader={true} showFooter={false} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
       <div className="min-h-screen bg-gold-100">
-        {/* Hero Section - Dark background */}
-        <div className="bg-black text-white py-16 w-full">
+        {/* Hero Section */}
+        <div className="bg-black text-white py-20">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center">
-              <h1 className="text-5xl font-bold mb-4">Market</h1>
-              <p className="text-xl text-white/80 max-w-2xl mx-auto">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-6xl font-bold mb-6">
+                Browse Minnesota Opportunity
+              </h1>
+              <p className="text-2xl text-white/80 mb-8 leading-relaxed">
                 Discover or manage off-market real estate listings and opportunities across Minnesota.
               </p>
-              <div className="mt-8">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="px-8 py-4 bg-gold-500 hover:bg-gold-600 text-black font-bold text-lg rounded-lg transition-colors flex items-center gap-2 shadow-lg mx-auto"
+                  className="px-8 py-4 bg-gold-500 hover:bg-gold-600 text-black font-bold text-lg rounded-lg transition-colors flex items-center gap-2 shadow-lg"
                 >
                   <PlusIcon className="w-5 h-5" />
                   Create Listing
