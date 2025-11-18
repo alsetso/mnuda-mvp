@@ -89,7 +89,7 @@ export default function CreditPage() {
                   Restore Your Credit
                 </h1>
                 <p className="text-2xl text-white/80 mb-8 leading-relaxed">
-                  Take control of your credit score. Dispute inaccurate items, track your progress, and build a better financial future.
+                  You are able to help get Minnesota under development and acquisition if you have a strong credit report–get started today
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   {userState === 'has_profile' ? (

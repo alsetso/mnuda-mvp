@@ -8,7 +8,6 @@ import { Address } from '@/features/map/types';
 import { MAP_CONFIG } from '@/features/map/config';
 import { PinEditModal } from '@/features/pins/components/PinEditModal';
 import { PinDeleteModal } from '@/features/pins/components/PinDeleteModal';
-import { PinCountDisplay } from '@/features/pins/components/PinCountDisplay';
 import { usePins } from '@/features/pins/hooks/usePins';
 import { ReverseGeocodingService } from '@/features/map/services/reverseGeocodingService';
 import { useToast } from '@/features/ui/hooks/useToast';
@@ -24,6 +23,8 @@ import { AreaService, Area, UpdateAreaData } from '@/features/areas/services/are
 import { AreaSaveModal } from '@/features/areas/components/AreaSaveModal';
 import { AreaEditModal } from '@/features/areas/components/AreaEditModal';
 import { AreaSidebar } from '@/features/areas/components/AreaSidebar';
+import { AreaPopup } from '@/features/areas/components/AreaPopup';
+import { MapFilters, DrawCoordinatesDisplay } from '@/features/map';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function CommunityPage() {
@@ -53,6 +54,9 @@ export default function CommunityPage() {
   const [selectedArea, setSelectedArea] = useState<Area | null>(null);
   const [isAreaSidebarOpen, setIsAreaSidebarOpen] = useState(false);
   const [hoveredAreaId, setHoveredAreaId] = useState<string | null>(null);
+  const [polygonCoordinates, setPolygonCoordinates] = useState<Array<[number, number]>>([]);
+  const [drawMode, setDrawMode] = useState<'draw' | 'pan'>('draw');
+  const [areaPopup, setAreaPopup] = useState<{ area: Area; position: { x: number; y: number } } | null>(null);
   
   // Debug state for cursor position and hovered features
   const [debugInfo, setDebugInfo] = useState<{
@@ -175,6 +179,7 @@ export default function CommunityPage() {
     updateMarkerPopup,
     flyTo,
     triggerGeolocate,
+    stopGeolocate,
     changeMapStyle,
   } = useMap({
     mapContainer,
@@ -395,6 +400,7 @@ export default function CommunityPage() {
       if (drawRef.current) {
         const allFeatures = drawRef.current.getAll();
         setHasDrawnPolygon(allFeatures.features.length > 0);
+        setPolygonCoordinates([]);
       }
     };
 
@@ -402,14 +408,29 @@ export default function CommunityPage() {
       // Check polygon state when mode changes
       if (drawRef.current) {
         const mode = drawRef.current.getMode();
+        const allFeatures = drawRef.current.getAll();
+        const hasFeatures = allFeatures.features.length > 0;
+        
         if (mode === 'draw_polygon') {
-          // Reset when starting new polygon
-          setHasDrawnPolygon(false);
+          // Don't reset if we already have a polygon - allow continuing to add points
+          if (!hasFeatures) {
+            // Only reset when starting a completely new polygon
+            setHasDrawnPolygon(false);
+            setPolygonCoordinates([]);
+          }
           setIsActivelyDrawing(true);
-        } else {
-          const allFeatures = drawRef.current.getAll();
-          setHasDrawnPolygon(allFeatures.features.length > 0);
+        } else if (mode === 'direct_select') {
+          // In direct_select mode, we're editing vertices
+          setHasDrawnPolygon(hasFeatures);
           setIsActivelyDrawing(false);
+        } else {
+          // simple_select or other modes
+          setHasDrawnPolygon(hasFeatures);
+          setIsActivelyDrawing(false);
+          // Keep coordinates if polygon exists, otherwise clear
+          if (!hasFeatures) {
+            setPolygonCoordinates([]);
+          }
         }
       }
     };
@@ -425,6 +446,20 @@ export default function CommunityPage() {
         const allFeatures = drawRef.current.getAll();
         // Show button if we have any features (completed or in-progress)
         setHasDrawnPolygon(allFeatures.features.length > 0);
+        
+        // Update coordinates when vertex is added
+        if (allFeatures.features.length > 0) {
+          const feature = allFeatures.features[0];
+          if (feature.geometry.type === 'Polygon' && feature.geometry.coordinates && feature.geometry.coordinates[0]) {
+            const coords = feature.geometry.coordinates[0] as Array<[number, number]>;
+            // Filter out any null/undefined coordinates
+            const validCoords = coords.filter(
+              (coord): coord is [number, number] => 
+                Array.isArray(coord) && coord.length >= 2 && coord[0] != null && coord[1] != null
+            );
+            setPolygonCoordinates(validCoords);
+          }
+        }
       }
     };
 
@@ -442,6 +477,39 @@ export default function CommunityPage() {
         // Show button if in draw mode and we have features
         if (mode === 'draw_polygon' || mode === 'simple_select') {
           setHasDrawnPolygon(allFeatures.features.length > 0);
+        }
+        
+        // Extract coordinates from current polygon being drawn
+        if (mode === 'draw_polygon' && allFeatures.features.length > 0) {
+          const feature = allFeatures.features[0];
+          if (feature.geometry.type === 'Polygon' && feature.geometry.coordinates && feature.geometry.coordinates[0]) {
+            // Get coordinates from the first ring (exterior ring)
+            const coords = feature.geometry.coordinates[0] as Array<[number, number]>;
+            // Filter out any null/undefined coordinates
+            const validCoords = coords.filter(
+              (coord): coord is [number, number] => 
+                Array.isArray(coord) && coord.length >= 2 && coord[0] != null && coord[1] != null
+            );
+            setPolygonCoordinates(validCoords);
+          } else {
+            setPolygonCoordinates([]);
+          }
+        } else if (mode === 'simple_select' && allFeatures.features.length > 0) {
+          // Show coordinates of selected polygon
+          const feature = allFeatures.features[0];
+          if (feature.geometry.type === 'Polygon' && feature.geometry.coordinates && feature.geometry.coordinates[0]) {
+            const coords = feature.geometry.coordinates[0] as Array<[number, number]>;
+            // Filter out any null/undefined coordinates
+            const validCoords = coords.filter(
+              (coord): coord is [number, number] => 
+                Array.isArray(coord) && coord.length >= 2 && coord[0] != null && coord[1] != null
+            );
+            setPolygonCoordinates(validCoords);
+          } else {
+            setPolygonCoordinates([]);
+          }
+        } else {
+          setPolygonCoordinates([]);
         }
       }
     };
@@ -639,7 +707,13 @@ export default function CommunityPage() {
         return;
       }
 
-      console.log('[AreaClick] Opening sidebar for area:', area.name);
+      // Show popup at click position with edit option
+      setAreaPopup({
+        area,
+        position: { x: e.point.x, y: e.point.y }
+      });
+      
+      // Also open sidebar (keep existing behavior)
       setSelectedArea(area);
       setIsAreaSidebarOpen(true);
     };
@@ -659,9 +733,14 @@ export default function CommunityPage() {
 
       // Check if click was on an area feature - if so, don't close
       // Layer-specific handlers should have already handled this, but double-check
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ['saved-areas-fill', 'saved-areas-labels'],
-      });
+      // Only query layers that exist to avoid errors
+      const areaLayers = ['saved-areas-fill', 'saved-areas-labels'].filter(
+        layerId => map.getLayer(layerId) !== undefined
+      );
+      
+      const features = areaLayers.length > 0
+        ? map.queryRenderedFeatures(e.point, { layers: areaLayers })
+        : [];
 
       // If clicking on an area, don't close (let handleAreaClick handle it)
       if (features && features.length > 0) {
@@ -669,10 +748,11 @@ export default function CommunityPage() {
         return;
       }
 
-      // Otherwise, close sidebar
+      // Otherwise, close sidebar and popup
       console.log('[MapClickForSidebar] Closing sidebar - empty map click');
       setSelectedArea(null);
       setIsAreaSidebarOpen(false);
+      setAreaPopup(null);
     };
 
     // --- HOVER → POINTER CURSOR + FEATURE-SPECIFIC HIGHLIGHT ---
@@ -813,9 +893,14 @@ export default function CommunityPage() {
       const { lng, lat } = e.lngLat;
       
       // Query all features at cursor position (areas and any other layers)
-      const features = map.queryRenderedFeatures(e.point, {
-        layers: ['saved-areas-fill', 'saved-areas-labels', 'saved-areas-outline'],
-      });
+      // Only query layers that exist to avoid errors
+      const areaLayers = ['saved-areas-fill', 'saved-areas-labels', 'saved-areas-outline'].filter(
+        layerId => map.getLayer(layerId) !== undefined
+      );
+      
+      const features = areaLayers.length > 0 
+        ? map.queryRenderedFeatures(e.point, { layers: areaLayers })
+        : [];
       
       // Also check for markers/pins by querying all rendered features
       const allFeatures = map.queryRenderedFeatures(e.point);
@@ -842,13 +927,94 @@ export default function CommunityPage() {
   useEffect(() => {
     if (!map || !drawRef.current) return;
 
+    // Intercept clicks in pan mode to prevent point placement
+    // We'll use a wrapper that checks the mode before allowing draw to handle clicks
+    let clickInterceptor: ((e: import('mapbox-gl').MapMouseEvent) => void) | null = null;
+    let domClickHandler: ((e: MouseEvent) => void) | null = null;
+
+    // Cursor handlers for pan mode
+    const handleMouseDown = () => {
+      if (activeMenuAction === 'draw' && drawMode === 'pan') {
+        map.getCanvas().style.cursor = 'grabbing';
+      }
+    };
+    const handleMouseUp = () => {
+      if (activeMenuAction === 'draw' && drawMode === 'pan') {
+        map.getCanvas().style.cursor = 'grab';
+      }
+    };
+
     if (activeMenuAction === 'draw') {
-      drawRef.current.changeMode('draw_polygon');
-      // Use crosshair cursor - Mapbox Draw will handle the cursor properly
-      // The custom pencil cursor had offset issues, so we'll use crosshair which is more accurate
-      map.getCanvas().style.cursor = 'crosshair';
-      setHasDrawnPolygon(false);
-      setIsActivelyDrawing(true);
+      // Always keep draw_polygon mode to preserve the polygon
+      // But intercept clicks when in pan mode
+      if (drawMode === 'draw') {
+        // Check if there's an existing polygon
+        const allFeatures = drawRef.current.getAll();
+        const hasPolygon = allFeatures.features.length > 0;
+        const currentMode = drawRef.current.getMode();
+        
+        // If we have a polygon and we're switching from pan mode, continue drawing
+        // Don't change mode if we're already in draw_polygon - this prevents completion
+        if (currentMode !== 'draw_polygon') {
+          if (hasPolygon && currentMode === 'simple_select') {
+            // Polygon was completed, switch back to draw_polygon to continue adding points
+            drawRef.current.changeMode('draw_polygon');
+          } else if (!hasPolygon) {
+            // No polygon, start fresh
+            drawRef.current.changeMode('draw_polygon');
+          }
+        }
+        
+        map.getCanvas().style.cursor = 'crosshair';
+        setIsActivelyDrawing(true);
+        
+        // Remove click interceptor in draw mode
+        if (clickInterceptor) {
+          map.off('click', clickInterceptor);
+          clickInterceptor = null;
+        }
+        // Remove DOM click handler if it exists
+        if (domClickHandler) {
+          const mapContainer = map.getContainer();
+          mapContainer.removeEventListener('click', domClickHandler, true);
+          domClickHandler = null;
+        }
+      } else {
+        // Pan mode - keep draw_polygon mode but temporarily disable draw control
+        // This preserves the polygon while allowing panning
+        if (drawRef.current.getMode() !== 'draw_polygon') {
+          drawRef.current.changeMode('draw_polygon');
+        }
+        map.getCanvas().style.cursor = 'grab';
+        setIsActivelyDrawing(false);
+        
+        // Intercept clicks at the DOM level before Mapbox Draw handles them
+        // We need to prevent clicks from adding points while keeping the polygon visible
+        clickInterceptor = (e: import('mapbox-gl').MapMouseEvent) => {
+          // Stop the event from reaching Mapbox Draw's click handler
+          // This allows panning while preserving the polygon
+          if (e.originalEvent) {
+            e.originalEvent.stopImmediatePropagation();
+            e.originalEvent.preventDefault();
+          }
+        };
+        // Use capture phase to intercept before Mapbox Draw
+        // We'll attach to the map container's DOM element
+        const mapContainer = map.getContainer();
+        domClickHandler = (e: MouseEvent) => {
+          if (activeMenuAction === 'draw' && drawMode === 'pan') {
+            e.stopImmediatePropagation();
+          }
+        };
+        mapContainer.addEventListener('click', domClickHandler, true); // true = capture phase
+        
+        // Also add to map events as backup
+        map.on('click', clickInterceptor);
+        
+        // Add cursor feedback for pan mode
+        map.on('mousedown', handleMouseDown);
+        map.on('mouseup', handleMouseUp);
+      }
     } else {
       if (drawRef.current.getMode() === 'draw_polygon') {
         drawRef.current.changeMode('simple_select');
@@ -859,8 +1025,27 @@ export default function CommunityPage() {
       }
       setHasDrawnPolygon(false);
       setIsActivelyDrawing(false);
+      if (clickInterceptor) {
+        map.off('click', clickInterceptor);
+        clickInterceptor = null;
+      }
     }
-  }, [map, activeMenuAction]);
+
+    // Cleanup
+    return () => {
+      if (clickInterceptor) {
+        map.off('click', clickInterceptor);
+      }
+      map.off('mousedown', handleMouseDown);
+      map.off('mouseup', handleMouseUp);
+      // Clean up DOM event listener
+      if (domClickHandler) {
+        const mapContainer = map.getContainer();
+        mapContainer.removeEventListener('click', domClickHandler, true);
+        domClickHandler = null;
+      }
+    };
+  }, [map, activeMenuAction, drawMode]);
 
   // Handle editing area shape
   const handleEditAreaShape = useCallback((area: Area) => {
@@ -873,6 +1058,17 @@ export default function CommunityPage() {
         drawRef.current?.delete(feature.id as string);
       }
     });
+    
+    // Extract coordinates from area geometry
+    let coords: Array<[number, number]> = [];
+    if (area.geometry.type === 'Polygon' && area.geometry.coordinates[0]) {
+      coords = area.geometry.coordinates[0] as Array<[number, number]>;
+      // Filter out any invalid coordinates
+      coords = coords.filter(
+        (coord): coord is [number, number] => 
+          Array.isArray(coord) && coord.length >= 2 && coord[0] != null && coord[1] != null
+      );
+    }
     
     // Add the area's geometry to Mapbox Draw
     const feature: GeoJSON.Feature = {
@@ -889,19 +1085,26 @@ export default function CommunityPage() {
     
     drawRef.current.add(feature);
     
-    // Switch to direct_select mode to allow editing vertices
-    drawRef.current.changeMode('direct_select', { featureId: area.id });
+    // Set coordinates state for display
+    setPolygonCoordinates(coords);
     
     // Set state to track we're editing
     setEditingAreaShape(area);
     setHasDrawnPolygon(true);
     setIsActivelyDrawing(false);
     
+    // Switch to draw mode to show the drawing interface
+    setActiveMenuAction('draw');
+    setDrawMode('draw');
+    
+    // Switch to direct_select mode to allow editing vertices
+    drawRef.current.changeMode('direct_select', { featureId: area.id });
+    
     // Zoom to the area
     if (area.geometry.type === 'Polygon' && area.geometry.coordinates[0]) {
-      const coords = area.geometry.coordinates[0];
-      const lngs = coords.map(c => c[0]);
-      const lats = coords.map(c => c[1]);
+      const polygonCoords = area.geometry.coordinates[0];
+      const lngs = polygonCoords.map((c: number[]) => c[0]);
+      const lats = polygonCoords.map((c: number[]) => c[1]);
       const minLng = Math.min(...lngs);
       const maxLng = Math.max(...lngs);
       const minLat = Math.min(...lats);
@@ -998,6 +1201,7 @@ export default function CommunityPage() {
       setEditingAreaShape(null);
       setHasDrawnPolygon(false);
       setIsActivelyDrawing(false);
+      setPolygonCoordinates([]);
       return;
     }
 
@@ -1013,6 +1217,8 @@ export default function CommunityPage() {
     drawRef.current.changeMode('simple_select');
     setHasDrawnPolygon(false);
     setIsActivelyDrawing(false);
+    setPolygonCoordinates([]);
+    setDrawMode('draw'); // Reset to draw mode for next time
     setActiveMenuAction(null);
   }, [editingAreaShape]);
 
@@ -1078,7 +1284,11 @@ export default function CommunityPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeMenuAction, isActivelyDrawing, handleCompleteDrawing]);
 
-  // Initialize pins hook
+  // Track selected category IDs for server-side filtering
+  // null = not initialized yet (fetch all), [] = no categories selected (fetch none), [ids] = fetch specific categories
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[] | null>(null);
+
+  // Initialize pins hook with category filtering
   const pins = usePins({
     mapLoaded,
     addMarker,
@@ -1088,19 +1298,50 @@ export default function CommunityPage() {
     onPinEdit: (pin) => setEditingPin(pin),
     onPinDelete: (pin) => setDeletingPin(pin),
     currentZoom: mapInfo.zoom,
+    categoryIds: selectedCategoryIds === null ? undefined : selectedCategoryIds,
   });
 
-  // Location tracking - use native Mapbox GeolocateControl
-  const [isLocationTracking, setIsLocationTracking] = useState(false);
+  // Track filtered pin IDs for ownership filtering (client-side)
+  const filteredPinIdsRef = useRef<Set<string>>(new Set());
 
-  // Handle location toggle - trigger native GeolocateControl
-  const handleLocationToggle = useCallback((enabled: boolean) => {
-    setIsLocationTracking(enabled);
-    if (enabled && mapLoaded) {
-      // Trigger the native GeolocateControl which will show the blue user location pin
-      triggerGeolocate();
-    }
-  }, [mapLoaded, triggerGeolocate]);
+  // Handle category IDs change from MapFilters (triggers server-side refetch)
+  const handleCategoryIdsChange = useCallback((categoryIds: string[]) => {
+    setSelectedCategoryIds(categoryIds);
+  }, []);
+
+  // Handle filtered pins change from MapFilters (ownership filtering only)
+  const handleFilteredPinsChange = useCallback((filtered: Pin[]) => {
+    if (!map || !mapLoaded) return;
+
+    // Update the set of filtered pin IDs (for ownership filtering)
+    const newFilteredIds = new Set(filtered.map(p => p.id));
+    filteredPinIdsRef.current = newFilteredIds;
+
+    // Get all current pin IDs from the pins hook
+    const allPinIds = pins.pins.map(p => p.id);
+
+    // Hide markers that are not in filtered list
+    allPinIds.forEach(pinId => {
+      const markerId = `pin-${pinId}`;
+      if (!newFilteredIds.has(pinId)) {
+        removeMarker(markerId);
+      }
+    });
+  }, [map, mapLoaded, pins.pins, removeMarker]);
+
+  // Re-apply ownership filters when pins change
+  useEffect(() => {
+    if (!map || !mapLoaded || filteredPinIdsRef.current.size === 0) return;
+    
+    const allPinIds = pins.pins.map(p => p.id);
+    allPinIds.forEach(pinId => {
+      const markerId = `pin-${pinId}`;
+      if (!filteredPinIdsRef.current.has(pinId)) {
+        removeMarker(markerId);
+      }
+    });
+  }, [pins.pins, map, mapLoaded, removeMarker]);
+
 
   // Handle pin actions from popup buttons (only for authenticated users)
   useEffect(() => {
@@ -1240,11 +1481,7 @@ export default function CommunityPage() {
           minZoomForCreate={12}
           onRefresh={() => pins.refreshPins()}
           isRefreshing={pins.isLoading}
-          onLocationToggle={handleLocationToggle}
-          isLocationTracking={isLocationTracking}
           allowCreate={!isAnonymous}
-          onMapStyleToggle={handleMapStyleToggle}
-          currentMapStyle={currentMapStyle}
         >
           {activeMenuAction === 'create' && !isAnonymous && (
             <PinCreationForm
@@ -1275,9 +1512,36 @@ export default function CommunityPage() {
             />
           )}
           {activeMenuAction === 'list' && (
-            <div className="pointer-events-auto bg-transparent backdrop-blur-[5px] rounded-2xl p-4 max-w-xs" style={{ backdropFilter: 'blur(5px)' }}>
-              <p className="text-sm font-medium text-white text-center">List functionality coming soon</p>
-            </div>
+            <MapFilters
+              map={map}
+              pins={pins.pins}
+              onFilteredPinsChange={handleFilteredPinsChange}
+              onCategoryIdsChange={handleCategoryIdsChange}
+              currentMapStyle={currentMapStyle}
+              onMapStyleToggle={handleMapStyleToggle}
+            />
+          )}
+          {activeMenuAction === 'draw' && (
+            <DrawCoordinatesDisplay
+              coordinates={polygonCoordinates}
+              isDrawing={isActivelyDrawing}
+              drawMode={drawMode}
+              onDrawModeChange={setDrawMode}
+              onEditVertices={() => {
+                if (drawRef.current) {
+                  const allFeatures = drawRef.current.getAll();
+                  if (allFeatures.features.length > 0 && allFeatures.features[0].id) {
+                    const featureId = allFeatures.features[0].id as string;
+                    drawRef.current.changeMode('direct_select', { featureId });
+                    setIsActivelyDrawing(false);
+                  }
+                }
+              }}
+              canEditVertices={hasDrawnPolygon && !isActivelyDrawing && polygonCoordinates.length > 0}
+              areaName={editingAreaShape?.name || null}
+              areas={areas}
+              onAreaSelect={handleEditAreaShape}
+            />
           )}
         </GlobalFloatingMenu>
 
@@ -1396,6 +1660,7 @@ export default function CommunityPage() {
               drawRef.current.changeMode('simple_select');
             }
             setHasDrawnPolygon(false);
+            setPolygonCoordinates([]);
             setActiveMenuAction(null);
           }}
         />
@@ -1460,16 +1725,6 @@ export default function CommunityPage() {
           </div>
         )}
 
-        {/* Pin Count Display */}
-        {!pins.isLoading && pins.pins.length > 0 && (
-          <div className="absolute top-4 right-4 z-[60]">
-            <PinCountDisplay 
-              totalPins={pins.pins.length}
-              visiblePins={pins.visiblePins.length}
-              currentZoom={mapInfo.zoom}
-            />
-          </div>
-        )}
 
         {/* Debug Panel - Left */}
         <div className="fixed bottom-4 left-4 z-[100] text-white text-xs font-mono pointer-events-none">
@@ -1508,6 +1763,20 @@ export default function CommunityPage() {
           </div>
         </div>
 
+        {/* Area Popup - shows on area click with edit option */}
+        {areaPopup && user && areaPopup.area.user_id === user.id && (
+          <AreaPopup
+            area={areaPopup.area}
+            position={areaPopup.position}
+            onClose={() => setAreaPopup(null)}
+            onEditShape={(area) => {
+              handleEditAreaShape(area);
+              setAreaPopup(null);
+            }}
+            isOwner={user.id === areaPopup.area.user_id}
+          />
+        )}
+
         {/* Area Sidebar */}
         <AreaSidebar
           area={selectedArea}
@@ -1515,6 +1784,7 @@ export default function CommunityPage() {
           onClose={() => {
             setIsAreaSidebarOpen(false);
             setSelectedArea(null);
+            setAreaPopup(null);
           }}
           onEditDetails={(area) => {
             setEditingArea(area);

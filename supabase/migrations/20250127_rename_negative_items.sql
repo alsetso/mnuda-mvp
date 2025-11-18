@@ -83,3 +83,4 @@ CREATE POLICY "Users can update own credit negatives"
 -- Update grant permissions (table name changed)
 GRANT SELECT, INSERT, UPDATE ON public.credit_negatives TO authenticated;
 
+

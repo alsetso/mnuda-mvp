@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { withAuthRetry } from '@/lib/authHelpers';
 
 export type MemberRole = 'general' | 'investor' | 'admin';
+export type MemberType = 'homeowner' | 'investor' | 'agent' | 'contractor' | 'lender' | 'advisor';
 
 export interface Member {
   id: string;
@@ -9,6 +10,23 @@ export interface Member {
   name: string | null;
   avatar_url: string | null;
   role: MemberRole;
+  // Professional information
+  company: string | null;
+  job_title: string | null;
+  bio: string | null;
+  website: string | null;
+  linkedin_url: string | null;
+  phone: string | null;
+  // Location information
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  primary_market_area: string | null;
+  market_radius: number | null; // Radius in miles (1-99)
+  // Member type and subtype
+  member_type: MemberType;
+  member_subtype: string | null;
+  // Metadata
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +35,19 @@ export interface UpdateMemberData {
   name?: string | null;
   avatar_url?: string | null;
   role?: MemberRole;
+  company?: string | null;
+  job_title?: string | null;
+  bio?: string | null;
+  website?: string | null;
+  linkedin_url?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+  primary_market_area?: string | null;
+  market_radius?: number | null;
+  member_type?: MemberType;
+  member_subtype?: string | null;
 }
 
 export class MemberService {

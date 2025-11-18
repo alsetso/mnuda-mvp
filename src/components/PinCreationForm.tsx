@@ -161,12 +161,12 @@ export function PinCreationForm({
     };
   }, [removeMarker]);
 
-  // Load categories on mount
+  // Load public categories on mount
   useEffect(() => {
     const loadCategories = async () => {
       setIsLoadingCategories(true);
       try {
-        const cats = await PinCategoryService.getCategories();
+        const cats = await PinCategoryService.getPublicCategories();
         setCategories(cats);
       } catch (err) {
         console.error('Error loading categories:', err);
@@ -177,12 +177,13 @@ export function PinCreationForm({
     loadCategories();
   }, []);
 
-  // Update category_id when pinType changes
+  // Update category_id when pinType (category slug) changes
   useEffect(() => {
     if (pinType && categories.length > 0) {
       const category = categories.find(cat => cat.slug === pinType);
       if (category) {
         setCategoryId(category.id);
+        setEmoji(category.emoji);
       }
     } else if (!pinType) {
       setCategoryId(null);
@@ -206,17 +207,14 @@ export function PinCreationForm({
     }
   }, [coordinates, pinType, projectScale, listingType, publicConcernType]);
 
-  const handlePinTypeSelect = (type: 'project' | 'listing' | 'public_concern') => {
-    setPinType(type);
-    // Set default emoji based on type (fixed, not editable)
-    if (type === 'project') {
-      setEmoji('🏗️');
-    } else if (type === 'listing') {
-      setEmoji('🏠');
-    } else if (type === 'public_concern') {
-      setEmoji('⚠️');
+  const handlePinTypeSelect = (categorySlug: string) => {
+    const category = categories.find(cat => cat.slug === categorySlug);
+    if (category) {
+      setPinType(categorySlug as PinType);
+      setCategoryId(category.id);
+      setEmoji(category.emoji);
+      setStep(1);
     }
-    setStep(1);
   };
 
   const handleScaleOrTypeSelect = (value: ProjectScale | ListingType | PublicConcernType) => {
@@ -265,10 +263,10 @@ export function PinCreationForm({
     setPublicConcernType(null);
     setName('');
     setDescription('');
-    setEmoji('🏠');
-    setCategoryId(null);
-    setVisibility('public');
-    onCancel();
+      setEmoji('📄');
+      setCategoryId(null);
+      setVisibility('public');
+      onCancel();
   };
 
   const handleSave = async () => {
@@ -312,7 +310,7 @@ export function PinCreationForm({
       setPublicConcernType(null);
       setName('');
       setDescription('');
-      setEmoji('🏠');
+      setEmoji('📄');
       setCategoryId(null);
       setVisibility('public');
     } catch (err) {
@@ -363,36 +361,27 @@ export function PinCreationForm({
             </p>
             {coordinates && (
               <div className="space-y-2">
-                <button
-                  onClick={() => handlePinTypeSelect('project')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
-                >
-                  <span className="text-2xl">🏗️</span>
-                  <div className="flex-1">
-                    <div className="font-bold">Open Project</div>
-                    <div className="text-xs text-white/70">Active construction, renovation, or job opening</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => handlePinTypeSelect('listing')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
-                >
-                  <span className="text-2xl">🏠</span>
-                  <div className="flex-1">
-                    <div className="font-bold">Active Listing</div>
-                    <div className="text-xs text-white/70">Property for sale (owner or under contract)</div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => handlePinTypeSelect('public_concern')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
-                >
-                  <span className="text-2xl">⚠️</span>
-                  <div className="flex-1">
-                    <div className="font-bold">Public Concern</div>
-                    <div className="text-xs text-white/70">Community issues, safety, or infrastructure needs</div>
-                  </div>
-                </button>
+                {isLoadingCategories ? (
+                  <div className="text-white/60 text-sm text-center py-4">Loading categories...</div>
+                ) : categories.length === 0 ? (
+                  <div className="text-white/60 text-sm text-center py-4">No categories available</div>
+                ) : (
+                  categories.map((category) => (
+                    <button
+                      key={category.id}
+                      onClick={() => handlePinTypeSelect(category.slug)}
+                      className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                    >
+                      <span className="text-2xl">{category.emoji}</span>
+                      <div className="flex-1">
+                        <div className="font-bold">{category.label}</div>
+                        {category.description && (
+                          <div className="text-xs text-white/70">{category.description}</div>
+                        )}
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             )}
             {!canProceed && coordinates && (
@@ -420,7 +409,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('home-repair')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🔧</span>
                   <div className="flex-1">
                     <div className="font-bold">Simple Home Repair</div>
                     <div className="text-xs text-white/70">Basic maintenance and small fixes</div>
@@ -430,7 +418,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('renovation')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🏡</span>
                   <div className="flex-1">
                     <div className="font-bold">Renovation</div>
                     <div className="text-xs text-white/70">Home or building renovation project</div>
@@ -440,7 +427,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('new-construction')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🏗️</span>
                   <div className="flex-1">
                     <div className="font-bold">New Construction</div>
                     <div className="text-xs text-white/70">Building new structures</div>
@@ -450,7 +436,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('commercial')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🏢</span>
                   <div className="flex-1">
                     <div className="font-bold">Commercial Development</div>
                     <div className="text-xs text-white/70">Commercial building projects</div>
@@ -460,7 +445,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('mixed-use')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🏘️</span>
                   <div className="flex-1">
                     <div className="font-bold">Mixed-Use Development</div>
                     <div className="text-xs text-white/70">Combined residential and commercial</div>
@@ -470,20 +454,18 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('city-development')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🏙️</span>
                   <div className="flex-1">
                     <div className="font-bold">City Development</div>
                     <div className="text-xs text-white/70">Large-scale urban development projects</div>
                   </div>
                 </button>
               </div>
-            ) : (
+            ) : pinType === 'listing' ? (
               <div className="space-y-2">
                 <button
                   onClick={() => handleScaleOrTypeSelect('residential')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🏠</span>
                   <div className="flex-1">
                     <div className="font-bold">Residential</div>
                     <div className="text-xs text-white/70">Single family home</div>
@@ -493,7 +475,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('multi-family')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🏘️</span>
                   <div className="flex-1">
                     <div className="font-bold">Multi-Family</div>
                     <div className="text-xs text-white/70">Duplex, triplex, or apartment building</div>
@@ -503,7 +484,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('commercial')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🏢</span>
                   <div className="flex-1">
                     <div className="font-bold">Commercial</div>
                     <div className="text-xs text-white/70">Office, retail, or commercial property</div>
@@ -513,7 +493,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('land')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🌳</span>
                   <div className="flex-1">
                     <div className="font-bold">Land</div>
                     <div className="text-xs text-white/70">Vacant land or lot</div>
@@ -523,7 +502,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('other')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">📍</span>
                   <div className="flex-1">
                     <div className="font-bold">Other</div>
                     <div className="text-xs text-white/70">Other property type</div>
@@ -536,7 +514,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('safety')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🚨</span>
                   <div className="flex-1">
                     <div className="font-bold">Safety</div>
                     <div className="text-xs text-white/70">Safety hazards or concerns</div>
@@ -546,7 +523,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('infrastructure')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🛠️</span>
                   <div className="flex-1">
                     <div className="font-bold">Infrastructure</div>
                     <div className="text-xs text-white/70">Roads, utilities, or public facilities</div>
@@ -556,7 +532,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('environmental')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🌱</span>
                   <div className="flex-1">
                     <div className="font-bold">Environmental</div>
                     <div className="text-xs text-white/70">Environmental issues or concerns</div>
@@ -566,7 +541,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('zoning')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">📋</span>
                   <div className="flex-1">
                     <div className="font-bold">Zoning</div>
                     <div className="text-xs text-white/70">Zoning or land use concerns</div>
@@ -576,7 +550,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('traffic')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">🚦</span>
                   <div className="flex-1">
                     <div className="font-bold">Traffic</div>
                     <div className="text-xs text-white/70">Traffic or transportation issues</div>
@@ -586,7 +559,6 @@ export function PinCreationForm({
                   onClick={() => handleScaleOrTypeSelect('other')}
                   className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
                 >
-                  <span className="text-2xl">📍</span>
                   <div className="flex-1">
                     <div className="font-bold">Other</div>
                     <div className="text-xs text-white/70">Other public concern</div>
@@ -599,11 +571,14 @@ export function PinCreationForm({
           /* Step 2: Location & Basic Info */
           <div className="space-y-4">
             {/* Pin Type Display */}
-            {pinType && (
+            {pinType && categoryId && (
               <div className="p-3 bg-white/10 rounded-lg border border-white/20">
                 <p className="text-xs text-white/70 mb-1">Type</p>
                 <p className="text-sm text-white font-medium">
-                  {pinType === 'project' ? '🏗️ Open Project' : pinType === 'listing' ? '🏠 Active Listing' : '⚠️ Public Concern'}
+                  {(() => {
+                    const category = categories.find(cat => cat.slug === pinType);
+                    return category ? `${category.emoji} ${category.label}` : '';
+                  })()}
                 </p>
               </div>
             )}
@@ -616,25 +591,25 @@ export function PinCreationForm({
                 </p>
                 <p className="text-sm text-white font-medium">
                   {pinType === 'project' ? (
-                    projectScale === 'home-repair' ? '🔧 Simple Home Repair' :
-                    projectScale === 'renovation' ? '🏡 Renovation' :
-                    projectScale === 'new-construction' ? '🏗️ New Construction' :
-                    projectScale === 'commercial' ? '🏢 Commercial Development' :
-                    projectScale === 'mixed-use' ? '🏘️ Mixed-Use Development' :
-                    projectScale === 'city-development' ? '🏙️ City Development' : ''
+                    projectScale === 'home-repair' ? 'Simple Home Repair' :
+                    projectScale === 'renovation' ? 'Renovation' :
+                    projectScale === 'new-construction' ? 'New Construction' :
+                    projectScale === 'commercial' ? 'Commercial Development' :
+                    projectScale === 'mixed-use' ? 'Mixed-Use Development' :
+                    projectScale === 'city-development' ? 'City Development' : ''
                   ) : pinType === 'listing' ? (
-                    listingType === 'residential' ? '🏠 Residential' :
-                    listingType === 'multi-family' ? '🏘️ Multi-Family' :
-                    listingType === 'commercial' ? '🏢 Commercial' :
-                    listingType === 'land' ? '🌳 Land' :
-                    listingType === 'other' ? '📍 Other' : ''
+                    listingType === 'residential' ? 'Residential' :
+                    listingType === 'multi-family' ? 'Multi-Family' :
+                    listingType === 'commercial' ? 'Commercial' :
+                    listingType === 'land' ? 'Land' :
+                    listingType === 'other' ? 'Other' : ''
                   ) : (
-                    publicConcernType === 'safety' ? '🚨 Safety' :
-                    publicConcernType === 'infrastructure' ? '🛠️ Infrastructure' :
-                    publicConcernType === 'environmental' ? '🌱 Environmental' :
-                    publicConcernType === 'zoning' ? '📋 Zoning' :
-                    publicConcernType === 'traffic' ? '🚦 Traffic' :
-                    publicConcernType === 'other' ? '📍 Other' : ''
+                    publicConcernType === 'safety' ? 'Safety' :
+                    publicConcernType === 'infrastructure' ? 'Infrastructure' :
+                    publicConcernType === 'environmental' ? 'Environmental' :
+                    publicConcernType === 'zoning' ? 'Zoning' :
+                    publicConcernType === 'traffic' ? 'Traffic' :
+                    publicConcernType === 'other' ? 'Other' : ''
                   )}
                 </p>
               </div>
@@ -684,7 +659,10 @@ export function PinCreationForm({
               <div className="p-3 bg-white/10 rounded-lg border border-white/20">
                 <p className="text-xs text-white/70 mb-1">Category</p>
                 <p className="text-sm text-white font-medium">
-                  {pinType === 'project' ? '🏗️ Open Project' : pinType === 'listing' ? '🏠 Active Listing' : '⚠️ Public Concern'}
+                  {(() => {
+                    const category = categories.find(cat => cat.slug === pinType);
+                    return category ? `${category.emoji} ${category.label}` : '';
+                  })()}
                 </p>
               </div>
             )}

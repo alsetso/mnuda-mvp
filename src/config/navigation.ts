@@ -2,8 +2,8 @@ import {
   HomeIcon,
   MapIcon,
   Cog6ToothIcon,
-  UserGroupIcon,
   CreditCardIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
 export interface NavItem {
@@ -30,13 +30,6 @@ export const navItems: NavItem[] = [
     category: 'Map',
   },
   {
-    name: 'Groups',
-    href: '/group',
-    icon: UserGroupIcon,
-    description: 'Join real estate development groups and collaborate with professionals',
-    category: 'Community',
-  },
-  {
     name: 'Credit',
     href: '/credit',
     icon: CreditCardIcon,
@@ -44,8 +37,15 @@ export const navItems: NavItem[] = [
     category: 'Services',
   },
   {
+    name: 'Articles',
+    href: '/articles',
+    icon: DocumentTextIcon,
+    description: 'Read articles about Minnesota real estate development and acquisition',
+    category: 'Resources',
+  },
+  {
     name: 'Settings',
-    href: '/settings',
+    href: '/account/settings',
     icon: Cog6ToothIcon,
     description: 'Manage your account settings and preferences',
     category: 'Account',

@@ -2,7 +2,7 @@
 
 import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-export type DeleteEntityType = 'group' | 'listing';
+export type DeleteEntityType = 'listing';
 
 interface DeleteModalProps {
   isOpen: boolean;
@@ -14,10 +14,6 @@ interface DeleteModalProps {
 }
 
 const entityConfig: Record<DeleteEntityType, { label: string; description: string }> = {
-  group: {
-    label: 'Group',
-    description: 'Deleting this group will permanently remove it and all its content, including posts, members, and associated data. This action cannot be undone.',
-  },
   listing: {
     label: 'Listing',
     description: 'Deleting this listing will permanently remove it from the market. This action cannot be undone.',

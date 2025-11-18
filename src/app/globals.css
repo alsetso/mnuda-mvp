@@ -184,25 +184,6 @@ body {
   display: none !important;
 }
 
-/* Hide default GeolocateControl button - we control it from floating menu */
-.mapboxgl-ctrl-geolocate,
-.mapboxgl-ctrl .mapboxgl-ctrl-geolocate,
-.mapboxgl-ctrl-group .mapboxgl-ctrl-geolocate,
-button.mapboxgl-ctrl-geolocate {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* Hide control group if it only contains geolocate */
-.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-geolocate:only-child) {
-  display: none !important;
-}
 
 /* Credit exhaustion shake animation */
 @keyframes credit-shake {

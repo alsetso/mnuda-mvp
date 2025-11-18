@@ -26,7 +26,6 @@ interface UseMapProps {
 export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): UseMapReturn {
   const map = useRef<import('mapbox-gl').Map | null>(null);
   const markers = useRef<Map<string, import('mapbox-gl').Marker>>(new Map());
-  const geolocateControlRef = useRef<import('mapbox-gl').GeolocateControl | null>(null);
   
   const onMapReadyRef = useRef(onMapReady);
   const onMapClickRef = useRef(onMapClick);
@@ -71,25 +70,14 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
           center: MAP_CONFIG.DEFAULT_CENTER,
           zoom: MAP_CONFIG.DEFAULT_ZOOM,
           maxZoom: MAP_CONFIG.MAX_ZOOM,
+          maxBounds: [
+            [MAP_CONFIG.MINNESOTA_BOUNDS.west, MAP_CONFIG.MINNESOTA_BOUNDS.south], // Southwest corner
+            [MAP_CONFIG.MINNESOTA_BOUNDS.east, MAP_CONFIG.MINNESOTA_BOUNDS.north]  // Northeast corner
+          ],
         });
 
-        map.current.on('load', () => {
-          // Add GeolocateControl
-          const geolocate = new mapbox.GeolocateControl({
-            positionOptions: { enableHighAccuracy: true },
-            trackUserLocation: true,
-          });
-          map.current?.addControl(geolocate);
-          geolocateControlRef.current = geolocate;
-          
-          // Hide control button
-          setTimeout(() => {
-            const button = map.current?.getContainer().querySelector('.mapboxgl-ctrl-geolocate') as HTMLElement;
-            if (button) {
-              button.style.display = 'none';
-            }
-          }, 100);
 
+        map.current.on('load', () => {
           setMapLoaded(true);
           onMapReadyRef.current?.(map.current!);
         });
@@ -252,10 +240,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
 
         const markerElement = marker.getElement();
         if (markerElement && options.popupContent) {
-          markerElement.addEventListener('click', (e) => {
-            e.stopPropagation();
-            marker.togglePopup();
-          });
+          markerElement.style.cursor = 'pointer';
         }
 
         marker.addTo(map.current);
@@ -267,6 +252,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     [setupPopupListeners]
   );
 
+  // Remove marker
   const removeMarker = useCallback((id: string) => {
     const marker = markers.current.get(id);
     if (marker) {
@@ -275,21 +261,35 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     }
   }, []);
 
+  // Clear all markers
   const clearMarkers = useCallback(() => {
-    markers.current.forEach((m) => m.remove());
+    markers.current.forEach((marker) => marker.remove());
     markers.current.clear();
   }, []);
 
+  // Update marker popup
   const updateMarkerPopup = useCallback((id: string, popupContent: string) => {
     const marker = markers.current.get(id);
     if (marker) {
       const popup = marker.getPopup();
-      if (popup && popup.isOpen()) {
+      if (popup) {
         popup.setHTML(popupContent);
+      } else {
+        const mapbox = require('mapbox-gl');
+        const newPopup = new mapbox.Popup({ 
+          offset: 25,
+          closeButton: false,
+          closeOnClick: false,
+          className: 'pin-popup-container',
+          maxWidth: '300px',
+        }).setHTML(popupContent);
+        marker.setPopup(newPopup);
+        setupPopupListeners(newPopup, id);
       }
     }
-  }, []);
+  }, [setupPopupListeners]);
 
+  // Fly to coordinates
   const flyTo = useCallback((coordinates: { lat: number; lng: number }, zoom?: number) => {
     if (!map.current) return;
     map.current.flyTo({
@@ -300,7 +300,11 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
   }, []);
 
   const triggerGeolocate = useCallback(() => {
-    geolocateControlRef.current?.trigger();
+    // GeolocateControl removed - function kept for compatibility
+  }, []);
+
+  const stopGeolocate = useCallback(() => {
+    // GeolocateControl removed - function kept for compatibility
   }, []);
 
   const changeMapStyle = useCallback((styleKey: keyof typeof MAP_CONFIG.STRATEGIC_STYLES): Promise<void> => {
@@ -365,6 +369,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     followUser,
     updateUserLocation,
     triggerGeolocate,
+    stopGeolocate,
     addMarker,
     removeMarker,
     clearMarkers,

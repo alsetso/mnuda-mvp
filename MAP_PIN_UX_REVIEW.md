@@ -227,3 +227,4 @@ const shouldShowPins = mapInfo.zoom >= MIN_PIN_ZOOM;
 - Size: 20-24px for better visibility
 - Add background circle for contrast
 
+

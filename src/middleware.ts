@@ -37,10 +37,20 @@ export async function middleware(req: NextRequest) {
 
   // Get session and refresh if needed (getUser triggers refresh, getSession does not)
   // This helps keep sessions alive across requests
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // Route protection can be added here if needed
-  // Example: Protect /map route by checking session and redirecting to login
+  // Protect /admin routes - require authentication
+  if (req.nextUrl.pathname.startsWith('/admin')) {
+    if (!user) {
+      const redirectUrl = new URL('/login', req.url);
+      redirectUrl.searchParams.set('redirect', req.nextUrl.pathname);
+      redirectUrl.searchParams.set('message', 'Please sign in to access admin panel');
+      return NextResponse.redirect(redirectUrl);
+    }
+    
+    // Admin role check is done at the route level for better error handling
+    // This middleware just ensures authentication
+  }
 
   return response;
 }

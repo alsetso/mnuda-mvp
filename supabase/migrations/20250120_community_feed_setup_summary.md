@@ -77,3 +77,4 @@ After running migrations:
 3. Verify names and avatars display correctly
 4. Test realtime updates
 
+

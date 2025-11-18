@@ -43,3 +43,4 @@ CREATE POLICY "Users can delete own credit reports"
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
+

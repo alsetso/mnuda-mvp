@@ -88,9 +88,9 @@ export default function IconBar() {
       {/* User Profile Icon */}
       <div className="mt-auto">
         <Link
-          href="/settings"
+          href="/account/settings"
           className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all overflow-hidden ${
-            pathname.startsWith('/settings')
+            pathname.startsWith('/account')
               ? 'ring-2 ring-gold-600/50'
               : 'hover:ring-2 hover:ring-gold-600/50'
           }`}

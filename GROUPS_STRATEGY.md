@@ -375,3 +375,4 @@ Success depends on:
 - **Integration**: Making pins/areas group-aware
 - **Iteration**: Learning from usage and improving
 
+

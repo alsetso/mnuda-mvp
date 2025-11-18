@@ -17,6 +17,7 @@ interface MapboxFeature {
   context?: Array<{
     id: string;
     text: string;
+    short_code?: string;
   }>;
 }
 
@@ -121,8 +122,20 @@ class GeocodingService {
     const streetNumber = contextMap.address || '';
     const streetName = contextMap.street || '';
     const city = contextMap.place || '';
-    const state = contextMap.region || '';
+    let state = contextMap.region || '';
     const zip = contextMap.postcode || '';
+
+    // Normalize state: use short_code if available (e.g., 'US-MN' -> 'MN'), or normalize 'Minnesota' to 'MN'
+    const regionContext = context.find(c => c.id?.startsWith('region.'));
+    if (regionContext?.short_code) {
+      // Extract state code from 'US-MN' format
+      const stateCode = regionContext.short_code.split('-')[1];
+      if (stateCode) {
+        state = stateCode;
+      }
+    } else if (state.toLowerCase() === 'minnesota') {
+      state = 'MN';
+    }
 
     // Build street address
     const street = this.buildStreetAddress(streetNumber, streetName, feature);
@@ -130,7 +143,7 @@ class GeocodingService {
     return { street, city, state, zip };
   }
 
-  private createContextMap(context: Array<{ id: string; text: string }>): Record<string, string> {
+  private createContextMap(context: Array<{ id: string; text: string; short_code?: string }>): Record<string, string> {
     return context.reduce((map, item) => {
       const type = item.id.split('.')[0]; // Get the type prefix (e.g., 'address', 'street', etc.)
       map[type] = item.text;

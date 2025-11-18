@@ -319,3 +319,4 @@ COMMENT ON COLUMN public.credit_letters.content_json IS 'Structured JSON content
 5. **Update service**: Modify `CreditRestorationService` to handle HTML/JSON
 6. **Update display**: Render HTML in letter list/detail views
 
+

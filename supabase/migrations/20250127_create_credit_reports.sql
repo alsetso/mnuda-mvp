@@ -93,3 +93,4 @@ CREATE POLICY "Users can update own credit reports"
 -- Grant permissions
 GRANT SELECT, INSERT, UPDATE ON public.credit_reports TO authenticated;
 
+

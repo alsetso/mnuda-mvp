@@ -112,3 +112,4 @@ CREATE TYPE compliance_violation_type AS ENUM (
   'NO_PERMISSIBLE_PURPOSE'
 );
 
+

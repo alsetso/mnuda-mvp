@@ -13,7 +13,7 @@ export default function Home() {
   // Filter nav items to exclude Home and Settings from the directory
   // Must be called unconditionally (hooks rules)
   const directoryItems = useMemo(() => {
-    return navItems.filter(item => item.href !== '/' && item.href !== '/settings');
+    return navItems.filter(item => item.href !== '/' && item.href !== '/account/settings');
   }, []);
 
   const categorizedItems = useMemo(() => {

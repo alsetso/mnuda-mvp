@@ -87,3 +87,4 @@ CREATE POLICY "Anonymous users can view active listings"
   TO anon
   USING (status = 'active'::public.listing_status);
 
+

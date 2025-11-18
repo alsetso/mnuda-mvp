@@ -98,7 +98,7 @@ export default function LoginPage() {
   // Redirect if already authenticated (after OTP verification or on page load)
   useEffect(() => {
     if (!isLoading && user) {
-      router.push('/settings');
+      router.push('/account/settings');
     }
   }, [isLoading, user, router]);
 

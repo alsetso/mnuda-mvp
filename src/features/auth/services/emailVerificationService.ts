@@ -36,7 +36,7 @@ class EmailVerificationService {
         type: 'signup',
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/settings`,
+          emailRedirectTo: `${window.location.origin}/account/settings`,
         },
       });
 
@@ -153,7 +153,7 @@ class EmailVerificationService {
     try {
       // Try to send a password reset email - this will only work if email is confirmed
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/settings`,
+        redirectTo: `${window.location.origin}/account/settings`,
       });
 
       if (error) {

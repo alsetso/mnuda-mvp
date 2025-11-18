@@ -9,13 +9,23 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 // Helper function to create Stripe customer if missing
-// Note: This function requires a profiles table which has been removed
-// Update this when implementing a new user data storage solution
+// Stores the customer ID in the members table
 export const createStripeCustomerIfMissing = async (
   userId: string, 
   email: string, 
   supabase: any // eslint-disable-line @typescript-eslint/no-explicit-any
 ): Promise<string> => {
+  // Check if customer already exists
+  const { data: member } = await supabase
+    .from('members')
+    .select('stripe_customer_id')
+    .eq('id', userId)
+    .single();
+
+  if (member?.stripe_customer_id) {
+    return member.stripe_customer_id;
+  }
+
   // Create Stripe customer
   const customer = await stripe.customers.create({
     email: email,
@@ -24,6 +34,11 @@ export const createStripeCustomerIfMissing = async (
     }
   });
 
-  // TODO: Store stripe_customer_id when user data storage is implemented
+  // Store stripe_customer_id in members table
+  await supabase
+    .from('members')
+    .update({ stripe_customer_id: customer.id })
+    .eq('id', userId);
+
   return customer.id;
 };

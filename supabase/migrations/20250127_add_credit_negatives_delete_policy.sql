@@ -17,3 +17,4 @@ CREATE POLICY "Users can delete own credit negatives"
 -- Grant DELETE permission
 GRANT DELETE ON public.credit_negatives TO authenticated;
 
+

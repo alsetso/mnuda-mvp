@@ -70,3 +70,4 @@ CROSS JOIN LATERAL (
 )
 WHERE pl.credit_profile_id IS NOT NULL;
 
+

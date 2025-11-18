@@ -46,7 +46,7 @@ export default function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOve
           icon: <MapIcon className="w-5 h-5" />
         },
         { 
-          href: '/settings', 
+          href: '/account/settings', 
           label: 'Settings', 
           description: 'Account settings and profile',
           icon: <Cog6ToothIcon className="w-5 h-5" />

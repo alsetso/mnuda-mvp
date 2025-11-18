@@ -249,3 +249,4 @@ Refer to the detailed design documents:
 - **UI/UX specs**: `GROUPS_UI_SPEC.md`
 - **Strategy**: `GROUPS_STRATEGY.md`
 
+

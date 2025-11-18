@@ -209,3 +209,4 @@ CREATE POLICY "Users can view own archived credit restoration requests"
   TO authenticated
   USING (auth.uid() = user_id);
 
+

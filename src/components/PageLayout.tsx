@@ -82,6 +82,10 @@ export default function PageLayout({
   // - When logged in, respect the showFooter prop (default false for authenticated pages)
   const shouldShowFooter = !user ? true : showFooter;
 
+  // Height and overflow logic:
+  // - When contentPadding is provided: use min-h-screen (allows natural scrolling)
+  // - When contentPadding is empty and no footer: use h-screen with overflow-hidden (fixed viewport)
+  // - When contentPadding is empty but footer exists: use min-h-screen (allows scrolling)
   const heightClass = shouldShowFooter === false && contentPadding === '' ? 'h-screen' : '';
   const overflowClass = shouldShowFooter === false && contentPadding === '' ? 'overflow-hidden' : '';
   const minHeightClass = shouldShowFooter !== false || contentPadding !== '' ? 'min-h-screen' : '';
@@ -124,7 +128,7 @@ export default function PageLayout({
       {/* Main Content */}
       <div className="flex flex-1 min-h-0 overflow-hidden" style={{ margin: 0, padding: 0, marginTop: showHeader ? '3rem' : '0' }}>
         {/* Main Content - Scrollable area */}
-        <main className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'} ${contentPadding ? 'overflow-y-auto' : 'overflow-hidden'}`} style={{ 
+        <main className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'} overflow-y-auto`} style={{ 
           maxWidth: '100vw', 
           margin: 0, 
           padding: 0, 
@@ -135,7 +139,7 @@ export default function PageLayout({
           position: 'relative',
           height: contentPadding ? undefined : '100%'
         }}>
-          <div className={contentPadding || ''} style={contentPadding ? { margin: 0, width: '100%' } : { width: '100%', margin: 0, padding: 0, height: '100%' }}>
+          <div className={contentPadding || ''} style={contentPadding ? { margin: 0, width: '100%' } : { width: '100%', margin: 0, padding: 0 }}>
             {children}
           </div>
         </main>

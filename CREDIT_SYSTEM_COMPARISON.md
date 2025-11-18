@@ -236,3 +236,4 @@
 - ✅ Switch from request-based to profile-based model - **NEEDS REFACTOR**
 - ✅ Normalize reports into separate table - **NEEDS MIGRATION**
 
+

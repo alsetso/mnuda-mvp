@@ -240,3 +240,4 @@ CREATE TYPE group_visibility AS ENUM ('public', 'invite_only', 'unlisted');
 
 **Skip**: Fully private/hidden groups (not needed)
 
+

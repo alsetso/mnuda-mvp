@@ -11,7 +11,7 @@ export class PasswordResetService {
     try {
       // Use Supabase's built-in password reset flow
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/settings`,
+        redirectTo: `${window.location.origin}/account/settings`,
       });
 
       if (error) {

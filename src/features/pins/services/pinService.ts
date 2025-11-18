@@ -9,6 +9,7 @@ export interface PinCategory {
   description: string | null;
   display_order: number;
   is_active: boolean;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -71,14 +72,52 @@ export class PinCategoryService {
 
     return data || [];
   }
+
+  /**
+   * Get all public pin categories (for map filters)
+   */
+  static async getPublicCategories(): Promise<PinCategory[]> {
+    const { data, error } = await supabase
+      .from('pins_categories')
+      .select('*')
+      .eq('is_active', true)
+      .eq('is_public', true)
+      .order('display_order', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching public pin categories:', error);
+      throw new Error(`Failed to fetch public categories: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Get all pin categories (including inactive ones)
+   */
+  static async getAllCategories(): Promise<PinCategory[]> {
+    const { data, error } = await supabase
+      .from('pins_categories')
+      .select('*')
+      .order('display_order', { ascending: true })
+      .order('is_active', { ascending: false }); // Active categories first
+
+    if (error) {
+      console.error('Error fetching all pin categories:', error);
+      throw new Error(`Failed to fetch all categories: ${error.message}`);
+    }
+
+    return data || [];
+  }
 }
 
 export class PinService {
   /**
    * Get all public pins and user's own pins (if authenticated)
    * For anonymous users, returns only public pins
+   * Optionally filter by category IDs (server-side filtering)
    */
-  static async getAllPins(): Promise<Pin[]> {
+  static async getAllPins(categoryIds?: string[]): Promise<Pin[]> {
     const { data: { user } } = await supabase.auth.getUser();
 
     let query = supabase
@@ -91,6 +130,17 @@ export class PinService {
     } else {
       // Anonymous users can only see public pins
       query = query.eq('visibility', 'public');
+    }
+
+    // Filter by category IDs if provided (server-side filtering)
+    // If empty array is passed, return empty result (no categories selected)
+    // If undefined, return all pins (no filtering)
+    if (categoryIds !== undefined) {
+      if (categoryIds.length === 0) {
+        // No categories selected, return empty array
+        return [];
+      }
+      query = query.in('category_id', categoryIds);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });

@@ -74,7 +74,7 @@ export default function Footer({ fixed = false }: FooterProps) {
                 </li>
                 <li>
                   <Link 
-                    href="/settings" 
+                    href="/account/settings" 
                     className="text-sm text-gray-600 hover:text-black transition-colors"
                     title="Settings - Manage your account settings and preferences"
                   >

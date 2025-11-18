@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/settings`,
+          emailRedirectTo: `${window.location.origin}/account/settings`,
         },
       });
       if (error) throw error;
@@ -198,7 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: email,
         options: {
           shouldCreateUser: false, // Only existing users
-          emailRedirectTo: `${window.location.origin}/settings`,
+          emailRedirectTo: `${window.location.origin}/account/settings`,
         }
       });
       if (error) throw error;
@@ -217,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: email,
         options: {
           shouldCreateUser: true, // Create account if doesn't exist
-          emailRedirectTo: `${window.location.origin}/settings`,
+          emailRedirectTo: `${window.location.origin}/account/settings`,
         }
       });
       if (error) throw error;

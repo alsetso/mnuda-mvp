@@ -157,3 +157,4 @@ If you want to switch from intake questions to manual review:
 3. Update UI to show "Request to Join" instead of form
 4. Owners review pending members with profile info only
 
+

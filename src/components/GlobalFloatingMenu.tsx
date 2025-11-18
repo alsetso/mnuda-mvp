@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PlusIcon, MagnifyingGlassIcon, ListBulletIcon, ArrowPathIcon, MapPinIcon, PencilIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, ListBulletIcon, ArrowPathIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/features/ui/hooks/useToast';
 
 interface GlobalFloatingMenuProps {
@@ -12,11 +12,7 @@ interface GlobalFloatingMenuProps {
   minZoomForCreate?: number;
   onRefresh?: () => void;
   isRefreshing?: boolean;
-  onLocationToggle?: (enabled: boolean) => void;
-  isLocationTracking?: boolean;
   allowCreate?: boolean;
-  onMapStyleToggle?: () => void;
-  currentMapStyle?: 'dark' | 'satellite';
 }
 
 const DEFAULT_MIN_ZOOM = 12;
@@ -29,11 +25,7 @@ export function GlobalFloatingMenu({
   minZoomForCreate = DEFAULT_MIN_ZOOM,
   onRefresh,
   isRefreshing = false,
-  onLocationToggle,
-  isLocationTracking = false,
-  allowCreate = true,
-  onMapStyleToggle,
-  currentMapStyle = 'dark'
+  allowCreate = true
 }: GlobalFloatingMenuProps) {
   const [internalActiveAction, setInternalActiveAction] = useState<'create' | 'search' | 'list' | 'draw' | null>(null);
   const { warning } = useToast();
@@ -93,7 +85,11 @@ export function GlobalFloatingMenu({
             <button
               onClick={() => handleMenuClick('create')}
               disabled={isZoomTooLow && activeAction !== 'create'}
-              className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all bg-transparent text-gray-300 ${
+              className={`relative w-10 h-10 flex items-center justify-center rounded-xl transition-all text-gray-300 ${
+                activeAction === 'create'
+                  ? 'bg-white/20'
+                  : 'bg-transparent'
+              } ${
                 isZoomTooLow && activeAction !== 'create'
                   ? 'opacity-50 cursor-not-allowed'
                   : ''
@@ -109,7 +105,11 @@ export function GlobalFloatingMenu({
           
           <button
             onClick={() => handleMenuClick('search')}
-            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all bg-transparent text-gray-300"
+            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all text-gray-300 ${
+              activeAction === 'search'
+                ? 'bg-white/20'
+                : 'bg-transparent'
+            }`}
             title="Search"
           >
             <MagnifyingGlassIcon className="w-5 h-5" />
@@ -117,7 +117,11 @@ export function GlobalFloatingMenu({
           
           <button
             onClick={() => handleMenuClick('list')}
-            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all bg-transparent text-gray-300"
+            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all text-gray-300 ${
+              activeAction === 'list'
+                ? 'bg-white/20'
+                : 'bg-transparent'
+            }`}
             title="List"
           >
             <ListBulletIcon className="w-5 h-5" />
@@ -125,7 +129,11 @@ export function GlobalFloatingMenu({
           
           <button
             onClick={() => handleMenuClick('draw')}
-            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all bg-transparent text-gray-300"
+            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all text-gray-300 ${
+              activeAction === 'draw'
+                ? 'bg-white/20'
+                : 'bg-transparent'
+            }`}
             title="Draw Polygon"
           >
             <PencilIcon className="w-5 h-5" />
@@ -139,26 +147,6 @@ export function GlobalFloatingMenu({
               title="Refresh"
             >
               <ArrowPathIcon className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            </button>
-          )}
-          
-          {onLocationToggle && (
-            <button
-              onClick={() => onLocationToggle(!isLocationTracking)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all bg-transparent text-gray-300"
-              title={isLocationTracking ? 'Stop tracking location' : 'Track my location'}
-            >
-              <MapPinIcon className={`w-5 h-5 ${isLocationTracking ? 'animate-pulse' : ''}`} />
-            </button>
-          )}
-
-          {onMapStyleToggle && (
-            <button
-              onClick={onMapStyleToggle}
-              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all bg-transparent text-gray-300"
-              title={currentMapStyle === 'dark' ? 'Switch to Satellite view' : 'Switch to Dark view'}
-            >
-              <GlobeAltIcon className="w-5 h-5" />
             </button>
           )}
         </div>

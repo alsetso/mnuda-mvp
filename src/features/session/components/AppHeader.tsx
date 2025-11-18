@@ -66,9 +66,9 @@ export default function AppHeader({
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/map', label: 'Map' },
-    { href: '/group', label: 'Groups' },
     { href: '/market', label: 'Market' },
     { href: '/credit', label: 'Credit' },
+    { href: '/articles', label: 'Articles' },
   ];
 
   const isActive = (href: string) => {
