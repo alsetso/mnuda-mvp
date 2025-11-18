@@ -94,3 +94,4 @@ CREATE POLICY "Users can update own credit profile"
 GRANT SELECT, INSERT, UPDATE ON public.credit_profiles TO authenticated;
 
 
+

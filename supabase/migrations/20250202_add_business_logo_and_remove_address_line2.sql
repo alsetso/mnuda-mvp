@@ -8,3 +8,4 @@ ADD COLUMN IF NOT EXISTS logo_url TEXT;
 ALTER TABLE public.businesses
 DROP COLUMN IF EXISTS address_line2;
 
+

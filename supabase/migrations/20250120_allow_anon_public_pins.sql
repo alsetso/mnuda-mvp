@@ -12,3 +12,4 @@ CREATE POLICY "Anonymous users can view public pins"
   USING (visibility = 'public'::public.pin_visibility);
 
 
+

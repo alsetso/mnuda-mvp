@@ -10,3 +10,4 @@ CREATE INDEX IF NOT EXISTS idx_members_market_radius ON public.members(market_ra
 -- Add comment
 COMMENT ON COLUMN public.members.market_radius IS 'Market radius in miles (1-99) around primary market area';
 
+

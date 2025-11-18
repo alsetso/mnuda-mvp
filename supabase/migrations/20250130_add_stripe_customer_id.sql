@@ -10,3 +10,4 @@ CREATE INDEX IF NOT EXISTS idx_members_stripe_customer_id ON public.members(stri
 -- Add comment
 COMMENT ON COLUMN public.members.stripe_customer_id IS 'Stripe customer ID for payment method and subscription management';
 
+

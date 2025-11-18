@@ -84,3 +84,4 @@ CREATE POLICY "Users can update own credit negatives"
 GRANT SELECT, INSERT, UPDATE ON public.credit_negatives TO authenticated;
 
 
+

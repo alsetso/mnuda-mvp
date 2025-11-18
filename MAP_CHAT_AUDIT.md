@@ -159,3 +159,4 @@ The Map Chat Widget is **authentic** in that:
 **Message viewing**: Map chat messages cannot be viewed in Supabase as they are not persisted. Use the `community_feed` table to view saved community messages.
 
 
+

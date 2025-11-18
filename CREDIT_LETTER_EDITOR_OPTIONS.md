@@ -320,3 +320,4 @@ COMMENT ON COLUMN public.credit_letters.content_json IS 'Structured JSON content
 6. **Update display**: Render HTML in letter list/detail views
 
 
+

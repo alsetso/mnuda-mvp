@@ -80,3 +80,4 @@ If the warning persists:
 
 In production, HTTPS is automatically handled by your hosting provider (Vercel, etc.). This setup is only needed for local development.
 
+

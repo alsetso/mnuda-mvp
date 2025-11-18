@@ -111,3 +111,4 @@ CREATE POLICY "Users can delete own credit letters"
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.credit_letters TO authenticated;
 
 
+

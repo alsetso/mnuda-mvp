@@ -36,3 +36,4 @@ echo ""
 echo "⚠️  Note: You may need to accept the certificate in your browser"
 echo "   (this is safe for local development)"
 
+

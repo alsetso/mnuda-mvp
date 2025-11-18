@@ -213,3 +213,4 @@ if (!hasTrackedInSession) {
 
 The current schema is **minimal but functional**. Enhance tracking logic first, then add database complexity only when needed.
 
+

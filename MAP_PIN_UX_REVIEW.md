@@ -228,3 +228,4 @@ const shouldShowPins = mapInfo.zoom >= MIN_PIN_ZOOM;
 - Add background circle for contrast
 
 
+

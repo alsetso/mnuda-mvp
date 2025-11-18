@@ -64,3 +64,4 @@ CREATE POLICY "Users can update own business logos"
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
 
+

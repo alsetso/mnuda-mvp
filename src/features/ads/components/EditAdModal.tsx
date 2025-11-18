@@ -344,3 +344,4 @@ export function EditAdModal({ isOpen, onClose, ad, onUpdateAd }: EditAdModalProp
   );
 }
 
+

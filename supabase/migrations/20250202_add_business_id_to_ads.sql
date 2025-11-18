@@ -73,3 +73,4 @@ CREATE POLICY "Users can delete ads for their businesses"
     )
   );
 
+

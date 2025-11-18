@@ -131,3 +131,4 @@ GROUP BY article_slug;
 3. **A/B Testing**: Track different ad variations
 4. **Performance Metrics**: Calculate CTR, conversion rates, etc.
 
+

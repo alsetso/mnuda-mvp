@@ -127,3 +127,4 @@ CREATE POLICY "Users can update own negative items"
 GRANT SELECT, INSERT, UPDATE ON public.negative_items TO authenticated;
 
 
+

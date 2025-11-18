@@ -115,3 +115,4 @@
 - Tablet: Two-column grid for details
 - Desktop: Full layout with optimal spacing
 
+

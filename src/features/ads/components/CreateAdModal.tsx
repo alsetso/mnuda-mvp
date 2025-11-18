@@ -336,3 +336,4 @@ export function CreateAdModal({ isOpen, onClose, onCreateAd }: CreateAdModalProp
   );
 }
 
+

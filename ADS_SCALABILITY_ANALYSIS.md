@@ -320,3 +320,4 @@ useEffect(() => {
 - **Recommended**: Yes (add selection strategies)
 - **Optional**: Infinite rotation for better UX
 
+

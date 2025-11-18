@@ -55,3 +55,4 @@ CREATE POLICY "Users can update own credit restoration requests"
 GRANT SELECT, INSERT, UPDATE ON public.credit_restoration_requests TO authenticated;
 
 
+

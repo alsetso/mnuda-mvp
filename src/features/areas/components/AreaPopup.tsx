@@ -57,3 +57,4 @@ export function AreaPopup({ area, position, onClose, onEditShape, isOwner }: Are
   );
 }
 
+

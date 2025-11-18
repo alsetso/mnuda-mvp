@@ -106,3 +106,4 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION public.track_ad_event(UUID, public.ad_event_type, public.ad_placement, TEXT, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.track_ad_event(UUID, public.ad_event_type, public.ad_placement, TEXT, UUID) TO anon;
 
+
