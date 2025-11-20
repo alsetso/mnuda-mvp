@@ -331,9 +331,22 @@ export function useSkipTracePins({
   const addSkipTracePin = useCallback((address: SkipTraceAddress) => {
     if (!address.coordinates) return;
 
+    const lat = address.coordinates.latitude;
+    const lng = address.coordinates.longitude;
+
+    // Validate coordinates
+    if (
+      typeof lat !== 'number' || typeof lng !== 'number' ||
+      isNaN(lat) || isNaN(lng) ||
+      !isFinite(lat) || !isFinite(lng)
+    ) {
+      console.warn('Invalid skip trace coordinates:', address.coordinates);
+      return;
+    }
+
     const coordinates = {
-      lat: address.coordinates.latitude,
-      lng: address.coordinates.longitude,
+      lat,
+      lng,
     };
 
     // Parse the response data the same way the node does

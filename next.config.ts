@@ -1,5 +1,19 @@
 import type { NextConfig } from "next";
 
+// Extract Supabase hostname from environment variable
+const getSupabaseHostname = (): string | null => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) return null;
+  try {
+    const url = new URL(supabaseUrl);
+    return url.hostname;
+  } catch {
+    return null;
+  }
+};
+
+const supabaseHostname = getSupabaseHostname();
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -33,6 +47,13 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      // Add Supabase hostname if available
+      ...(supabaseHostname ? [{
+        protocol: 'https' as const,
+        hostname: supabaseHostname,
+        port: '',
+        pathname: '/**',
+      }] : []),
     ],
   },
   async redirects() {
@@ -107,17 +128,6 @@ const nextConfig: NextConfig = {
       {
         source: '/for-rent/mn/zip/:zip',
         destination: '/',
-        permanent: true,
-      },
-      // Redirect old marketplace routes to new market routes
-      {
-        source: '/marketplace/:path*',
-        destination: '/market/:path*',
-        permanent: true,
-      },
-      {
-        source: '/marketplace',
-        destination: '/market',
         permanent: true,
       },
     ];

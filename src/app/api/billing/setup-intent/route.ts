@@ -30,29 +30,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Stripe customer ID (must exist before creating setup intent)
-    const { data: member, error: memberError } = await supabase
-      .from('members')
+    // Get account data
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
       .select('stripe_customer_id')
-      .eq('id', user.id)
-      .single();
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (memberError) {
-      console.error('Error fetching member:', memberError);
+    if (accountError) {
+      console.error('Error fetching account:', accountError);
       return NextResponse.json(
-        { error: 'Failed to fetch member data' },
+        { error: 'Failed to fetch account data' },
         { status: 500 }
       );
     }
 
-    if (!member.stripe_customer_id) {
+    if (!account) {
       return NextResponse.json(
-        { error: 'Stripe customer not found. Please create a customer first.' },
-        { status: 400 }
+        { error: 'Account not found. Please complete your account setup first.' },
+        { status: 404 }
       );
     }
 
-    const customerId = member.stripe_customer_id;
+    let customerId = account.stripe_customer_id;
+
+    // Create Stripe customer if it doesn't exist
+    if (!customerId) {
+      try {
+        const customer = await stripe.customers.create({
+          email: user.email!,
+          metadata: {
+            userId: user.id,
+          },
+        });
+
+        // Save customer ID to accounts table
+        const { error: updateError } = await supabase
+          .from('accounts')
+          .update({ stripe_customer_id: customer.id })
+          .eq('user_id', user.id);
+
+        if (updateError) {
+          console.error('Error updating account with Stripe customer ID:', updateError);
+          return NextResponse.json(
+            { error: 'Failed to save customer ID' },
+            { status: 500 }
+          );
+        }
+
+        customerId = customer.id;
+      } catch (error) {
+        console.error('Error creating Stripe customer:', error);
+        return NextResponse.json(
+          { error: error instanceof Error ? error.message : 'Failed to create customer' },
+          { status: 500 }
+        );
+      }
+    }
 
     // Create Setup Intent
     const setupIntent = await stripe.setupIntents.create({

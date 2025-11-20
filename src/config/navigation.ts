@@ -30,20 +30,6 @@ export const navItems: NavItem[] = [
     category: 'Map',
   },
   {
-    name: 'Credit',
-    href: '/credit',
-    icon: CreditCardIcon,
-    description: 'Step-by-step credit restoration system to repair your credit profile',
-    category: 'Services',
-  },
-  {
-    name: 'Articles',
-    href: '/articles',
-    icon: DocumentTextIcon,
-    description: 'Read articles about Minnesota real estate development and acquisition',
-    category: 'Resources',
-  },
-  {
     name: 'Settings',
     href: '/account/settings',
     icon: Cog6ToothIcon,

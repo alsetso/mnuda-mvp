@@ -31,13 +31,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get Stripe customer ID
-    const { data: member, error: memberError } = await supabase
-      .from('members')
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
       .select('stripe_customer_id')
-      .eq('id', user.id)
-      .single();
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (memberError || !member?.stripe_customer_id) {
+    if (accountError || !account?.stripe_customer_id) {
       return NextResponse.json({
         payment_methods: [],
         default_payment_method: null,
@@ -46,12 +46,12 @@ export async function GET(request: NextRequest) {
 
     // Get payment methods from Stripe
     const paymentMethods = await stripe.paymentMethods.list({
-      customer: member.stripe_customer_id,
+      customer: account.stripe_customer_id,
       type: 'card',
     });
 
     // Get customer to find default payment method
-    const customer = await stripe.customers.retrieve(member.stripe_customer_id);
+    const customer = await stripe.customers.retrieve(account.stripe_customer_id);
 
     const defaultPaymentMethodId = 
       typeof customer !== 'deleted' && customer.invoice_settings?.default_payment_method
@@ -118,13 +118,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Stripe customer ID
-    const { data: member, error: memberError } = await supabase
-      .from('members')
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
       .select('stripe_customer_id')
-      .eq('id', user.id)
-      .single();
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (memberError || !member?.stripe_customer_id) {
+    if (accountError || !account?.stripe_customer_id) {
       return NextResponse.json(
         { error: 'No Stripe customer found. Please add a payment method first.' },
         { status: 400 }
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     // Attach payment method to customer if not already attached
     try {
       await stripe.paymentMethods.attach(payment_method_id, {
-        customer: member.stripe_customer_id,
+        customer: account.stripe_customer_id,
       });
     } catch (error: unknown) {
       // Payment method might already be attached, continue
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Set as default payment method
-    await stripe.customers.update(member.stripe_customer_id, {
+    await stripe.customers.update(account.stripe_customer_id, {
       invoice_settings: {
         default_payment_method: payment_method_id,
       },
@@ -198,13 +198,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get Stripe customer ID to verify ownership
-    const { data: member, error: memberError } = await supabase
-      .from('members')
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
       .select('stripe_customer_id')
-      .eq('id', user.id)
-      .single();
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (memberError || !member?.stripe_customer_id) {
+    if (accountError || !account?.stripe_customer_id) {
       return NextResponse.json(
         { error: 'No Stripe customer found' },
         { status: 400 }
@@ -214,7 +214,7 @@ export async function DELETE(request: NextRequest) {
     // Verify payment method belongs to customer
     const paymentMethod = await stripe.paymentMethods.retrieve(payment_method_id);
     
-    if (paymentMethod.customer !== member.stripe_customer_id) {
+    if (paymentMethod.customer !== account.stripe_customer_id) {
       return NextResponse.json(
         { error: 'Payment method does not belong to this customer' },
         { status: 403 }

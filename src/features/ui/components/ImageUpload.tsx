@@ -8,7 +8,7 @@ import { useAuth } from '@/features/auth';
 export interface ImageUploadProps {
   value: string | string[] | null;
   onChange: (url: string | string[] | null) => void;
-  bucket: 'logos' | 'cover-photos' | 'marketplace-images' | 'members_business_logo';
+  bucket: 'logos' | 'cover-photos' | 'members_business_logo' | 'profile-images';
   table: string;
   column: string;
   multiple?: boolean;

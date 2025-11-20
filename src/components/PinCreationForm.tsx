@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/features/ui/hooks/useToast';
 import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { PinCategoryService, PinCategory } from '@/features/pins/services/pinService';
+import { useProfile } from '@/features/profiles/contexts/ProfileContext';
 
 interface PinCreationFormProps {
   coordinates: { lat: number; lng: number } | null;
@@ -45,6 +46,7 @@ export function PinCreationForm({
   addMarker,
   removeMarker,
 }: PinCreationFormProps) {
+  const { selectedProfile } = useProfile();
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
   const [pinType, setPinType] = useState<PinType>(null);
   const [projectScale, setProjectScale] = useState<ProjectScale>(null);
@@ -54,6 +56,7 @@ export function PinCreationForm({
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [categories, setCategories] = useState<PinCategory[]>([]);
+  const [allCategories, setAllCategories] = useState<PinCategory[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [description, setDescription] = useState('');
@@ -135,16 +138,23 @@ export function PinCreationForm({
     if (!addMarker || !removeMarker) return;
 
     // Remove marker when coordinates are cleared or form is cancelled
-    if (!coordinates) {
-      removeMarker(TEMP_PIN_MARKER_ID);
+    if (!coordinates || 
+        typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number' ||
+        isNaN(coordinates.lat) || isNaN(coordinates.lng) ||
+        !isFinite(coordinates.lat) || !isFinite(coordinates.lng)) {
+      if (removeMarker) {
+        removeMarker(TEMP_PIN_MARKER_ID);
+      }
       return;
     }
 
     // Add or update temporary marker
     const markerElement = createTempMarkerElement(emoji);
-    addMarker(TEMP_PIN_MARKER_ID, coordinates, {
-      element: markerElement,
-    });
+    if (addMarker) {
+      addMarker(TEMP_PIN_MARKER_ID, coordinates, {
+        element: markerElement,
+      });
+    }
 
     // Cleanup on unmount
     return () => {
@@ -161,12 +171,14 @@ export function PinCreationForm({
     };
   }, [removeMarker]);
 
-  // Load public categories on mount
+  // Load public categories on mount and filter by profile_type
   useEffect(() => {
     const loadCategories = async () => {
       setIsLoadingCategories(true);
       try {
-        const cats = await PinCategoryService.getPublicCategories();
+        const profileType = selectedProfile?.profile_type;
+        const cats = await PinCategoryService.getPublicCategories(profileType);
+        setAllCategories(cats);
         setCategories(cats);
       } catch (err) {
         console.error('Error loading categories:', err);
@@ -175,7 +187,7 @@ export function PinCreationForm({
       }
     };
     loadCategories();
-  }, []);
+  }, [selectedProfile?.profile_type]);
 
   // Update category_id when pinType (category slug) changes
   useEffect(() => {
@@ -323,60 +335,60 @@ export function PinCreationForm({
   const canProceed = currentZoom >= minZoom;
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col min-w-0">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+      <div className="flex items-center justify-between mb-3 flex-shrink-0">
         <div className="flex items-center gap-2">
           {step > 0 && (
             <button
               onClick={handleBack}
-              className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
               title="Back"
             >
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
           )}
-          <h3 className="text-lg font-semibold text-white">
+          <h3 className="text-base font-semibold text-white">
             Create Pin
           </h3>
         </div>
         <button
           onClick={handleCancel}
-          className="p-1 hover:bg-white/10 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
           title="Cancel"
         >
-          <XMarkIcon className="w-5 h-5 text-white" />
+          <XMarkIcon className="w-4 h-4 text-white" />
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 space-y-3">
         {step === 0 ? (
           /* Step 0: Select Pin Type */
-          <div className="space-y-3">
-            <p className="text-sm text-white/80 mb-3">
+          <div className="space-y-2.5">
+            <p className="text-xs text-white/80 mb-2">
               {coordinates ? 'Select pin type:' : 'Click on the map to select a location first'}
             </p>
             {coordinates && (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {isLoadingCategories ? (
-                  <div className="text-white/60 text-sm text-center py-4">Loading categories...</div>
+                  <div className="text-white/60 text-xs text-center py-3">Loading categories...</div>
                 ) : categories.length === 0 ? (
-                  <div className="text-white/60 text-sm text-center py-4">No categories available</div>
+                  <div className="text-white/60 text-xs text-center py-3">No categories available</div>
                 ) : (
                   categories.map((category) => (
                     <button
                       key={category.id}
                       onClick={() => handlePinTypeSelect(category.slug)}
-                      className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                      className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                     >
-                      <span className="text-2xl">{category.emoji}</span>
-                      <div className="flex-1">
-                        <div className="font-bold">{category.label}</div>
+                      <span className="text-xl leading-none">{category.emoji}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold truncate">{category.label}</div>
                         {category.description && (
-                          <div className="text-xs text-white/70">{category.description}</div>
+                          <div className="text-[11px] text-white/70 line-clamp-1">{category.description}</div>
                         )}
                       </div>
                     </button>
@@ -385,8 +397,8 @@ export function PinCreationForm({
               </div>
             )}
             {!canProceed && coordinates && (
-              <div className="p-3 bg-orange-500/20 border border-orange-500/30 rounded-lg">
-                <p className="text-xs text-orange-200">
+              <div className="p-2.5 bg-orange-500/20 border border-orange-500/30 rounded-lg">
+                <p className="text-[11px] text-orange-200">
                   Zoom in to at least {minZoom}x (current: {currentZoom.toFixed(1)}x)
                 </p>
               </div>
@@ -394,8 +406,8 @@ export function PinCreationForm({
           </div>
         ) : step === 1 ? (
           /* Step 1: Scale/Type Selection */
-          <div className="space-y-3">
-            <p className="text-sm text-white/80 mb-3">
+          <div className="space-y-2.5">
+            <p className="text-xs text-white/80 mb-2">
               {pinType === 'project' 
                 ? 'What is the scale of this project?' 
                 : pinType === 'listing'
@@ -404,164 +416,164 @@ export function PinCreationForm({
             </p>
 
             {pinType === 'project' ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <button
                   onClick={() => handleScaleOrTypeSelect('home-repair')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Simple Home Repair</div>
-                    <div className="text-xs text-white/70">Basic maintenance and small fixes</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Simple Home Repair</div>
+                    <div className="text-[11px] text-white/70">Basic maintenance and small fixes</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('renovation')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Renovation</div>
-                    <div className="text-xs text-white/70">Home or building renovation project</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Renovation</div>
+                    <div className="text-[11px] text-white/70">Home or building renovation project</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('new-construction')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">New Construction</div>
-                    <div className="text-xs text-white/70">Building new structures</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">New Construction</div>
+                    <div className="text-[11px] text-white/70">Building new structures</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('commercial')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Commercial Development</div>
-                    <div className="text-xs text-white/70">Commercial building projects</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Commercial Development</div>
+                    <div className="text-[11px] text-white/70">Commercial building projects</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('mixed-use')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Mixed-Use Development</div>
-                    <div className="text-xs text-white/70">Combined residential and commercial</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Mixed-Use Development</div>
+                    <div className="text-[11px] text-white/70">Combined residential and commercial</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('city-development')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">City Development</div>
-                    <div className="text-xs text-white/70">Large-scale urban development projects</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">City Development</div>
+                    <div className="text-[11px] text-white/70">Large-scale urban development projects</div>
                   </div>
                 </button>
               </div>
             ) : pinType === 'listing' ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <button
                   onClick={() => handleScaleOrTypeSelect('residential')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Residential</div>
-                    <div className="text-xs text-white/70">Single family home</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Residential</div>
+                    <div className="text-[11px] text-white/70">Single family home</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('multi-family')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Multi-Family</div>
-                    <div className="text-xs text-white/70">Duplex, triplex, or apartment building</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Multi-Family</div>
+                    <div className="text-[11px] text-white/70">Duplex, triplex, or apartment building</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('commercial')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Commercial</div>
-                    <div className="text-xs text-white/70">Office, retail, or commercial property</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Commercial</div>
+                    <div className="text-[11px] text-white/70">Office, retail, or commercial property</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('land')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Land</div>
-                    <div className="text-xs text-white/70">Vacant land or lot</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Land</div>
+                    <div className="text-[11px] text-white/70">Vacant land or lot</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('other')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Other</div>
-                    <div className="text-xs text-white/70">Other property type</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Other</div>
+                    <div className="text-[11px] text-white/70">Other property type</div>
                   </div>
                 </button>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <button
                   onClick={() => handleScaleOrTypeSelect('safety')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Safety</div>
-                    <div className="text-xs text-white/70">Safety hazards or concerns</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Safety</div>
+                    <div className="text-[11px] text-white/70">Safety hazards or concerns</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('infrastructure')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Infrastructure</div>
-                    <div className="text-xs text-white/70">Roads, utilities, or public facilities</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Infrastructure</div>
+                    <div className="text-[11px] text-white/70">Roads, utilities, or public facilities</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('environmental')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Environmental</div>
-                    <div className="text-xs text-white/70">Environmental issues or concerns</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Environmental</div>
+                    <div className="text-[11px] text-white/70">Environmental issues or concerns</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('zoning')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Zoning</div>
-                    <div className="text-xs text-white/70">Zoning or land use concerns</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Zoning</div>
+                    <div className="text-[11px] text-white/70">Zoning or land use concerns</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('traffic')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Traffic</div>
-                    <div className="text-xs text-white/70">Traffic or transportation issues</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Traffic</div>
+                    <div className="text-[11px] text-white/70">Traffic or transportation issues</div>
                   </div>
                 </button>
                 <button
                   onClick={() => handleScaleOrTypeSelect('other')}
-                  className="w-full px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 rounded-xl text-white font-semibold transition-all text-left flex items-center gap-3"
+                  className="w-full px-3 py-2.5 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-white font-medium transition-all text-left flex items-center gap-2.5 active:scale-[0.98]"
                 >
-                  <div className="flex-1">
-                    <div className="font-bold">Other</div>
-                    <div className="text-xs text-white/70">Other public concern</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold">Other</div>
+                    <div className="text-[11px] text-white/70">Other public concern</div>
                   </div>
                 </button>
               </div>
@@ -569,12 +581,12 @@ export function PinCreationForm({
           </div>
         ) : step === 2 ? (
           /* Step 2: Location & Basic Info */
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Pin Type Display */}
             {pinType && categoryId && (
-              <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                <p className="text-xs text-white/70 mb-1">Type</p>
-                <p className="text-sm text-white font-medium">
+              <div className="p-2.5 bg-white/10 rounded-lg border border-white/20">
+                <p className="text-[11px] text-white/70 mb-0.5">Type</p>
+                <p className="text-xs text-white font-medium">
                   {(() => {
                     const category = categories.find(cat => cat.slug === pinType);
                     return category ? `${category.emoji} ${category.label}` : '';
@@ -585,11 +597,11 @@ export function PinCreationForm({
 
             {/* Scale/Type Display */}
             {(projectScale || listingType || publicConcernType) && (
-              <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                <p className="text-xs text-white/70 mb-1">
+              <div className="p-2.5 bg-white/10 rounded-lg border border-white/20">
+                <p className="text-[11px] text-white/70 mb-0.5">
                   {pinType === 'project' ? 'Scale' : pinType === 'listing' ? 'Listing Type' : 'Concern Type'}
                 </p>
-                <p className="text-sm text-white font-medium">
+                <p className="text-xs text-white font-medium">
                   {pinType === 'project' ? (
                     projectScale === 'home-repair' ? 'Simple Home Repair' :
                     projectScale === 'renovation' ? 'Renovation' :
@@ -618,24 +630,24 @@ export function PinCreationForm({
             {/* Location Selection */}
             <div>
               {coordinates ? (
-                <div className="p-3 bg-white/10 rounded-lg border border-white/20">
+                <div className="p-2.5 bg-white/10 rounded-lg border border-white/20">
                   {isLoadingAddress ? (
-                    <p className="text-sm text-white/80">Loading address...</p>
+                    <p className="text-xs text-white/80">Loading address...</p>
                   ) : (
                     <>
-                      <p className="text-xs text-white/70 mb-1">Location</p>
-                      <p className="text-sm text-white font-medium">{address || 'Address not available'}</p>
+                      <p className="text-[11px] text-white/70 mb-0.5">Location</p>
+                      <p className="text-xs text-white font-medium">{address || 'Address not available'}</p>
                     </>
                   )}
                 </div>
               ) : (
-                <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                  <p className="text-sm text-white/80">Click on the map to select a location</p>
+                <div className="p-2.5 bg-white/10 rounded-lg border border-white/20">
+                  <p className="text-xs text-white/80">Click on the map to select a location</p>
                 </div>
               )}
               {!canProceed && coordinates && (
-                <div className="p-3 bg-orange-500/20 border border-orange-500/30 rounded-lg mt-2">
-                  <p className="text-xs text-orange-200">
+                <div className="p-2.5 bg-orange-500/20 border border-orange-500/30 rounded-lg mt-2">
+                  <p className="text-[11px] text-orange-200">
                     Zoom in to at least {minZoom}x (current: {currentZoom.toFixed(1)}x)
                   </p>
                 </div>
@@ -649,16 +661,16 @@ export function PinCreationForm({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Pin name"
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder-white/50 focus:outline-none focus:ring-1.5 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                 autoFocus
               />
             </div>
 
             {/* Category Display (auto-set based on pin type) */}
             {pinType && categoryId && (
-              <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                <p className="text-xs text-white/70 mb-1">Category</p>
-                <p className="text-sm text-white font-medium">
+              <div className="p-2.5 bg-white/10 rounded-lg border border-white/20">
+                <p className="text-[11px] text-white/70 mb-0.5">Category</p>
+                <p className="text-xs text-white font-medium">
                   {(() => {
                     const category = categories.find(cat => cat.slug === pinType);
                     return category ? `${category.emoji} ${category.label}` : '';
@@ -672,20 +684,20 @@ export function PinCreationForm({
               <button
                 onClick={handleNext}
                 disabled={!canProceed || isLoadingAddress || !name.trim()}
-                className="w-full px-4 py-3 bg-gold-500 hover:bg-gold-600 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full px-3 py-2.5 bg-gold-500 hover:bg-gold-600 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 active:scale-[0.98]"
               >
                 Continue
-                <CheckIcon className="w-4 h-4" />
+                <CheckIcon className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
         ) : (
           /* Step 3: Additional Details */
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Location Summary */}
             {coordinates && (
-              <div className="p-3 bg-white/10 rounded-lg border border-white/20">
-                <p className="text-sm text-white font-medium">{address || 'Address not available'}</p>
+              <div className="p-2.5 bg-white/10 rounded-lg border border-white/20">
+                <p className="text-xs text-white font-medium">{address || 'Address not available'}</p>
               </div>
             )}
 
@@ -695,17 +707,17 @@ export function PinCreationForm({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description (optional)"
-                rows={4}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none transition-all"
+                rows={3}
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-xs text-white placeholder-white/50 focus:outline-none focus:ring-1.5 focus:ring-blue-500/50 focus:border-blue-500/50 resize-none transition-all"
               />
             </div>
 
             {/* Visibility */}
             <div>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 <button
                   onClick={() => setVisibility('public')}
-                  className={`flex-1 px-4 py-3 rounded-xl font-medium transition-colors ${
+                  className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors active:scale-[0.98] ${
                     visibility === 'public'
                       ? 'bg-blue-600/80 text-white'
                       : 'bg-white/10 text-white/70 hover:bg-white/20'
@@ -715,7 +727,7 @@ export function PinCreationForm({
                 </button>
                 <button
                   onClick={() => setVisibility('private')}
-                  className={`flex-1 px-4 py-3 rounded-xl font-medium transition-colors ${
+                  className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors active:scale-[0.98] ${
                     visibility === 'private'
                       ? 'bg-blue-600/80 text-white'
                       : 'bg-white/10 text-white/70 hover:bg-white/20'
@@ -730,10 +742,10 @@ export function PinCreationForm({
             <button
               onClick={handleSave}
               disabled={!name.trim() || isSaving}
-              className="w-full px-4 py-3 bg-gold-500 hover:bg-gold-600 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+              className="w-full px-3 py-2.5 bg-gold-500 hover:bg-gold-600 disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 active:scale-[0.98]"
             >
               {isSaving ? 'Saving...' : pinType === 'project' ? 'Create Project' : pinType === 'listing' ? 'Create Listing' : 'Create Concern'}
-              {!isSaving && <CheckIcon className="w-4 h-4" />}
+              {!isSaving && <CheckIcon className="w-3.5 h-3.5" />}
             </button>
           </div>
         )}

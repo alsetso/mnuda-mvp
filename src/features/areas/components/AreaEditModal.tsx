@@ -1,63 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { XMarkIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { Area, UpdateAreaData } from '../services/areaService';
 import { useToast } from '@/features/ui/hooks/useToast';
-import { Area, UpdateAreaData, AreaCategory } from '../services/areaService';
-import { MemberService, Member } from '@/features/auth/services/memberService';
-import { useAuth } from '@/features/auth';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface AreaEditModalProps {
   isOpen: boolean;
   area: Area | null;
   onClose: () => void;
+  onEditShape: (area: Area) => void;
   onSave: (areaId: string, data: UpdateAreaData) => Promise<void>;
-  onEditShape?: (area: Area) => void;
 }
 
 export function AreaEditModal({
   isOpen,
   area,
   onClose,
-  onSave,
   onEditShape,
+  onSave,
 }: AreaEditModalProps) {
-  const { user } = useAuth();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
-  const [category, setCategory] = useState<AreaCategory>('custom');
+  const [category, setCategory] = useState<'custom' | 'county' | 'city' | 'state' | 'region' | 'zipcode'>('custom');
   const [isSaving, setIsSaving] = useState(false);
-  const [member, setMember] = useState<Member | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const { success, error } = useToast();
-
-  // Fetch member data to check admin role
-  useEffect(() => {
-    const fetchMember = async () => {
-      if (user && isOpen) {
-        try {
-          const memberData = await MemberService.getCurrentMember();
-          setMember(memberData);
-          
-          // Debug logging
-          console.log('[AreaEditModal] Member data:', memberData);
-          console.log('[AreaEditModal] Member role:', memberData?.role);
-          console.log('[AreaEditModal] Is admin?', memberData?.role === 'admin');
-          
-          setIsAdmin(memberData?.role === 'admin');
-        } catch (err) {
-          console.error('[AreaEditModal] Error fetching member:', err);
-          setIsAdmin(false);
-        }
-      } else {
-        setMember(null);
-        setIsAdmin(false);
-      }
-    };
-
-    fetchMember();
-  }, [user, isOpen]);
 
   useEffect(() => {
     if (isOpen && area) {
@@ -77,28 +45,18 @@ export function AreaEditModal({
 
     setIsSaving(true);
     try {
-      const updateData: UpdateAreaData = {
+      const data: UpdateAreaData = {
         name: name.trim(),
-        visibility,
         description: description.trim() || null,
+        visibility,
+        category,
       };
 
-      // Only include category if user is admin
-      if (isAdmin) {
-        updateData.category = category;
-      }
-
-      // Debug logging
-      console.log('[AreaEditModal] Updating area with data:', {
-        ...updateData,
-        isAdmin,
-        memberRole: member?.role,
-      });
-
-      await onSave(area.id, updateData);
-      success('Area Updated', 'Your area has been updated');
+      await onSave(area.id, data);
+      success('Area Updated', 'Your area has been updated successfully');
       onClose();
     } catch (err) {
+      console.error('Error updating area:', err);
       error('Update Failed', err instanceof Error ? err.message : 'Failed to update area');
     } finally {
       setIsSaving(false);
@@ -108,161 +66,107 @@ export function AreaEditModal({
   if (!isOpen || !area) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-[100] backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-black text-black">Edit Area</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={isSaving}
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
 
-      {/* Modal */}
-      <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
-        <div
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-6 pointer-events-auto max-h-[90vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Edit Area
-            </h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-black focus:ring-black"
+              placeholder="Enter area name"
+              disabled={isSaving}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-black focus:ring-black resize-none"
+              placeholder="Optional description"
+              rows={3}
+              disabled={isSaving}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Visibility
+            </label>
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-black focus:ring-black"
+              disabled={isSaving}
+            >
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as typeof category)}
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:border-black focus:ring-black"
+              disabled={isSaving}
+            >
+              <option value="custom">Custom</option>
+              <option value="county">County</option>
+              <option value="city">City</option>
+              <option value="state">State</option>
+              <option value="region">Region</option>
+              <option value="zipcode">Zipcode</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={() => onEditShape(area)}
+              disabled={isSaving}
+              className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Edit Shape
+            </button>
             <button
               onClick={onClose}
               disabled={isSaving}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <XMarkIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              Cancel
             </button>
-          </div>
-
-          <div className="space-y-4">
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter area name"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-gold-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                disabled={isSaving}
-                autoFocus
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add a description (optional)"
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-gold-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                disabled={isSaving}
-              />
-            </div>
-
-            {/* Visibility */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Visibility
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setVisibility('public')}
-                  disabled={isSaving}
-                  className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
-                    visibility === 'public'
-                      ? 'bg-gold-500 text-white border-gold-500'
-                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                  } disabled:opacity-50`}
-                >
-                  Public
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVisibility('private')}
-                  disabled={isSaving}
-                  className={`flex-1 px-4 py-2 rounded-lg border transition-colors ${
-                    visibility === 'private'
-                      ? 'bg-gold-500 text-white border-gold-500'
-                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
-                  } disabled:opacity-50`}
-                >
-                  Private
-                </button>
-              </div>
-            </div>
-
-            {/* Category - Admin Only */}
-            {isAdmin && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Geographic Category <span className="text-xs text-gray-500">(Admin Only)</span>
-                </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as AreaCategory)}
-                  disabled={isSaving}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-gold-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  <option value="custom">Custom</option>
-                  <option value="county">County</option>
-                  <option value="city">City</option>
-                  <option value="state">State</option>
-                  <option value="region">Region</option>
-                  <option value="zipcode">ZIP Code</option>
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Categorized areas can be used for view layers and filtering
-                </p>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-col gap-3 pt-2">
-              {/* Edit Shape Button - Only show if user owns the area */}
-              {onEditShape && area && user && area.user_id === user.id && (
-                <button
-                  onClick={() => {
-                    onEditShape(area);
-                    onClose();
-                  }}
-                  disabled={isSaving}
-                  className="w-full px-4 py-2 text-gold-600 dark:text-gold-400 bg-gold-50 dark:bg-gold-900/20 border border-gold-300 dark:border-gold-700 rounded-lg hover:bg-gold-100 dark:hover:bg-gold-900/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  <PencilIcon className="w-4 h-4" />
-                  Edit Shape
-                </button>
-              )}
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={onClose}
-                  disabled={isSaving}
-                  className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving || !name.trim()}
-                  className="flex-1 px-4 py-2 bg-gold-500 text-white rounded-lg hover:bg-gold-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            </div>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !name.trim()}
+              className="flex-1 px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
-

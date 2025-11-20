@@ -7,6 +7,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import ProfileDropdown from './ProfileDropdown';
 import { SessionData } from '../services/sessionStorage';
 import { useAuth } from '@/features/auth';
+import { useServerAuth } from '@/components/ServerAuthProvider';
+import type { ServerAuthUser } from '@/lib/authServer';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface AppHeaderProps {
@@ -36,6 +38,8 @@ interface AppHeaderProps {
   isSkipTraceSidebarOpen?: boolean;
   onSkipTraceSidebarToggle?: () => void;
   skipTracePinsCount?: number;
+  // Server-side auth data to prevent flash
+  serverAuth?: ServerAuthUser | null;
 }
 
 export default function AppHeader({
@@ -51,8 +55,12 @@ export default function AppHeader({
   showSidebarToggle = false,
   isSidebarOpen = true,
   onSidebarToggle,
+  serverAuth,
 }: AppHeaderProps) {
-  const { user } = useAuth();
+  // Prefer server auth to prevent flash, fallback to client auth
+  const serverAuthUser = useServerAuth();
+  const { user: clientUser } = useAuth();
+  const user = serverAuth || serverAuthUser || clientUser;
   const pathname = usePathname();
   const _router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -66,9 +74,6 @@ export default function AppHeader({
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/map', label: 'Map' },
-    { href: '/market', label: 'Market' },
-    { href: '/credit', label: 'Credit' },
-    { href: '/articles', label: 'Articles' },
   ];
 
   const isActive = (href: string) => {
@@ -94,8 +99,8 @@ export default function AppHeader({
                     href={link.href}
                     className={`px-2 sm:px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                       isActive(link.href)
-                        ? 'text-gold-400 bg-gray-800/60'
-                        : 'text-gray-300 hover:text-gold-400 hover:bg-gray-800/60'
+                        ? 'text-gold-400 bg-header-focus/60'
+                        : 'text-gray-300 hover:text-gold-400 hover:bg-header-focus/60'
                     }`}
                   >
                     {link.label}
@@ -106,7 +111,7 @@ export default function AppHeader({
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 text-gray-300 hover:text-gold-400 hover:bg-gray-800/60 rounded-lg transition-all"
+                className="md:hidden p-2 text-gray-300 hover:text-gold-400 hover:bg-header-focus/60 rounded-lg transition-all"
                 aria-label="Toggle menu"
               >
                 {isMobileMenuOpen ? (
@@ -163,7 +168,7 @@ export default function AppHeader({
                     <div className="hidden md:block">
                       <button
                         onClick={onSidebarToggle}
-                        className="p-2.5 text-gray-300 hover:text-gold-400 hover:bg-gray-800/60 border border-gray-700/50 hover:border-gray-600 rounded-lg transition-all duration-200 touch-manipulation active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-400/50 focus:ring-offset-2 focus:ring-offset-black"
+                        className="p-2.5 text-gray-300 hover:text-gold-400 hover:bg-header-focus/60 border border-header-focus/50 hover:border-header-focus rounded-lg transition-all duration-200 touch-manipulation active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold-400/50 focus:ring-offset-2 focus:ring-offset-black"
                         title={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
                         aria-label={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}
                       >
@@ -201,7 +206,7 @@ export default function AppHeader({
         
         {/* Mobile Menu Dropdown */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-800/50 bg-black/95 backdrop-blur-md">
+          <div className="md:hidden border-t border-header-focus/50 bg-black/95 backdrop-blur-md">
             <div className="px-4 py-3 space-y-1">
               {navLinks.map((link) => (
                 <Link
@@ -210,8 +215,8 @@ export default function AppHeader({
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`block px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive(link.href)
-                      ? 'text-gold-400 bg-gray-800/60'
-                      : 'text-gray-300 hover:text-gold-400 hover:bg-gray-800/60'
+                      ? 'text-gold-400 bg-header-focus/60'
+                      : 'text-gray-300 hover:text-gold-400 hover:bg-header-focus/60'
                   }`}
                 >
                   {link.label}

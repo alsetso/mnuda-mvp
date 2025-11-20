@@ -220,12 +220,12 @@ export function SearchContent({ onSearchComplete, onFlyTo }: SearchContentProps)
   }, []);
 
   return (
-    <div className="pointer-events-auto bg-transparent backdrop-blur-[5px] rounded-2xl w-80 max-h-[30rem] flex flex-col overflow-hidden" style={{ backdropFilter: 'blur(5px)' }}>
-      <div className="p-4 flex-shrink-0">
+    <div className="pointer-events-auto w-full max-h-[30rem] flex flex-col overflow-hidden">
+      <div className="flex-shrink-0">
         {/* Search Input */}
-        <div className="flex items-center px-3 py-2 bg-transparent backdrop-blur-[5px] rounded-lg" style={{ backdropFilter: 'blur(5px)' }}>
+        <div className="flex items-center px-2.5 py-2 bg-white/5 backdrop-blur-[5px] rounded-lg border border-white/20" style={{ backdropFilter: 'blur(5px)' }}>
           <svg
-            className="w-4 h-4 text-white/70 mr-2 flex-shrink-0"
+            className="w-3.5 h-3.5 text-white/70 mr-2 flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -244,10 +244,10 @@ export function SearchContent({ onSearchComplete, onFlyTo }: SearchContentProps)
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Search Minnesota..."
-            className="flex-1 outline-none text-sm placeholder-white/50 bg-transparent text-white"
+            className="flex-1 outline-none text-xs placeholder-white/50 bg-transparent text-white"
           />
           {isLoading && (
-            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin ml-2" />
+            <div className="w-2.5 h-2.5 border-2 border-white/30 border-t-white rounded-full animate-spin ml-2" />
           )}
           {searchQuery && (
             <button
@@ -257,7 +257,7 @@ export function SearchContent({ onSearchComplete, onFlyTo }: SearchContentProps)
                 setSelectedIndex(-1);
                 setSuggestions([]);
               }}
-              className="ml-2 p-1 hover:bg-white/10 rounded transition-colors"
+              className="ml-1.5 p-0.5 hover:bg-white/10 rounded transition-colors"
             >
               <svg className="w-3 h-3 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -268,7 +268,7 @@ export function SearchContent({ onSearchComplete, onFlyTo }: SearchContentProps)
 
         {/* No results message */}
         {searchQuery.length >= 2 && !isLoading && !showSuggestions && (
-          <div className="mt-2 text-sm text-white/70 text-center py-2">
+          <div className="mt-2 text-xs text-white/70 text-center py-1.5">
             No results found
           </div>
         )}
@@ -276,17 +276,17 @@ export function SearchContent({ onSearchComplete, onFlyTo }: SearchContentProps)
 
       {/* Suggestions Dropdown - Scrollable area */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-4 pb-4">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           <div
             ref={suggestionsRef}
-            className="flex-1 overflow-y-auto bg-transparent backdrop-blur-[5px] rounded-lg" style={{ backdropFilter: 'blur(5px)' }}
+            className="flex-1 overflow-y-auto"
           >
             {suggestions.map((suggestion, index) => (
               <button
                 key={suggestion.id}
                 onClick={() => handleSuggestionSelect(suggestion)}
-                className={`w-full px-3 py-2 text-left text-sm bg-transparent hover:bg-white/10 last:border-b-0 transition-colors ${
-                  index === selectedIndex ? 'bg-white/20 text-white' : 'text-white'
+                className={`w-full px-2.5 py-2 text-left text-xs bg-transparent hover:bg-white/10 last:border-b-0 transition-colors rounded ${
+                  index === selectedIndex ? 'bg-white/20 text-white' : 'text-white/90'
                 }`}
               >
                 <div className="font-medium truncate">

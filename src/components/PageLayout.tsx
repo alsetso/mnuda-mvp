@@ -4,6 +4,8 @@ import React from 'react';
 import AppHeader from '@/features/session/components/AppHeader';
 import Footer from '@/features/ui/components/Footer';
 import { useAuth } from '@/features/auth';
+import { useServerAuth } from '@/components/ServerAuthProvider';
+import type { ServerAuthUser } from '@/lib/authServer';
 import { SessionData } from '@/features/session/services/sessionStorage';
 
 interface PageLayoutProps {
@@ -42,6 +44,11 @@ interface PageLayoutProps {
    * Padding class for main content
    */
   contentPadding?: string;
+  /**
+   * Server-side auth data to prevent header flash
+   * Pass this from server components that use getServerAuth()
+   */
+  serverAuth?: ServerAuthUser | null;
 }
 
 /**
@@ -65,8 +72,12 @@ export default function PageLayout({
   containerMaxWidth = '7xl',
   backgroundColor = 'bg-gold-100',
   contentPadding = 'px-4 sm:px-6 lg:px-8 py-8',
+  serverAuth,
 }: PageLayoutProps) {
-  const { user } = useAuth();
+  // Prefer server auth to prevent flash, fallback to client auth
+  const serverAuthUser = useServerAuth();
+  const { user: clientUser } = useAuth();
+  const user = serverAuth || serverAuthUser || clientUser;
   const maxWidthClass = {
     sm: 'max-w-screen-sm',
     md: 'max-w-screen-md',
@@ -121,6 +132,7 @@ export default function PageLayout({
             updateUrl={headerProps.updateUrl ?? false}
             showSessionSelector={headerProps.showSessionSelector ?? false}
             showMobileToggle={headerProps.showMobileToggle ?? false}
+            serverAuth={serverAuth || serverAuthUser}
           />
         </div>
       )}

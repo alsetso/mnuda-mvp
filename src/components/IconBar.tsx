@@ -3,28 +3,28 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useAuth, MemberService, Member } from '@/features/auth';
+import { useAuth, AccountService, Account } from '@/features/auth';
 import ProfilePhoto from '@/components/ProfilePhoto';
 import { navItems } from '@/config/navigation';
 
 export default function IconBar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [member, setMember] = useState<Member | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
 
   useEffect(() => {
-    const fetchMember = async () => {
+    const fetchAccount = async () => {
       if (user) {
         try {
-          const memberData = await MemberService.getCurrentMember();
-          setMember(memberData);
+          const accountData = await AccountService.getCurrentAccount();
+          setAccount(accountData);
         } catch (error) {
-          console.error('Error fetching member for IconBar:', error);
+          console.error('Error fetching account for IconBar:', error);
         }
       }
     };
 
-    fetchMember();
+    fetchAccount();
   }, [user]);
 
   if (!user) return null;
@@ -97,11 +97,11 @@ export default function IconBar() {
           title="Account Settings"
         >
           <ProfilePhoto 
-            profile={member ? {
-              id: member.id,
-              avatar_url: member.avatar_url,
-              name: member.name,
-              email: member.email
+            profile={account ? {
+              id: account.id,
+              avatar_url: account.avatar_url,
+              name: account.name,
+              email: account.email
             } : null} 
             size="sm" 
             editable={false} 

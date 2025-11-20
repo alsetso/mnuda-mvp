@@ -25,7 +25,7 @@ export function CreditProfileModal({ isOpen, onClose, onProfileCreated }: Credit
     // If user is not logged in, redirect to signup/login with form data
     if (!user) {
       sessionStorage.setItem('credit_profile_data', JSON.stringify(identityDetails));
-      router.push(`/login?redirect=/credit&message=Please sign in to create your credit profile`);
+      router.push(`/login?redirect=/account/credit&message=Please sign in to create your credit profile`);
       return;
     }
 
@@ -38,7 +38,7 @@ export function CreditProfileModal({ isOpen, onClose, onProfileCreated }: Credit
       if (onProfileCreated) {
         onProfileCreated();
       } else {
-        router.push('/credit/app');
+        router.push('/account/credit/app');
       }
     } catch (error) {
       console.error('Error creating credit profile:', error);

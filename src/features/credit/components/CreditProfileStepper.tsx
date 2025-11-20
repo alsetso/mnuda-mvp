@@ -41,7 +41,7 @@ export function CreditProfileStepper() {
     try {
       await CreditRestorationService.createCreditProfile(identityDetails);
       success('Credit profile created successfully');
-      router.push('/credit/app');
+      router.push('/account/credit/app');
     } catch (error) {
       console.error('Error creating credit profile:', error);
       showError(error instanceof Error ? error.message : 'Failed to create credit profile');
@@ -55,7 +55,7 @@ export function CreditProfileStepper() {
     if (!user) {
       // Store form data in sessionStorage to restore after login
       sessionStorage.setItem('credit_profile_data', JSON.stringify(identityDetails));
-      router.push(`/login?redirect=/credit&message=Please sign in to create your credit profile`);
+      router.push(`/login?redirect=/account/credit&message=Please sign in to create your credit profile`);
       return;
     }
 
@@ -64,7 +64,7 @@ export function CreditProfileStepper() {
     try {
       await CreditRestorationService.createCreditProfile(identityDetails);
       success('Credit profile created successfully');
-      router.push('/credit/app');
+      router.push('/account/credit/app');
     } catch (error) {
       console.error('Error creating credit profile:', error);
       showError(error instanceof Error ? error.message : 'Failed to create credit profile');

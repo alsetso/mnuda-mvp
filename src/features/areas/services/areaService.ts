@@ -4,7 +4,7 @@ export type AreaCategory = 'custom' | 'county' | 'city' | 'state' | 'region' | '
 
 export interface Area {
   id: string;
-  user_id: string;
+  profile_id: string;
   name: string;
   description: string | null;
   visibility: 'public' | 'private';
@@ -34,23 +34,13 @@ export class AreaService {
   /**
    * Get all public areas and user's own areas (if authenticated)
    * For anonymous users, returns only public areas
+   * RLS policies handle the filtering automatically
    */
   static async getAllAreas(): Promise<Area[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    let query = supabase
+    const { data, error } = await supabase
       .from('areas')
-      .select('*');
-
-    if (user) {
-      // Authenticated users can see public areas OR their own areas
-      query = query.or(`visibility.eq.public,user_id.eq.${user.id}`);
-    } else {
-      // Anonymous users can only see public areas
-      query = query.eq('visibility', 'public');
-    }
-
-    const { data, error } = await query.order('created_at', { ascending: false });
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching areas:', error);
@@ -62,6 +52,7 @@ export class AreaService {
 
   /**
    * Get user's own areas
+   * RLS policies ensure users only see their own areas
    */
   static async getUserAreas(): Promise<Area[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -72,7 +63,6 @@ export class AreaService {
     const { data, error } = await supabase
       .from('areas')
       .select('*')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -80,16 +70,43 @@ export class AreaService {
       throw new Error(`Failed to fetch user areas: ${error.message}`);
     }
 
+    // RLS will filter to only user's areas, but we can also filter client-side for clarity
     return data || [];
   }
 
   /**
    * Create a new area
    */
-  static async createArea(data: CreateAreaData): Promise<Area> {
+  static async createArea(data: CreateAreaData, profileId?: string): Promise<Area> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       throw new Error('User not authenticated');
+    }
+
+    // Get profile_id if not provided
+    let areaProfileId = profileId;
+    if (!areaProfileId) {
+      const { data: account } = await supabase
+        .from('accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .single();
+
+      if (account) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('account_id', account.id)
+          .limit(1)
+          .single();
+
+        areaProfileId = profile?.id || null;
+      }
+    }
+
+    if (!areaProfileId) {
+      throw new Error('No profile found. Please create a profile first.');
     }
 
     // Validate geometry
@@ -100,7 +117,7 @@ export class AreaService {
     const { data: area, error } = await supabase
       .from('areas')
       .insert({
-        user_id: user.id,
+        profile_id: areaProfileId,
         name: data.name,
         description: data.description || null,
         visibility: data.visibility || 'public',
@@ -143,7 +160,6 @@ export class AreaService {
       .from('areas')
       .update(updateData)
       .eq('id', areaId)
-      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -171,8 +187,7 @@ export class AreaService {
     const { error } = await supabase
       .from('areas')
       .delete()
-      .eq('id', areaId)
-      .eq('user_id', user.id);
+      .eq('id', areaId);
 
     if (error) {
       console.error('Error deleting area:', error);
@@ -194,7 +209,7 @@ export class AreaService {
 
     if (user) {
       // Authenticated users can see public areas OR their own areas
-      query = query.or(`visibility.eq.public,user_id.eq.${user.id}`);
+      // RLS handles this
     } else {
       // Anonymous users can only see public areas
       query = query.eq('visibility', 'public');

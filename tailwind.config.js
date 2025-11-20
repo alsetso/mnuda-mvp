@@ -36,6 +36,10 @@ module.exports = {
           'blue-hover': '#013347',
           'blue-light': '#1dd1f5',
         },
+        'header-focus': {
+          DEFAULT: '#2a2828',
+          light: '#2d2b2b',
+        },
       },
     },
   },

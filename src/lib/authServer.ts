@@ -1,13 +1,14 @@
 import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import type { MemberRole } from '@/features/auth/services/memberService';
+import type { AccountRole, MemberRole } from '@/features/auth/services/memberService';
 import { Database } from '@/types/supabase';
+import { measureAuthCheck } from '@/lib/performance';
 
 export interface ServerAuthUser {
   id: string;
   email: string;
-  role: MemberRole | null;
+  role: AccountRole | null;
   name: string | null;
 }
 
@@ -19,101 +20,109 @@ export interface ServerAuthUser {
  * This is the primary function to use in server components for checking auth/role
  */
 export const getServerAuth = cache(async (): Promise<ServerAuthUser | null> => {
-  const cookieStore = await cookies();
-  
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
+  return measureAuthCheck(async () => {
+    const cookieStore = await cookies();
+    
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          set() {
+            // Server components can't set cookies
+          },
+          remove() {
+            // Server components can't remove cookies
+          },
         },
-        set() {
-          // Server components can't set cookies
-        },
-        remove() {
-          // Server components can't remove cookies
-        },
-      },
+      }
+    );
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return null;
     }
-  );
-  
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
-  if (authError || !user) {
-    return null;
-  }
 
-  // Get member role in the same query
-  const { data: member, error: memberError } = await supabase
-    .from('members')
-    .select('role, name, email')
-    .eq('id', user.id)
-    .single();
+    // Get account role - query by user_id (accounts.id is a separate UUID, user_id references auth.users)
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
+      .select('role, first_name, last_name')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle();
 
-  if (memberError) {
-    console.error('Error fetching member:', memberError);
-    // User exists in auth but not in members table - return user without role
+    if (accountError) {
+      console.error('Error fetching account:', accountError);
+      // User exists in auth but not in accounts table - return user without role
+      return {
+        id: user.id,
+        email: user.email || '',
+        role: null,
+        name: user.user_metadata?.name || null,
+      };
+    }
+
+    if (!account) {
+      // User exists in auth but not in accounts table - return user without role
+      return {
+        id: user.id,
+        email: user.email || '',
+        role: null,
+        name: user.user_metadata?.name || null,
+      };
+    }
+
+    // Ensure role is a string (PostgreSQL enums can sometimes be returned differently)
+    // Handle both string and enum types from PostgreSQL
+    let roleValue: string;
+    if (typeof account.role === 'string') {
+      roleValue = account.role.toLowerCase().trim();
+    } else {
+      // If it's an object (PostgreSQL enum), extract the value
+      roleValue = String(account.role).toLowerCase().trim();
+    }
+    
+    // Validate role is one of the expected values
+    const validRoles: AccountRole[] = ['general', 'admin'];
+    const normalizedRole: AccountRole | null = validRoles.includes(roleValue as AccountRole) 
+      ? (roleValue as AccountRole) 
+      : null;
+    
+    // Debug logging for role normalization (only log if there's an issue)
+    if (!normalizedRole && account.role) {
+      console.warn('Role normalization issue:', {
+        original: account.role,
+        originalType: typeof account.role,
+        normalized: normalizedRole,
+        roleValue,
+        userId: user.id,
+        email: user.email,
+      });
+    }
+
+    // Construct name from first_name and last_name
+    const name = account?.first_name || account?.last_name
+      ? `${account.first_name || ''} ${account.last_name || ''}`.trim()
+      : null;
+
     return {
       id: user.id,
       email: user.email || '',
-      role: null,
-      name: user.user_metadata?.name || null,
+      role: normalizedRole,
+      name,
     };
-  }
-
-  if (!member) {
-    // User exists in auth but not in members table - return user without role
-    return {
-      id: user.id,
-      email: user.email || '',
-      role: null,
-      name: user.user_metadata?.name || null,
-    };
-  }
-
-  // Ensure role is a string (PostgreSQL enums can sometimes be returned differently)
-  // Handle both string and enum types from PostgreSQL
-  let roleValue: string;
-  if (typeof member.role === 'string') {
-    roleValue = member.role.toLowerCase().trim();
-  } else {
-    // If it's an object (PostgreSQL enum), extract the value
-    roleValue = String(member.role).toLowerCase().trim();
-  }
-  
-  // Validate role is one of the expected values
-  const validRoles: MemberRole[] = ['general', 'investor', 'admin'];
-  const normalizedRole: MemberRole | null = validRoles.includes(roleValue as MemberRole) 
-    ? (roleValue as MemberRole) 
-    : null;
-  
-  // Debug logging for role normalization (only log if there's an issue)
-  if (!normalizedRole && member.role) {
-    console.warn('Role normalization issue:', {
-      original: member.role,
-      originalType: typeof member.role,
-      normalized: normalizedRole,
-      roleValue,
-      userId: user.id,
-      email: user.email,
-    });
-  }
-
-  return {
-    id: user.id,
-    email: member.email || user.email || '',
-    role: normalizedRole,
-    name: member.name,
-  };
+  });
 });
 
 /**
  * Get the current user's role only
  * Convenience function that returns just the role
  */
-export const getServerRole = cache(async (): Promise<MemberRole | null> => {
+export const getServerRole = cache(async (): Promise<AccountRole | null> => {
   const auth = await getServerAuth();
   return auth?.role || null;
 });

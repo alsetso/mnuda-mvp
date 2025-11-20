@@ -4,7 +4,6 @@ import {
   ChevronRightIcon,
   ChevronLeftIcon,
 } from '@heroicons/react/24/outline';
-import NewsSidebar from '@/features/community/components/NewsSidebar';
 
 interface RightPanelProps {
   isOpen: boolean;
@@ -39,7 +38,7 @@ export default function RightPanel({ isOpen, onToggle }: RightPanelProps) {
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto scrollbar-hide">
               <div className="p-3">
-                <NewsSidebar />
+                {/* News sidebar removed */}
               </div>
             </div>
           </aside>

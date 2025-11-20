@@ -189,6 +189,16 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     ) => {
       if (!map.current) return;
 
+      // Validate coordinates
+      if (!coordinates || 
+          typeof coordinates !== 'object' ||
+          typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number' ||
+          isNaN(coordinates.lat) || isNaN(coordinates.lng) ||
+          !isFinite(coordinates.lat) || !isFinite(coordinates.lng)) {
+        console.warn('Invalid coordinates provided to addMarker:', coordinates, 'for marker:', id);
+        return;
+      }
+
       try {
         const mapbox = await loadMapboxGL();
         const existingMarker = markers.current.get(id);

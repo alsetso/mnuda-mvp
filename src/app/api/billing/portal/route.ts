@@ -31,13 +31,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Stripe customer ID
-    const { data: member, error: memberError } = await supabase
-      .from('members')
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
       .select('stripe_customer_id')
-      .eq('id', user.id)
-      .single();
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (memberError || !member?.stripe_customer_id) {
+    if (accountError || !account?.stripe_customer_id) {
       return NextResponse.json(
         { error: 'No Stripe customer found. Please add a payment method first.' },
         { status: 400 }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Create portal session
     const portalSession = await stripe.billingPortal.sessions.create({
-      customer: member.stripe_customer_id,
+      customer: account.stripe_customer_id,
       return_url: return_url || defaultReturnUrl,
     });
 

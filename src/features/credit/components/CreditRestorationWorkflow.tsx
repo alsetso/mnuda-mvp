@@ -94,7 +94,7 @@ export function CreditRestorationWorkflow() {
       
       // Redirect to dashboard after a short delay
       setTimeout(() => {
-        window.location.href = '/credit';
+        window.location.href = '/account/credit';
       }, 2000);
     } catch (err) {
       showError('Submission Failed', err instanceof Error ? err.message : 'Please try again.');

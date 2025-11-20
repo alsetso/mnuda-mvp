@@ -30,29 +30,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get member data
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('stripe_customer_id, email')
-      .eq('id', user.id)
-      .single();
+    // Get account data
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
+      .select('stripe_customer_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-    if (memberError) {
-      console.error('Error fetching member:', memberError);
+    if (accountError) {
+      console.error('Error fetching account:', accountError);
       return NextResponse.json(
-        { error: 'Failed to fetch member data' },
+        { error: 'Failed to fetch account data' },
         { status: 500 }
       );
     }
 
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Account not found. Please complete your account setup first.' },
+        { status: 404 }
+      );
+    }
+
     // If customer already exists, return it
-    if (member.stripe_customer_id) {
+    if (account.stripe_customer_id) {
       // Verify customer still exists in Stripe
       try {
-        const customer = await stripe.customers.retrieve(member.stripe_customer_id);
+        const customer = await stripe.customers.retrieve(account.stripe_customer_id);
         if (customer && !customer.deleted) {
           return NextResponse.json({
-            customer_id: member.stripe_customer_id,
+            customer_id: account.stripe_customer_id,
             created: false,
           });
         }
@@ -64,20 +71,20 @@ export async function POST(request: NextRequest) {
 
     // Create new Stripe customer
     const customer = await stripe.customers.create({
-      email: member.email || user.email!,
+      email: user.email!,
       metadata: {
         userId: user.id,
       },
     });
 
-    // Store customer ID in members table
+    // Store customer ID in accounts table
     const { error: updateError } = await supabase
-      .from('members')
+      .from('accounts')
       .update({ stripe_customer_id: customer.id })
-      .eq('id', user.id);
+      .eq('user_id', user.id);
 
     if (updateError) {
-      console.error('Error updating member with Stripe customer ID:', updateError);
+      console.error('Error updating account with Stripe customer ID:', updateError);
       return NextResponse.json(
         { error: 'Failed to save customer ID' },
         { status: 500 }
@@ -124,24 +131,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get member data
-    const { data: member, error: memberError } = await supabase
-      .from('members')
+    // Get account data
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
       .select('stripe_customer_id')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
-    if (memberError) {
-      console.error('Error fetching member:', memberError);
+    if (accountError) {
+      console.error('Error fetching account:', accountError);
       return NextResponse.json(
-        { error: 'Failed to fetch member data' },
+        { error: 'Failed to fetch account data' },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
-      customer_id: member.stripe_customer_id || null,
-      has_customer: !!member.stripe_customer_id,
+      customer_id: account?.stripe_customer_id || null,
+      has_customer: !!account?.stripe_customer_id,
     });
   } catch (error) {
     console.error('Error fetching customer:', error);
@@ -151,5 +158,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
 
 

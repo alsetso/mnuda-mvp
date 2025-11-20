@@ -1,189 +1,192 @@
 import { supabase } from '@/lib/supabase';
 import { withAuthRetry } from '@/lib/authHelpers';
 
-export type MemberRole = 'general' | 'investor' | 'admin';
-export type MemberType = 'homeowner' | 'investor' | 'agent' | 'contractor' | 'lender' | 'advisor';
+export type AccountRole = 'general' | 'admin';
+export type ProfileType = 'homeowner' | 'renter' | 'investor' | 'realtor' | 'wholesaler' | 'contractor' | 'services' | 'developer' | 'property_manager' | 'organization';
 
-export interface Member {
+// Legacy alias for backward compatibility during migration
+export type AccountType = ProfileType;
+
+export interface Account {
   id: string;
-  email: string;
-  name: string | null;
-  avatar_url: string | null;
-  role: MemberRole;
-  // Professional information
-  company: string | null;
-  job_title: string | null;
-  bio: string | null;
-  website: string | null;
-  linkedin_url: string | null;
-  phone: string | null;
-  // Location information
-  city: string | null;
-  state: string | null;
-  zip_code: string | null;
-  primary_market_area: string | null;
-  market_radius: number | null; // Radius in miles (1-99)
-  // Member type and subtype
-  member_type: MemberType;
-  member_subtype: string | null;
-  // Metadata
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  gender: string | null;
+  age: number | null;
+  image_url: string | null;
+  role: AccountRole;
+  stripe_customer_id: string | null;
   created_at: string;
   updated_at: string;
+  last_visit: string | null;
 }
 
-export interface UpdateMemberData {
-  name?: string | null;
-  avatar_url?: string | null;
-  role?: MemberRole;
-  company?: string | null;
-  job_title?: string | null;
-  bio?: string | null;
-  website?: string | null;
-  linkedin_url?: string | null;
-  phone?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zip_code?: string | null;
-  primary_market_area?: string | null;
-  market_radius?: number | null;
-  member_type?: MemberType;
-  member_subtype?: string | null;
+export interface UpdateAccountData {
+  first_name?: string | null;
+  last_name?: string | null;
+  gender?: string | null;
+  age?: number | null;
+  image_url?: string | null;
+  role?: AccountRole;
 }
 
-export class MemberService {
+export class AccountService {
   /**
-   * Get the current user's member record
+   * Get the current user's account record
    */
-  static async getCurrentMember(): Promise<Member | null> {
+  static async getCurrentAccount(): Promise<Account | null> {
     return withAuthRetry(async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         return null;
       }
 
-      return this.getMemberById(user.id);
-    }, 'Get current member');
+      return this.getAccountById(user.id);
+    }, 'Get current account');
   }
 
   /**
-   * Get a member by user ID
+   * Get an account by user ID (returns first account for the user)
    */
-  static async getMemberById(userId: string): Promise<Member | null> {
+  static async getAccountById(userId: string): Promise<Account | null> {
     return withAuthRetry(async () => {
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
       if (authError || !authUser) {
-        console.error('Auth error in getMemberById:', authError);
+        console.error('Auth error in getAccountById:', authError);
         throw new Error('User not authenticated');
       }
 
       if (authUser.id !== userId) {
-        throw new Error('Unauthorized: Cannot access other user\'s member record');
+        throw new Error('Unauthorized: Cannot access other user\'s account record');
       }
 
       const { data, error } = await supabase
-        .from('members')
+        .from('accounts')
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
+        .limit(1)
         .single();
 
       if (error) {
         if (error.code === 'PGRST116') {
           return null;
         }
-        console.error('Error fetching member:', error);
-        throw new Error(`Failed to fetch member: ${error.message}`);
+        console.error('Error fetching account:', error);
+        throw new Error(`Failed to fetch account: ${error.message}`);
       }
 
       return data;
-    }, 'Get member by ID');
+    }, 'Get account by ID');
   }
 
   /**
-   * Ensure a member record exists for the current user
+   * Ensure an account record exists for the current user
    */
-  static async ensureMemberExists(): Promise<Member> {
+  static async ensureAccountExists(): Promise<Account> {
     return withAuthRetry(async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
 
-      let member = await this.getMemberById(user.id);
+      let account = await this.getAccountById(user.id);
       
-      if (!member) {
-        // Create member record if it doesn't exist
-        const { data: newMember, error } = await supabase
-          .from('members')
+      if (!account) {
+        // Create account record if it doesn't exist
+        const { data: newAccount, error } = await supabase
+          .from('accounts')
           .insert({
-            id: user.id,
-            email: user.email!,
-            name: user.user_metadata?.name || user.email?.split('@')[0] || null,
+            user_id: user.id,
             role: 'general' // Every user automatically gets 'general' role
           })
           .select()
           .single();
 
         if (error) {
-          console.error('Error creating member:', error);
-          throw new Error('Failed to create member');
+          console.error('Error creating account:', error);
+          throw new Error('Failed to create account');
         }
 
-        if (!newMember) {
-          throw new Error('Failed to create member: no data returned');
+        if (!newAccount) {
+          throw new Error('Failed to create account: no data returned');
         }
 
-        member = newMember;
+        account = newAccount;
       }
 
-      if (!member) {
-        throw new Error('Member not found and could not be created');
+      if (!account) {
+        throw new Error('Account not found and could not be created');
       }
 
-      return member;
-    }, 'Ensure member exists');
+      return account;
+    }, 'Ensure account exists');
   }
 
   /**
-   * Update the current user's member record
+   * Update the current user's account record
    */
-  static async updateCurrentMember(data: UpdateMemberData): Promise<Member> {
+  static async updateCurrentAccount(data: UpdateAccountData): Promise<Account> {
     return withAuthRetry(async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
       }
 
-      // Ensure member exists
-      await this.ensureMemberExists();
+      // Ensure account exists
+      await this.ensureAccountExists();
 
       // Remove undefined values
-      const cleanedData: UpdateMemberData = {};
+      const cleanedData: UpdateAccountData = {};
       Object.entries(data).forEach(([key, value]) => {
         if (value !== undefined) {
-          cleanedData[key as keyof UpdateMemberData] = value;
+          cleanedData[key as keyof UpdateAccountData] = value;
         }
       });
 
-      const { data: member, error } = await supabase
-        .from('members')
+      // Get the first account for this user
+      const { data: existingAccount } = await supabase
+        .from('accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .single();
+
+      if (!existingAccount) {
+        throw new Error('Account not found');
+      }
+
+      const { data: account, error } = await supabase
+        .from('accounts')
         .update(cleanedData)
-        .eq('id', user.id)
+        .eq('id', existingAccount.id)
         .select()
         .single();
 
       if (error) {
-        console.error('Error updating member:', error);
-        throw new Error(`Failed to update member: ${error.message}`);
+        console.error('Error updating account:', error);
+        throw new Error(`Failed to update account: ${error.message}`);
       }
 
-      return member;
-    }, 'Update current member');
+      return account;
+    }, 'Update current account');
   }
 
   /**
-   * Get display name from member record
+   * Get display name from account record
    */
-  static getDisplayName(member: Member): string {
-    return member.name || member.email.split('@')[0] || 'User';
+  static getDisplayName(account: Account | null): string {
+    if (!account) return 'Account';
+    if (account.first_name || account.last_name) {
+      return `${account.first_name || ''} ${account.last_name || ''}`.trim();
+    }
+    return 'User';
   }
 }
+
+// Legacy aliases for backward compatibility during migration
+export type MemberRole = AccountRole;
+export type MemberType = AccountType;
+export type Member = Account;
+export type UpdateMemberData = UpdateAccountData;
+export const MemberService = AccountService;

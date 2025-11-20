@@ -34,13 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const getInitialUser = async () => {
       try {
         // Set a timeout to prevent infinite loading
+        // Reduced from 10s to 2s for better UX - fail fast
         timeoutId = setTimeout(() => {
           if (mounted) {
             console.warn('Session check timeout, assuming no session');
             setUser(null);
             setIsLoading(false);
           }
-        }, 10000); // 10 second timeout
+        }, 2000); // 2 second timeout
 
         // Use getUser() instead of getSession() - validates token and triggers refresh if needed
         const { data: { user }, error } = await supabase.auth.getUser();

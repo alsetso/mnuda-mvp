@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import PageLayout from '@/components/PageLayout';
-import { useAuth } from '@/features/auth';
+import { useAuth, AccountType } from '@/features/auth';
 import { navItems, getNavItemsByCategory } from '@/config/navigation';
 import Link from 'next/link';
-import { ArrowRightIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon } from '@heroicons/react/24/outline';
 
 export default function Home() {
   const { user, isLoading: authLoading } = useAuth();
@@ -151,131 +151,102 @@ export default function Home() {
 function HomepageStepperForm() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
-    serviceType: '',
-    projectType: '',
-    timeline: '',
-    propertyType: '',
-    name: '',
-    email: '',
-    phone: '',
+    accountType: '' as AccountType | '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const accountTypeOptions = [
+    {
+      value: 'homeowner' as AccountType,
+      label: 'Homeowner',
+      description: 'A fast, fair solution for their property problem. (roofing, selling, repairs, bids, cleanup, cash offers, guidance)',
+    },
+    {
+      value: 'renter' as AccountType,
+      label: 'Renter',
+      description: 'A safer, cleaner, better neighborhood to live in.',
+    },
+    {
+      value: 'investor' as AccountType,
+      label: 'Investor',
+      description: 'Consistent access to profitable deals.',
+    },
+    {
+      value: 'realtor' as AccountType,
+      label: 'Realtor',
+      description: 'More listings, more clients, and faster closings.',
+    },
+    {
+      value: 'wholesaler' as AccountType,
+      label: 'Wholesaler',
+      description: 'Buyers who will reliably take their deals.',
+    },
+    {
+      value: 'contractor' as AccountType,
+      label: 'Contractor',
+      description: 'High-quality jobs they can start immediately.',
+    },
+    {
+      value: 'services' as AccountType,
+      label: 'Services',
+      description: 'A steady stream of customers who need your specialized services. (title, inspections, lending, junk removal, cleaning, lawn, snow, etc.)',
+    },
+    {
+      value: 'developer' as AccountType,
+      label: 'Developer',
+      description: 'Land, projects, and partners for big builds or redevelopment.',
+    },
+    {
+      value: 'property_manager' as AccountType,
+      label: 'Property Manager',
+      description: 'Reliable tenants and fast solutions to property issues.',
+    },
+    {
+      value: 'organization' as AccountType,
+      label: 'Organization',
+      description: 'Local exposure and new customers.',
+    },
+  ];
 
   const steps = [
     {
-      question: 'What are you looking for?',
-      options: [
-        { value: 'development', label: 'Real Estate Development Opportunities' },
-        { value: 'acquisition', label: 'Property Acquisition & Investment' },
-        { value: 'network', label: 'Connect with Real Estate Professionals' },
-      ],
+      question: 'What describes you best?',
+      options: accountTypeOptions,
     },
     {
-      question: 'What type of development opportunity?',
-      options: [
-        { value: 'residential', label: 'Residential Development' },
-        { value: 'commercial', label: 'Commercial Development' },
-        { value: 'mixed', label: 'Mixed-Use Development' },
-        { value: 'land', label: 'Land Acquisition' },
-        { value: 'other', label: 'Other' },
-    ],
-      condition: (data: typeof formData) => data.serviceType === 'development',
-    },
-    {
-      question: 'What is your timeline?',
-      options: [
-        { value: 'asap', label: 'Immediate Opportunity' },
-        { value: 'month', label: 'Within 30 Days' },
-        { value: 'quarter', label: 'Within 90 Days' },
-        { value: 'flexible', label: 'Exploring Options' },
-      ],
-      condition: (data: typeof formData) => data.serviceType === 'development' || data.serviceType === 'acquisition',
-    },
-    {
-      question: 'What type of property?',
-      options: [
-        { value: 'single', label: 'Single Family Home' },
-        { value: 'multi', label: 'Multi-Family' },
-        { value: 'condo', label: 'Condo' },
-        { value: 'commercial', label: 'Commercial' },
-      ],
+      question: 'Confirm your selection',
+      isConfirmation: true,
     },
   ];
 
   const getVisibleSteps = () => {
-    return steps.filter((step, index) => {
-      if (step.condition) {
-        return step.condition(formData);
-      }
-      // Show property type step for acquisition or development
-      if (index === 3) {
-        return formData.serviceType === 'acquisition' || formData.serviceType === 'development';
-      }
-      return true;
-    });
+    return steps;
+  };
+
+  const getSelectedAccountType = () => {
+    return accountTypeOptions.find(opt => opt.value === formData.accountType);
   };
 
   const handleOptionSelect = (value: string) => {
-    const visibleSteps = getVisibleSteps();
-    const currentVisibleStep = visibleSteps[currentStep];
+    setFormData(prev => ({ ...prev, accountType: value as AccountType }));
     
-    // Map step to form data key
-    let stepKey = '';
-    if (currentVisibleStep?.question === 'What are you looking for?') {
-      stepKey = 'serviceType';
-    } else if (currentVisibleStep?.question === 'What type of development opportunity?') {
-      stepKey = 'projectType';
-    } else if (currentVisibleStep?.question === 'What is your timeline?') {
-      stepKey = 'timeline';
-    } else if (currentVisibleStep?.question === 'What type of property?') {
-      stepKey = 'propertyType';
-    }
-    
-    setFormData(prev => ({ ...prev, [stepKey]: value }));
-    
-    // Auto-advance to next step
+    // Auto-advance to confirmation step
     setTimeout(() => {
       setCurrentStep(prev => prev + 1);
     }, 300);
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      // Submit form data to API
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setIsSubmitted(true);
-      } else {
-        const errorMessage = data.error || 'Submission failed';
-        console.error('Form submission error:', errorMessage);
-        alert(`Error: ${errorMessage}`);
-      }
-    } catch (error) {
-      console.error('Form submission error:', error);
-      alert('There was an error submitting your form. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+  const handleConfirm = () => {
+    // Navigate to landing page for selected account type
+    if (formData.accountType) {
+      window.location.href = `/lp/${formData.accountType}`;
     }
   };
 
+
   const visibleSteps = getVisibleSteps();
-  const totalSteps = visibleSteps.length + 1; // +1 for contact info step
-  const isContactStep = currentStep >= visibleSteps.length;
+  const totalSteps = visibleSteps.length;
+  const isConfirmationStep = visibleSteps[currentStep]?.isConfirmation;
+  const selectedType = getSelectedAccountType();
 
   return (
     <PageLayout showHeader={true} showFooter={true} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
@@ -308,111 +279,85 @@ function HomepageStepperForm() {
             </p>
           </div>
 
-          {isSubmitted ? (
-            <div className="text-center">
-              <div className="w-20 h-20 bg-gold-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckIcon className="w-12 h-12 text-black" />
-              </div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-4">
-                Thank You!
-              </h2>
-              <p className="text-lg sm:text-xl text-gray-300 mb-4">
-                Your information has been sent to our team.
-              </p>
-              <p className="text-base sm:text-lg text-gray-400">
-                We'll be in touch shortly. If you have any questions, reach out to{' '}
-                <a 
-                  href="mailto:support@mnuda.com" 
-                  className="text-gold-400 hover:text-gold-300 underline"
-                >
-                  support@mnuda.com
-                </a>
-              </p>
-            </div>
-          ) : isContactStep ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-8 text-center">
-                Let's Get Started
-              </h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold-500 transition-all"
-                    placeholder="Your full name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold-500 transition-all"
-                    placeholder="your@email.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-4 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-gold-500 transition-all"
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(prev => prev - 1)}
-                  className="flex-1 px-6 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white font-bold hover:bg-white/20 transition-all"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 px-6 py-3 bg-gold-500 text-black font-bold rounded-lg hover:bg-gold-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
-                  {!isSubmitting && <ArrowRightIcon className="w-5 h-5" />}
-                </button>
-              </div>
-            </form>
-          ) : (
+          {isConfirmationStep ? (
             <div className="text-center">
               <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 sm:mb-12 leading-tight">
                 {visibleSteps[currentStep]?.question}
               </h2>
+              
+              {selectedType && (
+                <div className="max-w-2xl mx-auto space-y-6 mb-8">
+                  <div className="bg-white/10 backdrop-blur-sm border-2 border-white/30 rounded-lg p-6 sm:p-8">
+                    <div className="text-left space-y-4">
+                      <div>
+                        <div className="text-sm sm:text-base text-gray-400 mb-2">
+                          You are a
+                        </div>
+                        <div className="text-2xl sm:text-3xl font-bold text-white">
+                          {selectedType.label}
+                        </div>
+                      </div>
+                      <div className="border-t border-white/20 pt-4">
+                        <div className="text-sm sm:text-base text-gray-400 mb-2">
+                          You are looking for
+                        </div>
+                        <div className="text-lg sm:text-xl text-gray-200 leading-relaxed">
+                          {selectedType.description}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-4 justify-center">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(prev => prev - 1)}
+                  className="px-6 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white font-bold hover:bg-white/20 transition-all"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  className="px-6 py-3 bg-gold-500 text-black font-bold rounded-lg hover:bg-gold-600 transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  Continue
+                  <ArrowRightIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-3 sm:mb-4 leading-tight">
+                {visibleSteps[currentStep]?.question}
+              </h2>
+              {currentStep === 0 && (
+                <p className="text-lg sm:text-xl text-gray-300 mb-8 sm:mb-12">
+                  See what we provide.
+                </p>
+              )}
               
               <div className="space-y-3 sm:space-y-4 max-w-2xl mx-auto">
                 {visibleSteps[currentStep]?.options.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleOptionSelect(option.value)}
-                    className="w-full px-6 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 rounded-lg text-white text-lg sm:text-xl font-semibold hover:bg-white/20 hover:border-gold-500 transition-all text-left group"
+                    className="w-full px-6 py-5 bg-white/10 backdrop-blur-sm border-2 border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-gold-500 transition-all text-left group"
                   >
-                    <div className="flex items-center justify-between">
-                      <span>{option.label}</span>
-                      <ArrowRightIcon className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="text-lg sm:text-xl font-bold mb-1">
+                          {option.label}
+                        </div>
+                        {option.description && (
+                          <div className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                            {option.description}
+                          </div>
+                        )}
+                      </div>
+                      <ArrowRightIcon className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
                     </div>
                   </button>
                 ))}

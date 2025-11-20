@@ -1,13 +1,16 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/features/auth';
+import { useProfile } from '@/features/profiles/contexts/ProfileContext';
 import { useMap } from '@/features/map/hooks/useMap';
 import { Address } from '@/features/map/types';
 import { MAP_CONFIG } from '@/features/map/config';
 import { PinEditModal } from '@/features/pins/components/PinEditModal';
 import { PinDeleteModal } from '@/features/pins/components/PinDeleteModal';
+import { MapDeleteModal, type DeleteRecord } from '@/components/MapDeleteModal';
 import { usePins } from '@/features/pins/hooks/usePins';
 import { ReverseGeocodingService } from '@/features/map/services/reverseGeocodingService';
 import { useToast } from '@/features/ui/hooks/useToast';
@@ -16,7 +19,6 @@ import { GlobalFloatingMenu } from '@/components/GlobalFloatingMenu';
 import { SearchContent } from '@/components/SearchContent';
 import { PinCreationForm } from '@/components/PinCreationForm';
 import { LoginPromptModal } from '@/components/LoginPromptModal';
-import CommunityChatWidget from '@/features/community/components/CommunityChatWidget';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { AreaService, Area, UpdateAreaData } from '@/features/areas/services/areaService';
@@ -28,15 +30,21 @@ import { MapFilters, DrawCoordinatesDisplay } from '@/features/map';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function CommunityPage() {
+  const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const { selectedProfile } = useProfile();
   const mapContainer = useRef<HTMLDivElement>(null);
+  
+  // Get profile_type from selected profile for experience customization
+  const profileAccountType = selectedProfile?.profile_type || null;
   const [pinModalCoordinates, setPinModalCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [pinModalAddress, setPinModalAddress] = useState<string>('');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
   const [editingPin, setEditingPin] = useState<Pin | null>(null);
   const [deletingPin, setDeletingPin] = useState<Pin | null>(null);
+  const [deletingRecord, setDeletingRecord] = useState<DeleteRecord | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const { error: showError } = useToast();
+  const { error: showError, success } = useToast();
 
   // For anonymous users, show limited view (map + public pins only, no create/edit/delete)
   const isAnonymous = !user;
@@ -99,8 +107,17 @@ export default function CommunityPage() {
     editingAreaShapeRef.current = editingAreaShape;
   }, [editingAreaShape]);
 
+  // Temporary map click handler for onboarding drop pin mode
+  const onboardingMapClickHandlerRef = useRef<((coordinates: { lat: number; lng: number }) => void) | null>(null);
+
   // Handle map click - defined before useMap
   const handleMapClick = useCallback(async (coordinates: { lat: number; lng: number }, mapInstance?: import('mapbox-gl').Map | null) => {
+    // Check for onboarding drop pin handler first
+    if (onboardingMapClickHandlerRef.current) {
+      onboardingMapClickHandlerRef.current(coordinates);
+      return;
+    }
+
     // Don't handle clicks when in draw mode - let Mapbox Draw handle them
     if (activeMenuActionRef.current === 'draw') {
       return;
@@ -1047,6 +1064,84 @@ export default function CommunityPage() {
     };
   }, [map, activeMenuAction, drawMode]);
 
+  // Handle deleting area
+  const handleDeleteArea = useCallback(async (areaId: string) => {
+    try {
+      await AreaService.deleteArea(areaId);
+      
+      // Reload areas after deletion
+      const updatedAreas = await AreaService.getAllAreas();
+      setAreas(updatedAreas);
+      
+      // Update map source
+      if (map && mapLoaded) {
+        if (updatedAreas.length > 0) {
+          const features = updatedAreas.map(a => ({
+            type: 'Feature' as const,
+            id: a.id,
+            properties: {
+              name: a.name,
+              description: a.description,
+              visibility: a.visibility,
+              category: a.category || 'custom',
+            },
+            geometry: a.geometry,
+          }));
+
+          const geoJsonData = {
+            type: 'FeatureCollection' as const,
+            features,
+          };
+
+          if (map.getSource('saved-areas')) {
+            (map.getSource('saved-areas') as import('mapbox-gl').GeoJSONSource).setData(geoJsonData);
+          }
+        } else {
+          // Remove source if no areas left
+          if (map.getSource('saved-areas')) {
+            if (map.getLayer('saved-areas-labels')) map.removeLayer('saved-areas-labels');
+            if (map.getLayer('saved-areas-fill')) map.removeLayer('saved-areas-fill');
+            if (map.getLayer('saved-areas-outline')) map.removeLayer('saved-areas-outline');
+            map.removeSource('saved-areas');
+          }
+        }
+      }
+      
+      // Clear selection if deleted area was selected
+      if (selectedArea?.id === areaId) {
+        setSelectedArea(null);
+        setIsAreaSidebarOpen(false);
+      }
+      
+      // Remove from Mapbox Draw if it's being edited
+      if (drawRef.current && editingAreaShape?.id === areaId) {
+        const allFeatures = drawRef.current.getAll();
+        allFeatures.features.forEach((feature) => {
+          if (feature.id === areaId) {
+            drawRef.current?.delete(areaId);
+          }
+        });
+        setEditingAreaShape(null);
+      }
+      
+      success('Area Deleted', 'The area has been deleted successfully');
+    } catch (err) {
+      showError('Delete Failed', err instanceof Error ? err.message : 'Failed to delete area');
+      throw err;
+    }
+  }, [map, mapLoaded, selectedArea, editingAreaShape, success, showError]);
+
+  // Handle delete record (dynamic - works for pins, areas, etc.)
+  const handleDeleteRecord = useCallback(async (recordId: string) => {
+    if (!deletingRecord) return;
+    
+    if (deletingRecord.type === 'area') {
+      await handleDeleteArea(recordId);
+    }
+    
+    setDeletingRecord(null);
+  }, [deletingRecord, handleDeleteArea]);
+
   // Handle editing area shape
   const handleEditAreaShape = useCallback((area: Area) => {
     if (!drawRef.current || !map) return;
@@ -1180,6 +1275,10 @@ export default function CommunityPage() {
     
     // Otherwise, open the save modal for a new area
     setDrawnGeometry(geometry);
+    // Exit draw mode when opening save modal
+    if (drawRef.current) {
+      drawRef.current.changeMode('simple_select');
+    }
     setShowAreaSaveModal(true);
   }, [isAnonymous, editingAreaShape, map, mapLoaded]);
 
@@ -1445,6 +1544,13 @@ export default function CommunityPage() {
     );
   }
 
+  // Redirect to setup map if not onboarded
+  useEffect(() => {
+    if (selectedProfile && !selectedProfile.onboarded) {
+      router.replace(`/map/setup/${selectedProfile.profile_type}`);
+    }
+  }, [selectedProfile, router]);
+
   return (
     <PageLayout showHeader={true} showFooter={false} containerMaxWidth="full" contentPadding="" backgroundColor="bg-gold-100">
       <div className="h-[calc(100vh-3rem)] w-full overflow-hidden relative" style={{ margin: 0, padding: 0 }}>
@@ -1454,11 +1560,9 @@ export default function CommunityPage() {
           className="absolute inset-0 w-full h-full"
           style={{ width: '100%', height: '100%', margin: 0, padding: 0, position: 'relative' }}
         />
-        
-        {/* Community Chat Widget - only show for authenticated users */}
-        {!isAnonymous && <CommunityChatWidget />}
 
-        {/* Global Floating Menu */}
+        {/* Global Floating Menu - Only show if onboarded */}
+        {selectedProfile?.onboarded && (
         <GlobalFloatingMenu
           activeAction={activeMenuAction}
           onMenuAction={(action) => {
@@ -1541,9 +1645,23 @@ export default function CommunityPage() {
               areaName={editingAreaShape?.name || null}
               areas={areas}
               onAreaSelect={handleEditAreaShape}
+              onAreaDelete={(area) => {
+                // Open delete modal with area data
+                setDeletingRecord({
+                  id: area.id,
+                  type: 'area',
+                  name: area.name,
+                  description: area.description || undefined,
+                  details: {
+                    category: area.category,
+                    visibility: area.visibility,
+                  },
+                });
+              }}
             />
           )}
         </GlobalFloatingMenu>
+        )}
 
         {/* Pin Edit Modal - only show for authenticated users */}
         {editingPin && !isAnonymous && (
@@ -1562,6 +1680,16 @@ export default function CommunityPage() {
             pin={deletingPin}
             onClose={() => setDeletingPin(null)}
             onDelete={handleDeletePin}
+          />
+        )}
+
+        {/* Dynamic Delete Modal - Works for areas and other records */}
+        {deletingRecord && !isAnonymous && (
+          <MapDeleteModal
+            isOpen={!!deletingRecord}
+            record={deletingRecord}
+            onClose={() => setDeletingRecord(null)}
+            onDelete={handleDeleteRecord}
           />
         )}
 
@@ -1611,8 +1739,11 @@ export default function CommunityPage() {
           onClose={() => {
             setShowAreaSaveModal(false);
             setDrawnGeometry(null);
-            // Keep the polygon drawn so user can try again or cancel via the floating button
-            // Don't delete it here - let the cancel button handle that
+            // Exit draw mode when closing
+            if (drawRef.current) {
+              drawRef.current.changeMode('simple_select');
+            }
+            setActiveMenuAction(null);
           }}
           onSave={async () => {
             // Reload areas after saving
@@ -1764,7 +1895,7 @@ export default function CommunityPage() {
         </div>
 
         {/* Area Popup - shows on area click with edit option */}
-        {areaPopup && user && areaPopup.area.user_id === user.id && (
+        {areaPopup && user && selectedProfile && areaPopup.area.profile_id === selectedProfile.id && (
           <AreaPopup
             area={areaPopup.area}
             position={areaPopup.position}
@@ -1773,7 +1904,7 @@ export default function CommunityPage() {
               handleEditAreaShape(area);
               setAreaPopup(null);
             }}
-            isOwner={user.id === areaPopup.area.user_id}
+            isOwner={selectedProfile.id === areaPopup.area.profile_id}
           />
         )}
 
@@ -1790,44 +1921,20 @@ export default function CommunityPage() {
             setEditingArea(area);
           }}
           onEditShape={handleEditAreaShape}
-          onDelete={async (area) => {
-            try {
-              await AreaService.deleteArea(area.id);
-              // Reload areas after deletion
-              const updatedAreas = await AreaService.getAllAreas();
-              setAreas(updatedAreas);
-              
-              // Update map source
-              if (map && mapLoaded) {
-                const features = updatedAreas.map(a => ({
-                  type: 'Feature' as const,
-                  id: a.id,
-                  properties: {
-                    name: a.name,
-                    description: a.description,
-                    visibility: a.visibility,
-                    category: a.category || 'custom',
-                  },
-                  geometry: a.geometry,
-                }));
-
-                const geoJsonData = {
-                  type: 'FeatureCollection' as const,
-                  features,
-                };
-
-                if (map.getSource('saved-areas')) {
-                  (map.getSource('saved-areas') as import('mapbox-gl').GeoJSONSource).setData(geoJsonData);
-                }
-              }
-              
-              // Close sidebar
-              setIsAreaSidebarOpen(false);
-              setSelectedArea(null);
-            } catch (error) {
-              console.error('Error deleting area:', error);
-              alert('Failed to delete area. Please try again.');
-            }
+          onDelete={(area) => {
+            // Open delete modal with area data
+            setDeletingRecord({
+              id: area.id,
+              type: 'area',
+              name: area.name,
+              description: area.description || undefined,
+              details: {
+                category: area.category,
+                visibility: area.visibility,
+              },
+            });
+            // Close sidebar
+            setIsAreaSidebarOpen(false);
           }}
         />
 

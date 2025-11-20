@@ -63,7 +63,7 @@ export function CreditRestorationDashboard({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-black">Credit Restoration</h2>
             <button
-              onClick={() => router.push('/credit')}
+              onClick={() => router.push('/account/credit')}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="New request"
             >

@@ -2,23 +2,21 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
-import { MemberService, Member } from '@/features/auth';
+import { ProfileService, Profile } from '@/features/profiles/services/profileService';
+import { Account, AccountService } from '@/features/auth';
 
 interface ProfilePhotoProps {
-  profile: {
-    id: string;
-    avatar_url?: string | null;
-    name?: string | null;
-    email: string;
-  } | null;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  profile?: Profile | null;
+  account?: Account | null;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   editable?: boolean;
-  onUpdate?: (updatedMember: Member) => void;
+  onUpdate?: (updatedProfile: Profile) => void;
   className?: string;
 }
 
 export default function ProfilePhoto({ 
-  profile, 
+  profile,
+  account,
   size = 'md', 
   editable = false, 
   onUpdate,
@@ -26,9 +24,11 @@ export default function ProfilePhoto({
 }: ProfilePhotoProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [imageError, setImageError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sizeClasses = {
+    xs: 'w-6 h-6',
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
     lg: 'w-16 h-16',
@@ -36,31 +36,36 @@ export default function ProfilePhoto({
   };
 
   const iconSizes = {
+    xs: 'w-3 h-3',
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
     lg: 'w-8 h-8',
     xl: 'w-12 h-12'
   };
 
+  const avatarUrl = profile?.profile_image || account?.image_url || null;
+  const displayName = profile ? ProfileService.getDisplayName(profile) : AccountService.getDisplayName(account) || '';
+  const email = account?.user_id || '';
+
   const getInitials = (): string => {
-    if (profile?.name) {
-      const names = profile.name.trim().split(/\s+/);
+    if (displayName) {
+      const names = displayName.trim().split(/\s+/);
       if (names.length >= 2) {
         return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
       }
       return names[0][0].toUpperCase();
     }
-    if (profile?.email) {
-      return profile.email[0].toUpperCase();
+    if (email) {
+      return email[0].toUpperCase();
     }
     return 'U';
   };
 
   const getBackgroundColor = (): string => {
-    if (profile?.avatar_url) return '';
+    if (avatarUrl) return '';
     
-    // Generate a consistent color based on user ID or email
-    const seed = profile?.id || profile?.email || 'default';
+    // Generate a consistent color based on profile ID or account email
+    const seed = profile?.id || account?.id || email || 'default';
     const colors = [
       'bg-gold-500',
       'bg-green-500', 
@@ -106,13 +111,18 @@ export default function ProfilePhoto({
         try {
           const base64Data = e.target?.result as string;
           
-          // Update member with new avatar URL
-          const updatedMember = await MemberService.updateCurrentMember({
-            avatar_url: base64Data
+          if (!profile) {
+            setUploadError('No profile selected');
+            return;
+          }
+          
+          // Update profile with new image URL
+          const updatedProfile = await ProfileService.updateProfile(profile.id, {
+            profile_image: base64Data,
           });
 
-          if (updatedMember && onUpdate) {
-            onUpdate(updatedMember);
+          if (updatedProfile && onUpdate) {
+            onUpdate(updatedProfile);
           }
         } catch (error) {
           console.error('Error updating avatar:', error);
@@ -130,16 +140,18 @@ export default function ProfilePhoto({
   };
 
   const handleRemovePhoto = async () => {
+    if (!profile) return;
+    
     setIsUploading(true);
     setUploadError('');
 
     try {
-      const updatedMember = await MemberService.updateCurrentMember({
-        avatar_url: null
+      const updatedProfile = await ProfileService.updateProfile(profile.id, {
+        profile_image: null,
       });
 
-      if (updatedMember && onUpdate) {
-        onUpdate(updatedMember);
+      if (updatedProfile && onUpdate) {
+        onUpdate(updatedProfile);
       }
     } catch (error) {
       console.error('Error removing avatar:', error);
@@ -153,13 +165,15 @@ export default function ProfilePhoto({
     <div className={`relative ${className}`}>
       {/* Profile Photo */}
       <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-200 flex items-center justify-center ${getBackgroundColor()} text-white font-medium border-2 border-gray-300 relative`}>
-        {profile?.avatar_url ? (
+        {avatarUrl && !imageError ? (
           <Image
-            src={profile.avatar_url}
-            alt={profile.name || profile.email}
+            src={avatarUrl}
+            alt={displayName || email}
             fill
             sizes="(max-width: 96px) 100vw, 96px"
             className="object-cover rounded-full"
+            onError={() => setImageError(true)}
+            unoptimized={avatarUrl.startsWith('data:') || avatarUrl.includes('supabase.co')}
           />
         ) : (
           <span className={`${iconSizes[size]} font-semibold`}>
@@ -186,7 +200,7 @@ export default function ProfilePhoto({
       )}
 
       {/* Remove Photo Button */}
-      {editable && profile?.avatar_url && (
+      {editable && avatarUrl && (
         <button
           onClick={handleRemovePhoto}
           disabled={isUploading}

@@ -1,7 +1,7 @@
 'use client';
 
-import { PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { Area } from '../services/areaService';
+import { PencilIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 interface AreaPopupProps {
   area: Area;
@@ -11,10 +11,16 @@ interface AreaPopupProps {
   isOwner: boolean;
 }
 
-export function AreaPopup({ area, position, onClose, onEditShape, isOwner }: AreaPopupProps) {
+export function AreaPopup({
+  area,
+  position,
+  onClose,
+  onEditShape,
+  isOwner,
+}: AreaPopupProps) {
   return (
     <div
-      className="fixed z-50 bg-black/80 backdrop-blur-sm rounded-lg border border-white/20 shadow-lg p-3 min-w-[200px]"
+      className="fixed z-50 bg-white rounded-lg shadow-xl border-2 border-gray-200 p-4 min-w-[200px] max-w-[300px]"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
@@ -22,39 +28,35 @@ export function AreaPopup({ area, position, onClose, onEditShape, isOwner }: Are
         marginTop: '-8px',
       }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="text-white font-semibold text-sm mb-1 truncate">{area.name}</div>
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex-1">
+          <h3 className="font-black text-black text-sm mb-1">{area.name}</h3>
           {area.description && (
-            <div className="text-white/70 text-xs line-clamp-2">{area.description}</div>
+            <p className="text-xs text-gray-600 mb-2">{area.description}</p>
           )}
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="capitalize">{area.category || 'custom'}</span>
+            <span>•</span>
+            <span className="capitalize">{area.visibility}</span>
+          </div>
         </div>
         <button
           onClick={onClose}
-          className="flex-shrink-0 p-1 hover:bg-white/10 rounded transition-colors"
-          title="Close"
+          className="text-gray-400 hover:text-gray-600 transition-colors ml-2"
         >
-          <XMarkIcon className="w-4 h-4 text-white/60" />
+          <XMarkIcon className="w-4 h-4" />
         </button>
       </div>
-      
+
       {isOwner && (
-        <div className="mt-3 pt-3 border-t border-white/20">
-          <button
-            onClick={() => {
-              onEditShape(area);
-              onClose();
-            }}
-            className="w-full px-3 py-2 bg-gold-500/20 hover:bg-gold-500/30 border border-gold-500/50 rounded text-white text-xs font-medium transition-colors flex items-center justify-center gap-2"
-            title="Edit area shape"
-          >
-            <PencilIcon className="w-4 h-4" />
-            Edit Shape
-          </button>
-        </div>
+        <button
+          onClick={() => onEditShape(area)}
+          className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-semibold border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          <PencilIcon className="w-4 h-4" />
+          Edit Shape
+        </button>
       )}
     </div>
   );
 }
-
-

@@ -169,30 +169,30 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
   );
 
   return (
-    <div className="pointer-events-auto bg-transparent backdrop-blur-[5px] rounded-2xl p-4 max-w-xs space-y-4" style={{ backdropFilter: 'blur(5px)' }}>
-      <div className="text-white font-semibold text-sm mb-3">Map Filters</div>
+    <div className="pointer-events-auto w-full space-y-3.5">
+      <div className="text-white font-semibold text-sm mb-2.5">Map Filters</div>
 
       {/* Pin Categories */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1.5">
           <label className="text-white/90 text-xs font-medium">Pin Categories</label>
           <button
             onClick={toggleAllCategories}
-            className="text-white/70 hover:text-white text-xs underline"
+            className="text-white/70 hover:text-white text-xs underline transition-colors"
           >
             {filters.selectedCategories.size === categories.length ? 'Deselect All' : 'Select All'}
           </button>
         </div>
         {isLoadingCategories ? (
-          <div className="text-white/60 text-xs">Loading categories...</div>
+          <div className="text-white/60 text-xs py-1">Loading categories...</div>
         ) : categories.length === 0 ? (
-          <div className="text-white/60 text-xs">No categories available</div>
+          <div className="text-white/60 text-xs py-1">No categories available</div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {categories.map(category => (
               <label
                 key={category.id}
-                className={`flex items-center gap-2 cursor-pointer group ${
+                className={`flex items-center gap-2.5 cursor-pointer group py-0.5 rounded transition-colors hover:bg-white/5 ${
                   !category.is_active ? 'opacity-60' : ''
                 }`}
               >
@@ -200,12 +200,12 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
                   type="checkbox"
                   checked={filters.selectedCategories.has(category.id)}
                   onChange={() => toggleCategory(category.id)}
-                  className="w-4 h-4 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-2"
+                  className="w-3.5 h-3.5 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-1.5 transition-all"
                 />
-                <span className="text-lg">{category.emoji}</span>
+                <span className="text-base leading-none">{category.emoji}</span>
                 <span className="text-white/90 text-xs flex-1">{category.label}</span>
                 {!category.is_active && (
-                  <span className="text-white/50 text-xs">(inactive)</span>
+                  <span className="text-white/50 text-[10px]">(inactive)</span>
                 )}
               </label>
             ))}
@@ -215,34 +215,34 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
 
       {/* Additional Pin Layers Accordion */}
       {additionalCategories.length > 0 && (
-        <div className="space-y-2 border-t border-white/20 pt-3">
+        <div className="space-y-2 border-t border-white/20 pt-2.5">
           <button
             onClick={() => setIsAdditionalLayersOpen(!isAdditionalLayersOpen)}
-            className="flex items-center justify-between w-full text-left"
+            className="flex items-center justify-between w-full text-left py-0.5 hover:bg-white/5 rounded transition-colors"
           >
             <label className="text-white/90 text-xs font-medium cursor-pointer">
               Additional Pin Layers
             </label>
             <ChevronDownIcon
-              className={`w-4 h-4 text-white/60 transition-transform ${
+              className={`w-3.5 h-3.5 text-white/60 transition-transform ${
                 isAdditionalLayersOpen ? 'transform rotate-180' : ''
               }`}
             />
           </button>
           {isAdditionalLayersOpen && (
-            <div className="space-y-1.5 mt-2">
+            <div className="space-y-1 mt-1.5">
               {additionalCategories.map(category => (
                 <label
                   key={category.id}
-                  className="flex items-center gap-2 cursor-pointer group"
+                  className="flex items-center gap-2.5 cursor-pointer group py-0.5 rounded transition-colors hover:bg-white/5"
                 >
                   <input
                     type="checkbox"
                     checked={filters.additionalCategories.has(category.id)}
                     onChange={() => toggleAdditionalCategory(category.id)}
-                    className="w-4 h-4 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-2"
+                    className="w-3.5 h-3.5 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-1.5 transition-all"
                   />
-                  <span className="text-lg">{category.emoji}</span>
+                  <span className="text-base leading-none">{category.emoji}</span>
                   <span className="text-white/90 text-xs flex-1">{category.label}</span>
                 </label>
               ))}
@@ -253,24 +253,24 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
 
       {/* Pin Ownership Filters */}
       {user && (
-        <div className="space-y-2 border-t border-white/20 pt-3">
-          <label className="text-white/90 text-xs font-medium block mb-2">Pin Visibility</label>
-          <div className="space-y-1.5">
-            <label className="flex items-center gap-2 cursor-pointer group">
+        <div className="space-y-2 border-t border-white/20 pt-2.5">
+          <label className="text-white/90 text-xs font-medium block mb-1.5">Pin Visibility</label>
+          <div className="space-y-1">
+            <label className="flex items-center gap-2.5 cursor-pointer group py-0.5 rounded transition-colors hover:bg-white/5">
               <input
                 type="checkbox"
                 checked={filters.showMyPins}
                 onChange={(e) => setFilters(prev => ({ ...prev, showMyPins: e.target.checked }))}
-                className="w-4 h-4 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-2"
+                className="w-3.5 h-3.5 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-1.5 transition-all"
               />
               <span className="text-white/90 text-xs">My Pins</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer group">
+            <label className="flex items-center gap-2.5 cursor-pointer group py-0.5 rounded transition-colors hover:bg-white/5">
               <input
                 type="checkbox"
                 checked={filters.showOthersPins}
                 onChange={(e) => setFilters(prev => ({ ...prev, showOthersPins: e.target.checked }))}
-                className="w-4 h-4 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-2"
+                className="w-3.5 h-3.5 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-1.5 transition-all"
               />
               <span className="text-white/90 text-xs">Others' Pins</span>
             </label>
@@ -279,10 +279,10 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
       )}
 
       {/* Layer Visibility */}
-      <div className="space-y-2 border-t border-white/20 pt-3">
-        <label className="text-white/90 text-xs font-medium block mb-2">Layers</label>
-        <div className="space-y-1.5">
-          <label className="flex items-center gap-2 cursor-pointer group">
+      <div className="space-y-2 border-t border-white/20 pt-2.5">
+        <label className="text-white/90 text-xs font-medium block mb-1.5">Layers</label>
+        <div className="space-y-1">
+          <label className="flex items-center gap-2.5 cursor-pointer group py-0.5 rounded transition-colors hover:bg-white/5">
             <input
               type="checkbox"
               checked={filters.showAreas}
@@ -293,13 +293,13 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
                 toggleLayerVisibility('saved-areas-outline', visible);
                 toggleLayerVisibility('saved-areas-labels', visible);
               }}
-              className="w-4 h-4 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-2"
+              className="w-3.5 h-3.5 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-1.5 transition-all"
             />
             <span className="text-white/90 text-xs flex-1">Saved Areas</span>
             {filters.showAreas ? (
-              <EyeIcon className="w-4 h-4 text-white/60" />
+              <EyeIcon className="w-3.5 h-3.5 text-white/60" />
             ) : (
-              <EyeSlashIcon className="w-4 h-4 text-white/60" />
+              <EyeSlashIcon className="w-3.5 h-3.5 text-white/60" />
             )}
           </label>
         </div>
@@ -307,21 +307,21 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
 
       {/* Map Style Toggle */}
       {onMapStyleToggle && (
-        <div className="space-y-2 border-t border-white/20 pt-3">
-          <label className="text-white/90 text-xs font-medium block mb-2">Map Style</label>
-          <div className="space-y-1.5">
+        <div className="space-y-2 border-t border-white/20 pt-2.5">
+          <label className="text-white/90 text-xs font-medium block mb-1.5">Map Style</label>
+          <div className="space-y-1">
             <button
               onClick={onMapStyleToggle}
-              className="flex items-center gap-2 w-full cursor-pointer group hover:opacity-80 transition-opacity"
+              className="flex items-center gap-2.5 w-full cursor-pointer group py-0.5 rounded transition-colors hover:bg-white/5"
             >
-              <div className="relative w-10 h-5 rounded-full bg-white/20 border border-white/30 transition-colors">
+              <div className="relative w-9 h-4.5 rounded-full bg-white/20 border border-white/30 transition-colors">
                 <div
-                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                    currentMapStyle === 'satellite' ? 'translate-x-5' : ''
+                  className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${
+                    currentMapStyle === 'satellite' ? 'translate-x-4.5' : ''
                   }`}
                 />
               </div>
-              <GlobeAltIcon className="w-4 h-4 text-white/60" />
+              <GlobeAltIcon className="w-3.5 h-3.5 text-white/60" />
               <span className="text-white/90 text-xs flex-1 text-left">
                 {currentMapStyle === 'satellite' ? 'Satellite' : 'Dark'}
               </span>
@@ -331,8 +331,8 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
       )}
 
       {/* Filter Summary */}
-      <div className="border-t border-white/20 pt-3">
-        <div className="text-white/70 text-xs">
+      <div className="border-t border-white/20 pt-2.5">
+        <div className="text-white/70 text-[11px] leading-relaxed">
           Showing {filters.selectedCategories.size + filters.additionalCategories.size} of {categories.length + additionalCategories.length} categories
           {user && (
             <>

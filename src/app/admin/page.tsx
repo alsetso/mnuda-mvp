@@ -2,7 +2,7 @@ import { getServerAuth } from '@/lib/authServer';
 import { redirect } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
 import Link from 'next/link';
-import { DocumentTextIcon, PlusIcon, ChartBarIcon, TagIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, TagIcon, MapPinIcon, MapIcon, UserGroupIcon, MegaphoneIcon, BuildingOfficeIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -31,6 +31,7 @@ export default async function AdminPage() {
       containerMaxWidth="full"
       backgroundColor="bg-gold-100"
       contentPadding=""
+      serverAuth={auth}
     >
       <div className="min-h-screen bg-gold-100 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -46,41 +47,101 @@ export default async function AdminPage() {
 
           {/* Admin Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Articles Management */}
+            {/* Pins Management */}
             <Link
-              href="/admin/articles"
+              href="/admin/pins"
               className="group bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
             >
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
-                  <DocumentTextIcon className="w-6 h-6 text-gold-600" />
+                  <MapPinIcon className="w-6 h-6 text-gold-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-xl font-bold text-black mb-1 group-hover:text-gold-600 transition-colors">
-                    Articles
+                    Pins
                   </h2>
                   <p className="text-gray-600 text-sm">
-                    Manage article content and view metrics
+                    Manage all map pins
                   </p>
                 </div>
               </div>
             </Link>
 
-            {/* Create New Article */}
+            {/* Areas Management */}
             <Link
-              href="/admin/articles/new"
+              href="/admin/areas"
               className="group bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
             >
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
-                  <PlusIcon className="w-6 h-6 text-gold-600" />
+                  <MapIcon className="w-6 h-6 text-gold-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2 className="text-xl font-bold text-black mb-1 group-hover:text-gold-600 transition-colors">
-                    New Article
+                    Areas
                   </h2>
                   <p className="text-gray-600 text-sm">
-                    Create a new article to publish
+                    Manage all map areas
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Accounts Management */}
+            <Link
+              href="/admin/community/members"
+              className="group bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
+                  <UserGroupIcon className="w-6 h-6 text-gold-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl font-bold text-black mb-1 group-hover:text-gold-600 transition-colors">
+                    Accounts
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    Manage accounts and roles
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Advertising Management */}
+            <Link
+              href="/admin/advertising/ads"
+              className="group bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
+                  <MegaphoneIcon className="w-6 h-6 text-gold-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl font-bold text-black mb-1 group-hover:text-gold-600 transition-colors">
+                    Advertisements
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    Manage ads and analytics
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Businesses Management */}
+            <Link
+              href="/admin/users/businesses"
+              className="group bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
+                  <BuildingOfficeIcon className="w-6 h-6 text-gold-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl font-bold text-black mb-1 group-hover:text-gold-600 transition-colors">
+                    Businesses
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    Manage user businesses
                   </p>
                 </div>
               </div>
@@ -101,6 +162,26 @@ export default async function AdminPage() {
                   </h2>
                   <p className="text-gray-600 text-sm">
                     Manage map filter visibility
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Onboarding Questions Management */}
+            <Link
+              href="/admin/onboarding_questions"
+              className="group bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
+                  <DocumentTextIcon className="w-6 h-6 text-gold-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl font-bold text-black mb-1 group-hover:text-gold-600 transition-colors">
+                    Onboarding Questions
+                  </h2>
+                  <p className="text-gray-600 text-sm">
+                    Manage questions for all account types
                   </p>
                 </div>
               </div>

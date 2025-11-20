@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, phone, serviceType, projectType, timeline, propertyType } = body;
+    const { name, email, phone, accountType } = body;
 
     // Validate required fields
     if (!name || !email || !phone) {
@@ -32,32 +32,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Format service type labels
-    const serviceTypeLabels: Record<string, string> = {
-      project: 'Project Management',
-      cash: 'Cash Offer for My Home',
-      both: 'Both',
-    };
-
-    const projectTypeLabels: Record<string, string> = {
-      renovation: 'Home Renovation',
-      repair: 'Repairs & Maintenance',
-      remodel: 'Full Remodel',
-      other: 'Other',
-    };
-
-    const timelineLabels: Record<string, string> = {
-      asap: 'As Soon As Possible',
-      month: 'Within a Month',
-      quarter: 'Within 3 Months',
-      flexible: 'Flexible Timeline',
-    };
-
-    const propertyTypeLabels: Record<string, string> = {
-      single: 'Single Family Home',
-      multi: 'Multi-Family',
-      condo: 'Condo',
-      commercial: 'Commercial',
+    // Format account type labels
+    const accountTypeLabels: Record<string, string> = {
+      homeowner: 'Homeowner',
+      renter: 'Resident',
+      investor: 'Investor',
+      realtor: 'Realtor',
+      wholesaler: 'Wholesaler',
+      contractor: 'Contractor',
+      service_provider: 'Service Provider',
+      developer: 'Developer',
+      property_manager: 'Property Manager',
+      business: 'Business',
     };
 
     // Build email HTML content
@@ -97,29 +83,11 @@ export async function POST(request: NextRequest) {
                 <div class="value"><a href="tel:${phone}">${phone}</a></div>
               </div>
               
-              <h2 style="margin-top: 30px;">Service Details</h2>
+              <h2 style="margin-top: 30px;">Account Type</h2>
               <div class="field">
-                <div class="label">Service Type:</div>
-                <div class="value">${serviceTypeLabels[serviceType] || serviceType || 'Not specified'}</div>
+                <div class="label">Account Type:</div>
+                <div class="value">${accountTypeLabels[accountType] || accountType || 'Not specified'}</div>
               </div>
-              ${projectType ? `
-              <div class="field">
-                <div class="label">Project Type:</div>
-                <div class="value">${projectTypeLabels[projectType] || projectType}</div>
-              </div>
-              ` : ''}
-              ${timeline ? `
-              <div class="field">
-                <div class="label">Timeline:</div>
-                <div class="value">${timelineLabels[timeline] || timeline}</div>
-              </div>
-              ` : ''}
-              ${propertyType ? `
-              <div class="field">
-                <div class="label">Property Type:</div>
-                <div class="value">${propertyTypeLabels[propertyType] || propertyType}</div>
-              </div>
-              ` : ''}
               
               <div class="field" style="margin-top: 30px;">
                 <div class="label">Submitted:</div>
@@ -143,11 +111,8 @@ Name: ${name}
 Email: ${email}
 Phone: ${phone}
 
-Service Details:
-Service Type: ${serviceTypeLabels[serviceType] || serviceType || 'Not specified'}
-${projectType ? `Project Type: ${projectTypeLabels[projectType] || projectType}\n` : ''}
-${timeline ? `Timeline: ${timelineLabels[timeline] || timeline}\n` : ''}
-${propertyType ? `Property Type: ${propertyTypeLabels[propertyType] || propertyType}\n` : ''}
+Account Type:
+Account Type: ${accountTypeLabels[accountType] || accountType || 'Not specified'}
 
 Submitted: ${new Date().toLocaleString()}
 
@@ -165,7 +130,7 @@ This lead was submitted through the MNUDA website contact form.
         body: JSON.stringify({
           from: 'MNUDA <support@mnuda.com>',
           to: 'cole@mnuda.com',
-          subject: `New Lead: ${name} - ${serviceTypeLabels[serviceType] || serviceType || 'Inquiry'}`,
+          subject: `New Lead: ${name} - ${accountTypeLabels[accountType] || accountType || 'Inquiry'}`,
           html: emailHtml,
           text: emailText,
         }),
@@ -190,6 +155,7 @@ This lead was submitted through the MNUDA website contact form.
         name,
         email,
         phone,
+        accountType,
         timestamp: new Date().toISOString(),
       });
     } catch (emailError) {

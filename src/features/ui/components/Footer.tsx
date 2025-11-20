@@ -45,11 +45,11 @@ export default function Footer({ fixed = false }: FooterProps) {
               <ul className="space-y-3">
                 <li>
                   <Link 
-                    href="/map" 
+                    href="/community" 
                     className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Map - Interactive map with community pins and property search"
+                    title="Community - Interactive map with community pins and property search"
                   >
-                    Map
+                    Community
                   </Link>
                 </li>
               </ul>
@@ -74,7 +74,7 @@ export default function Footer({ fixed = false }: FooterProps) {
                 </li>
                 <li>
                   <Link 
-                    href="/account/settings" 
+                    href="/settings" 
                     className="text-sm text-gray-600 hover:text-black transition-colors"
                     title="Settings - Manage your account settings and preferences"
                   >

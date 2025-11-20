@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Pin, PinService, CreatePinData, UpdatePinData } from '../services/pinService';
 import { useAuth } from '@/features/auth';
+import { useProfile } from '@/features/profiles/contexts/ProfileContext';
 import { useToast } from '@/features/ui/hooks/useToast';
 import { clusterPins, Cluster } from '../utils/clustering';
 
@@ -50,6 +51,7 @@ export function usePins({
   categoryIds,
 }: UsePinsProps): UsePinsReturn {
   const { user } = useAuth();
+  const { selectedProfile } = useProfile();
   const { success, error } = useToast();
   const [pins, setPins] = useState<Pin[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -169,13 +171,23 @@ export function usePins({
    * Clusters nearby pins based on zoom level
    */
   const renderPins = useCallback((pinsToRender: Pin[], zoom: number) => {
-    // Convert pins to cluster points
-    const clusterPoints = pinsToRender.map(pin => ({
-      id: pin.id,
-      lat: pin.lat,
-      lng: pin.long,
-      pin,
-    }));
+    // Convert pins to cluster points, filtering out invalid coordinates
+    const clusterPoints = pinsToRender
+      .filter(pin => {
+        const lat = pin.lat;
+        const lng = pin.long;
+        return (
+          typeof lat === 'number' && typeof lng === 'number' &&
+          !isNaN(lat) && !isNaN(lng) &&
+          isFinite(lat) && isFinite(lng)
+        );
+      })
+      .map(pin => ({
+        id: pin.id,
+        lat: pin.lat,
+        lng: pin.long,
+        pin,
+      }));
 
     // Cluster points based on zoom level - reduced radius for tighter clustering
     const clusters = clusterPins(clusterPoints, zoom, 30); // 30px cluster radius (reduced from 50)
@@ -190,6 +202,15 @@ export function usePins({
 
     // Render clusters or individual pins
     clusters.forEach((cluster) => {
+      // Validate cluster coordinates
+      if (
+        typeof cluster.lat !== 'number' || typeof cluster.lng !== 'number' ||
+        isNaN(cluster.lat) || isNaN(cluster.lng) ||
+        !isFinite(cluster.lat) || !isFinite(cluster.lng)
+      ) {
+        return;
+      }
+
       if (cluster.isCluster) {
         // Render cluster marker
         const clusterId = `cluster-${cluster.id}`;
@@ -203,12 +224,12 @@ export function usePins({
         });
       } else {
         // Render individual pin
-        const pin = cluster.points[0].pin as Pin;
+        const pin = cluster.points[0]?.pin as Pin;
         if (!pin) return;
         
         const pinId = `pin-${pin.id}`;
         newMarkerIds.add(pinId);
-        const isOwner = user?.id === pin.user_id;
+        const isOwner = selectedProfile?.id === pin.profile_id;
         const markerElement = createPinMarkerElement(pin, isOwner);
         const popupContent = createPinPopupContent(pin, isOwner);
 
@@ -220,7 +241,7 @@ export function usePins({
     });
 
     renderedPinIdsRef.current = newMarkerIds;
-  }, [user, addMarker, removeMarker, createPinMarkerElement, createPinPopupContent, createClusterMarkerElement, createClusterPopupContent]);
+  }, [selectedProfile, addMarker, removeMarker, createPinMarkerElement, createPinPopupContent, createClusterMarkerElement, createClusterPopupContent]);
 
   /**
    * Load pins from the database
@@ -301,8 +322,12 @@ export function usePins({
       throw new Error('Authentication required to create pins');
     }
 
+    if (!selectedProfile) {
+      throw new Error('No profile selected');
+    }
+
     try {
-      const newPin = await PinService.createPin(data);
+      const newPin = await PinService.createPin(data, selectedProfile.id);
       setPins((prev) => {
         const updated = [newPin, ...prev];
         // Re-render all pins with clustering (will handle the new pin)
@@ -316,7 +341,7 @@ export function usePins({
       error('Create Failed', err instanceof Error ? err.message : 'Failed to create pin');
       throw err;
     }
-  }, [user, renderPins, currentZoom, success, error]);
+  }, [user, selectedProfile, renderPins, currentZoom, success, error]);
 
   /**
    * Update an existing pin
@@ -332,7 +357,7 @@ export function usePins({
       setPins((prev) => prev.map((pin) => (pin.id === pinId ? updatedPin : pin)));
       
       // Update marker popup
-      const isOwner = updatedPin.user_id === user.id;
+      const isOwner = selectedProfile?.id === updatedPin.profile_id;
       const popupContent = createPinPopupContent(updatedPin, isOwner);
       updateMarkerPopup(`pin-${pinId}`, popupContent);
       

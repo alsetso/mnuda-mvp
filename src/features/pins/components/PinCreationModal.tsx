@@ -118,6 +118,17 @@ export function PinCreationModal({
       return;
     }
 
+    // Validate coordinates before adding marker
+    if (!coordinates ||
+        typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number' ||
+        isNaN(coordinates.lat) || isNaN(coordinates.lng) ||
+        !isFinite(coordinates.lat) || !isFinite(coordinates.lng)) {
+      if (removeMarker) {
+        removeMarker(TEMP_PIN_MARKER_ID);
+      }
+      return;
+    }
+
     // Add or update temporary marker
     const markerElement = createTempMarkerElement(emoji);
     addMarker(TEMP_PIN_MARKER_ID, coordinates, {

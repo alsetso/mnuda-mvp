@@ -2,11 +2,13 @@
  * Server-side Supabase clients for SSR, SSG, ISR, and Route Handlers
  * 
  * - createServerClient: anon client for public reads (RLS-protected)
+ * - createServerClientWithAuth: client with user session from cookies (for RLS with auth)
  * - createServiceClient: service role for build-time operations and admin writes
  */
 
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
+import { cookies } from 'next/headers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -19,6 +21,7 @@ if (!supabaseUrl) {
 /**
  * Server client with anonymous key (RLS-protected)
  * Use for public read operations in SSR/SSG
+ * Does NOT include user session - use createServerClientWithAuth() for authenticated operations
  */
 export function createServerClient() {
   if (!supabaseAnonKey) {
@@ -32,6 +35,43 @@ export function createServerClient() {
       detectSessionInUrl: false,
     },
   });
+}
+
+/**
+ * Server client with user session from cookies (for RLS with authentication)
+ * Use for authenticated operations where RLS policies need to check auth.uid()
+ * This is required for admin operations that rely on RLS policies
+ * 
+ * Uses the same pattern as getServerAuth() to ensure consistency
+ * 
+ * @param cookieStore Optional cookie store (for API routes, pass request cookies)
+ */
+export async function createServerClientWithAuth(cookieStore?: ReturnType<typeof cookies>) {
+  if (!supabaseAnonKey) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  }
+
+  // Use provided cookie store or get from next/headers
+  const cookieStoreToUse = cookieStore || await cookies();
+
+  // Use the same pattern as getServerAuth() which we know works
+  return createClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      cookies: {
+        getAll() {
+          return cookieStoreToUse.getAll();
+        },
+        set() {
+          // Server components can't set cookies
+        },
+        remove() {
+          // Server components can't remove cookies
+        },
+      },
+    }
+  );
 }
 
 /**
