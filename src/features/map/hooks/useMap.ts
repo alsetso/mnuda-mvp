@@ -1,31 +1,43 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { UseMapReturn, Coordinates } from '../types';
+import type { Map as MapboxMap, Marker, Popup, MapMouseEvent } from 'mapbox-gl';
+import { loadMapboxGL } from '../utils/mapboxLoader';
 import { MAP_CONFIG } from '../config';
+import { validateMapConfig, validateCoordinateObject } from '../utils/mapValidation';
 
-// Dynamic import for Mapbox GL JS
-let mapboxgl: typeof import('mapbox-gl').default | null = null;
-const loadMapboxGL = async () => {
-  if (!mapboxgl) {
-    const mapboxModule = await import('mapbox-gl');
-    mapboxgl = mapboxModule.default;
-  }
-  return mapboxgl;
-};
-
-interface UseMapProps {
+export interface UseMapProps {
   mapContainer: React.RefObject<HTMLDivElement | null>;
-  onMapReady?: (map: import('mapbox-gl').Map) => void;
-  onMapClick?: (coordinates: { lat: number; lng: number }, mapInstance?: import('mapbox-gl').Map | null) => void;
+  onMapReady?: (map: MapboxMap) => void;
+  onMapClick?: (coordinates: { lat: number; lng: number }, mapInstance?: MapboxMap | null) => void;
+}
+
+export interface UseMapReturn {
+  map: MapboxMap | null;
+  mapLoaded: boolean;
+  mapInfo: {
+    zoom: number;
+    center: { lat: number; lng: number };
+    cursor: { lat: number; lng: number };
+    bearing: number;
+    pitch: number;
+  };
+  addMarker: (id: string, coordinates: { lat: number; lng: number }, options?: { color?: string; element?: HTMLElement; popupContent?: string }) => Promise<void>;
+  removeMarker: (id: string) => void;
+  clearMarkers: () => void;
+  updateMarkerPopup: (id: string, popupContent: string) => void;
+  flyTo: (coordinates: { lat: number; lng: number }, zoom?: number) => void;
+  changeMapStyle: (styleKey: 'streets' | 'satellite' | 'light' | 'dark' | 'outdoors') => Promise<void>;
+  triggerGeolocate: () => void;
 }
 
 /**
- * Simplified map hook - basic functionality only
+ * Consolidated map hook with all essential functionality
  */
 export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): UseMapReturn {
-  const map = useRef<import('mapbox-gl').Map | null>(null);
-  const markers = useRef<Map<string, import('mapbox-gl').Marker>>(new Map());
+  const map = useRef<MapboxMap | null>(null);
+  const markers = useRef<Map<string, Marker>>(new Map());
+  const mapInitializedRef = useRef(false);
   
   const onMapReadyRef = useRef(onMapReady);
   const onMapClickRef = useRef(onMapClick);
@@ -39,230 +51,185 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
   }, [onMapClick]);
 
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
   const [mapInfo, setMapInfo] = useState({
     zoom: 5,
     center: { lat: 46.7296, lng: -94.6859 },
     cursor: { lat: 0, lng: 0 },
     bearing: 0,
-    pitch: 0
+    pitch: 0,
   });
 
   // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    if (!mapContainer.current || map.current || mapInitializedRef.current) return;
 
-    if (!MAP_CONFIG.MAPBOX_TOKEN) {
-      console.error('Mapbox token missing');
+    const configValidation = validateMapConfig();
+    if (!configValidation.valid) {
+      console.error('Map config invalid:', configValidation.error);
       return;
     }
 
-    const initializeMap = async () => {
+    mapInitializedRef.current = true;
+
+    const setupMap = async () => {
       try {
         const mapbox = await loadMapboxGL();
         mapbox.accessToken = MAP_CONFIG.MAPBOX_TOKEN;
 
-        if (!mapContainer.current) return;
+        if (!mapContainer.current) {
+          mapInitializedRef.current = false;
+          return;
+        }
 
-        map.current = new mapbox.Map({
-          container: mapContainer.current,
+        const container = mapContainer.current;
+
+        // Wait for container dimensions
+        if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+          await new Promise(resolve => {
+            const checkDimensions = () => {
+              if (container.offsetWidth > 0 && container.offsetHeight > 0) {
+                resolve(undefined);
+              } else {
+                requestAnimationFrame(checkDimensions);
+              }
+            };
+            requestAnimationFrame(checkDimensions);
+          });
+        }
+
+        // Create map instance
+        const mapInstance = new mapbox.Map({
+          container,
           style: MAP_CONFIG.MAPBOX_STYLE,
           center: MAP_CONFIG.DEFAULT_CENTER,
           zoom: MAP_CONFIG.DEFAULT_ZOOM,
           maxZoom: MAP_CONFIG.MAX_ZOOM,
           maxBounds: [
-            [MAP_CONFIG.MINNESOTA_BOUNDS.west, MAP_CONFIG.MINNESOTA_BOUNDS.south], // Southwest corner
-            [MAP_CONFIG.MINNESOTA_BOUNDS.east, MAP_CONFIG.MINNESOTA_BOUNDS.north]  // Northeast corner
+            [MAP_CONFIG.MINNESOTA_BOUNDS.west, MAP_CONFIG.MINNESOTA_BOUNDS.south],
+            [MAP_CONFIG.MINNESOTA_BOUNDS.east, MAP_CONFIG.MINNESOTA_BOUNDS.north],
           ],
         });
 
-
-        map.current.on('load', () => {
+        let loadHandlerCalled = false;
+        mapInstance.on('load', () => {
+          if (loadHandlerCalled) return;
+          loadHandlerCalled = true;
+          mapInstance.resize();
           setMapLoaded(true);
-          onMapReadyRef.current?.(map.current!);
+          onMapReadyRef.current?.(mapInstance);
         });
 
-        // Handle clicks
-        map.current.on('click', (e) => {
-          onMapClickRef.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }, map.current);
-        });
+        // Track map info
+        const updateMapInfo = () => {
+          if (!mapInstance || mapInstance.removed) return;
+          const center = mapInstance.getCenter();
+          setMapInfo({
+            zoom: mapInstance.getZoom(),
+            center: { lat: center.lat, lng: center.lng },
+            cursor: { lat: 0, lng: 0 },
+            bearing: mapInstance.getBearing(),
+            pitch: mapInstance.getPitch(),
+          });
+        };
 
-        // Track zoom changes
-        map.current.on('zoom', () => {
-          if (map.current) {
-            const center = map.current.getCenter();
-            setMapInfo(prev => ({
-              ...prev,
-              zoom: map.current!.getZoom(),
-              center: { lat: center.lat, lng: center.lng },
-              bearing: map.current!.getBearing(),
-              pitch: map.current!.getPitch()
-            }));
+        mapInstance.on('zoom', updateMapInfo);
+        mapInstance.on('move', updateMapInfo);
+        mapInstance.on('rotate', updateMapInfo);
+        mapInstance.on('pitch', updateMapInfo);
+
+        // Handle map clicks
+        const handleClick = (e: MapMouseEvent) => {
+          // Check if click is on marker or popup
+          const target = e.originalEvent?.target as HTMLElement;
+          if (target?.closest('.mapboxgl-marker') || target?.closest('.mapboxgl-popup')) {
+            return;
           }
-        });
+          onMapClickRef.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }, mapInstance);
+        };
 
-        // Track move
-        map.current.on('move', () => {
-          if (map.current) {
-            const center = map.current.getCenter();
-            setMapInfo(prev => ({
-              ...prev,
-              center: { lat: center.lat, lng: center.lng },
-              bearing: map.current!.getBearing(),
-              pitch: map.current!.getPitch()
-            }));
-          }
-        });
+        mapInstance.on('click', handleClick);
 
-        // Track rotate
-        map.current.on('rotate', () => {
-          if (map.current) {
-            setMapInfo(prev => ({
-              ...prev,
-              bearing: map.current!.getBearing()
-            }));
-          }
-        });
+        map.current = mapInstance;
 
-        // Track pitch
-        map.current.on('pitch', () => {
-          if (map.current) {
-            setMapInfo(prev => ({
-              ...prev,
-              pitch: map.current!.getPitch()
-            }));
-          }
-        });
-
+        // Cleanup
         return () => {
-          if (map.current) {
-            map.current.remove();
-            map.current = null;
-            markers.current.clear();
-          }
+          mapInstance.off('zoom', updateMapInfo);
+          mapInstance.off('move', updateMapInfo);
+          mapInstance.off('rotate', updateMapInfo);
+          mapInstance.off('pitch', updateMapInfo);
+          mapInstance.off('click', handleClick);
         };
       } catch (err) {
         console.error('Error initializing map:', err);
+        mapInitializedRef.current = false;
       }
     };
 
-    initializeMap();
+    setupMap();
+
+    return () => {
+      // Clear all markers
+      markers.current.forEach(marker => marker.remove());
+      markers.current.clear();
+
+      // Destroy map
+      if (map.current && !map.current.removed) {
+        map.current.remove();
+        map.current = null;
+      }
+      setMapLoaded(false);
+      mapInitializedRef.current = false;
+    };
   }, [mapContainer]);
 
-  // Setup popup listeners
-  const setupPopupListeners = useCallback((popup: import('mapbox-gl').Popup, id: string) => {
-    popup.on('open', () => {
-      const popupElement = popup.getElement();
-      if (popupElement) {
-        const popupContent = popupElement.querySelector('.mapboxgl-popup-content') as HTMLElement;
-        if (popupContent && popupElement.classList.contains('pin-popup-container')) {
-          popupContent.style.background = 'transparent';
-          popupContent.style.backdropFilter = 'blur(5px)';
-          popupContent.style.border = '1px solid rgba(255, 255, 255, 0.3)';
-        }
+  // Marker operations
+  const addMarker = useCallback(async (
+    id: string,
+    coordinates: { lat: number; lng: number },
+    options: { color?: string; element?: HTMLElement; popupContent?: string } = {}
+  ) => {
+    if (!map.current || map.current.removed || !validateCoordinateObject(coordinates)) return;
 
-        popupElement.addEventListener('click', (e) => {
-          const target = e.target as HTMLElement;
-          const pinActionBtn = target.closest('.pin-edit-btn, .pin-delete-btn');
-          if (pinActionBtn) {
-            e.stopPropagation();
-            const pinId = pinActionBtn.getAttribute('data-pin-id');
-            const action = pinActionBtn.getAttribute('data-action');
-            if (pinId && action) {
-              document.dispatchEvent(new CustomEvent('pinAction', { 
-                detail: { pinId, action, markerId: id },
-                bubbles: true 
-              }));
-            }
-          }
-        });
+    try {
+      const mapbox = await loadMapboxGL();
+
+      // Remove existing marker
+      const existingMarker = markers.current.get(id);
+      if (existingMarker) {
+        existingMarker.remove();
+        markers.current.delete(id);
       }
-    });
+
+      // Create marker options
+      const markerOptions: any = { anchor: 'center' };
+      if (options.element) {
+        markerOptions.element = options.element;
+      } else if (options.color) {
+        markerOptions.color = options.color;
+      }
+
+      // Create marker
+      const marker = new mapbox.Marker(markerOptions).setLngLat([coordinates.lng, coordinates.lat]);
+
+      // Add popup if provided
+      if (options.popupContent) {
+        const popup = new mapbox.Popup({
+          offset: 25,
+          closeButton: false,
+          closeOnClick: false,
+          className: 'pin-popup-container',
+          maxWidth: '300px',
+        }).setHTML(options.popupContent);
+        marker.setPopup(popup);
+      }
+
+      marker.addTo(map.current);
+      markers.current.set(id, marker);
+    } catch (err) {
+      console.error('Error adding marker:', err);
+    }
   }, []);
 
-  // Add marker
-  const addMarker = useCallback(
-    async (
-      id: string,
-      coordinates: { lat: number; lng: number },
-      options: { color?: string; element?: HTMLElement; popupContent?: string } = {}
-    ) => {
-      if (!map.current) return;
-
-      // Validate coordinates
-      if (!coordinates || 
-          typeof coordinates !== 'object' ||
-          typeof coordinates.lat !== 'number' || typeof coordinates.lng !== 'number' ||
-          isNaN(coordinates.lat) || isNaN(coordinates.lng) ||
-          !isFinite(coordinates.lat) || !isFinite(coordinates.lng)) {
-        console.warn('Invalid coordinates provided to addMarker:', coordinates, 'for marker:', id);
-        return;
-      }
-
-      try {
-        const mapbox = await loadMapboxGL();
-        const existingMarker = markers.current.get(id);
-
-        if (existingMarker) {
-          existingMarker.setLngLat([coordinates.lng, coordinates.lat]);
-          if (options.popupContent) {
-            const popup = existingMarker.getPopup();
-            if (popup) {
-              popup.setHTML(options.popupContent);
-            } else {
-              const newPopup = new mapbox.Popup({ 
-                offset: 25,
-                closeButton: false,
-                closeOnClick: false,
-                className: 'pin-popup-container',
-                maxWidth: '300px',
-              }).setHTML(options.popupContent);
-              existingMarker.setPopup(newPopup);
-              setupPopupListeners(newPopup, id);
-            }
-          }
-          return;
-        }
-
-        const markerOptions: Partial<import('mapbox-gl').MarkerOptions> = {
-          anchor: 'center',
-        };
-        
-        if (options.element) {
-          markerOptions.element = options.element;
-        } else if (options.color) {
-          markerOptions.color = options.color;
-        }
-        
-        const marker = new mapbox.Marker(markerOptions).setLngLat([coordinates.lng, coordinates.lat]);
-
-        if (options.popupContent) {
-          const popup = new mapbox.Popup({ 
-            offset: 25,
-            closeButton: false,
-            closeOnClick: false,
-            className: 'pin-popup-container',
-            maxWidth: '300px',
-          }).setHTML(options.popupContent);
-          marker.setPopup(popup);
-          setupPopupListeners(popup, id);
-        }
-
-        const markerElement = marker.getElement();
-        if (markerElement && options.popupContent) {
-          markerElement.style.cursor = 'pointer';
-        }
-
-        marker.addTo(map.current);
-        markers.current.set(id, marker);
-      } catch (err) {
-        console.error('Error adding marker:', err);
-      }
-    },
-    [setupPopupListeners]
-  );
-
-  // Remove marker
   const removeMarker = useCallback((id: string) => {
     const marker = markers.current.get(id);
     if (marker) {
@@ -271,37 +238,34 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     }
   }, []);
 
-  // Clear all markers
   const clearMarkers = useCallback(() => {
-    markers.current.forEach((marker) => marker.remove());
+    markers.current.forEach(marker => marker.remove());
     markers.current.clear();
   }, []);
 
-  // Update marker popup
   const updateMarkerPopup = useCallback((id: string, popupContent: string) => {
     const marker = markers.current.get(id);
-    if (marker) {
-      const popup = marker.getPopup();
-      if (popup) {
-        popup.setHTML(popupContent);
-      } else {
-        const mapbox = require('mapbox-gl');
-        const newPopup = new mapbox.Popup({ 
-          offset: 25,
-          closeButton: false,
-          closeOnClick: false,
-          className: 'pin-popup-container',
-          maxWidth: '300px',
-        }).setHTML(popupContent);
-        marker.setPopup(newPopup);
-        setupPopupListeners(newPopup, id);
-      }
-    }
-  }, [setupPopupListeners]);
+    if (!marker) return;
 
-  // Fly to coordinates
+    const popup = marker.getPopup();
+    if (popup) {
+      popup.setHTML(popupContent);
+    } else {
+      const mapbox = require('mapbox-gl');
+      const newPopup = new mapbox.Popup({
+        offset: 25,
+        closeButton: false,
+        closeOnClick: false,
+        className: 'pin-popup-container',
+        maxWidth: '300px',
+      }).setHTML(popupContent);
+      marker.setPopup(newPopup);
+    }
+  }, []);
+
+  // Navigation
   const flyTo = useCallback((coordinates: { lat: number; lng: number }, zoom?: number) => {
-    if (!map.current) return;
+    if (!map.current || map.current.removed) return;
     map.current.flyTo({
       center: [coordinates.lng, coordinates.lat],
       zoom: zoom || MAP_CONFIG.ADDRESS_ZOOM,
@@ -309,35 +273,31 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     });
   }, []);
 
-  const triggerGeolocate = useCallback(() => {
-    // GeolocateControl removed - function kept for compatibility
-  }, []);
+  // Style changes
+  const changeMapStyle = useCallback(async (styleKey: 'streets' | 'satellite' | 'light' | 'dark' | 'outdoors') => {
+    if (!map.current || map.current.removed) {
+      throw new Error('Map not initialized');
+    }
 
-  const stopGeolocate = useCallback(() => {
-    // GeolocateControl removed - function kept for compatibility
-  }, []);
+    const styleUrl = MAP_CONFIG.STRATEGIC_STYLES[styleKey];
+    if (!styleUrl) {
+      throw new Error(`Invalid style key: ${styleKey}`);
+    }
 
-  const changeMapStyle = useCallback((styleKey: keyof typeof MAP_CONFIG.STRATEGIC_STYLES): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if (!map.current) {
-        reject(new Error('Map not initialized'));
-        return;
-      }
+    const currentCenter = map.current.getCenter();
+    const currentZoom = map.current.getZoom();
 
-      const styleUrl = MAP_CONFIG.STRATEGIC_STYLES[styleKey];
-      const currentCenter = map.current.getCenter();
-      const currentZoom = map.current.getZoom();
-
+    return new Promise<void>((resolve, reject) => {
       try {
-        map.current.setStyle(styleUrl);
-        map.current.once('styledata', () => {
-          if (map.current) {
+        map.current!.setStyle(styleUrl);
+        map.current!.once('styledata', () => {
+          if (map.current && !map.current.removed) {
             map.current.setCenter(currentCenter);
             map.current.setZoom(currentZoom);
             resolve();
           }
         });
-        map.current.once('error', (e) => {
+        map.current!.once('error', (e) => {
           reject(new Error(`Failed to load style: ${e.error?.message || 'Unknown error'}`));
         });
       } catch (error) {
@@ -346,48 +306,21 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     });
   }, []);
 
-  // Stub functions for compatibility
-  const addAddressPin = useCallback(() => {}, []);
-  const removeAddressPin = useCallback(() => {}, []);
-  const addUserMarker = useCallback(() => {}, []);
-  const removeUserMarker = useCallback(() => {}, []);
-  const lockInteractions = useCallback(() => {}, []);
-  const unlockInteractions = useCallback(() => {}, []);
-  const setCursorStyle = useCallback(() => {}, []);
-  const followUser = useCallback(() => {}, []);
-  const updateUserLocation = useCallback(() => {}, []);
-  const findUserLocation = useCallback(() => {}, []);
-  const zoomToMinnesota = useCallback(() => {}, []);
-  const flyFromGlobeToMinnesota = useCallback(() => {}, []);
-  const zoomToStrategic = useCallback(() => {}, []);
+  // Stub for compatibility
+  const triggerGeolocate = useCallback(() => {
+    // Geolocate functionality removed - kept for API compatibility
+  }, []);
 
   return {
+    map: map.current,
     mapLoaded,
-    userLocation,
-    isTracking: false,
-    isInteractionsLocked: false,
     mapInfo,
-    findUserLocation,
-    addAddressPin,
-    removeAddressPin,
-    addUserMarker,
-    removeUserMarker,
-    lockInteractions,
-    unlockInteractions,
-    setCursorStyle,
-    flyTo,
-    followUser,
-    updateUserLocation,
-    triggerGeolocate,
-    stopGeolocate,
     addMarker,
     removeMarker,
     clearMarkers,
     updateMarkerPopup,
-    zoomToMinnesota,
-    flyFromGlobeToMinnesota,
-    zoomToStrategic,
+    flyTo,
     changeMapStyle,
-    map: map.current,
+    triggerGeolocate,
   };
 }

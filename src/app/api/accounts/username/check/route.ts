@@ -13,23 +13,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate length
-    if (username.length <= 4) {
+    // Validate length (3-30 characters per migration)
+    if (username.length < 3 || username.length > 30) {
       return NextResponse.json(
-        { available: false, error: 'Username must be more than 4 characters' },
+        { available: false, error: 'Username must be between 3 and 30 characters' },
         { status: 400 }
       );
     }
 
-    // Validate format
-    if (!/^[a-zA-Z0-9-]+$/.test(username)) {
+    // Validate format (alphanumeric, hyphens, underscores)
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
       return NextResponse.json(
-        { available: false, error: 'Username can only contain letters, numbers, and hyphens' },
+        { available: false, error: 'Username can only contain letters, numbers, hyphens, and underscores' },
         { status: 400 }
       );
     }
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -51,15 +51,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current account to exclude from check
+    // Get current account
     const { data: currentAccount } = await supabase
       .from('accounts')
-      .select('username')
+      .select('id, username')
       .eq('user_id', user.id)
       .limit(1)
       .single();
 
-    // Check if username exists (excluding current user's username)
+    if (!currentAccount) {
+      return NextResponse.json(
+        { available: false, error: 'Account not found' },
+        { status: 404 }
+      );
+    }
+
+    // If username matches current account username, it's available (no change)
+    if (currentAccount.username === username) {
+      return NextResponse.json({ available: true });
+    }
+
+    // Check if username exists for another account
     const { data: existing, error } = await supabase
       .from('accounts')
       .select('id')
@@ -67,12 +79,7 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
-    // If username matches current user's username, it's available (no change)
-    if (currentAccount?.username === username) {
-      return NextResponse.json({ available: true });
-    }
-
-    // If username exists for another user, it's not available
+    // If username exists for another account, it's not available
     if (existing && !error) {
       return NextResponse.json({ available: false });
     }
@@ -87,4 +94,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

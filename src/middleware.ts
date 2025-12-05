@@ -8,29 +8,65 @@ import type { AccountRole, MemberRole } from '@/features/auth/services/memberSer
 const ROUTE_PROTECTION: Record<string, { 
   auth: boolean; 
   roles?: AccountRole[];
-  requireAccountComplete?: boolean;
 }> = {
-  '/admin': { auth: true, roles: ['admin'] },
   '/account': { auth: true },
-  '/account/onboarding': { auth: true, requireAccountComplete: false },
-  '/account/profiles': { auth: true, requireAccountComplete: true },
-  '/account/settings': { auth: true, requireAccountComplete: true },
-  '/account/billing': { auth: true, requireAccountComplete: true },
+  '/account/settings': { auth: true },
+  '/account/billing': { auth: true },
+  '/map-test': { auth: true },
 };
 
 /**
- * Get user role from database
+ * Check if account has all required fields
  */
-async function getUserRole(supabase: ReturnType<typeof createServerClient>, userId: string): Promise<AccountRole | null> {
-  const { data: account, error } = await supabase
+function isAccountComplete(account: {
+  first_name: string | null;
+  last_name: string | null;
+  gender: string | null;
+  age: number | null;
+  image_url: string | null;
+  username: string | null;
+} | null): boolean {
+  if (!account) return false;
+  
+  return !!(
+    account.username &&
+    account.first_name &&
+    account.last_name &&
+    account.gender &&
+    account.age &&
+    account.image_url
+  );
+}
+
+/**
+ * Get user account data (role, onboarded status, and completeness)
+ */
+async function getUserAccountData(
+  supabase: ReturnType<typeof createServerClient>, 
+  userId: string
+): Promise<{
+  role: AccountRole | null;
+  onboarded: boolean | null;
+  isComplete: boolean;
+}> {
+  // Try to get account role, onboarded status, and completeness fields
+  const { data: account, error: accountError } = await supabase
     .from('accounts')
-    .select('role')
+    .select('role, onboarded, username, first_name, last_name, gender, age, image_url')
     .eq('user_id', userId)
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (error || !account) {
-    return null;
+  // If account doesn't exist or query fails, allow access (account will be created)
+  if (accountError || !account) {
+    if (accountError && accountError.code !== 'PGRST116') {
+      console.warn('[middleware] Account lookup error:', accountError);
+    }
+    return {
+      role: null,
+      onboarded: null,
+      isComplete: false,
+    };
   }
 
   // Normalize role value
@@ -42,7 +78,21 @@ async function getUserRole(supabase: ReturnType<typeof createServerClient>, user
   }
 
   const validRoles: AccountRole[] = ['general', 'admin'];
-  return validRoles.includes(roleValue as AccountRole) ? (roleValue as AccountRole) : null;
+  const role: AccountRole | null = validRoles.includes(roleValue as AccountRole) 
+    ? (roleValue as AccountRole) 
+    : null;
+
+  // Check if account is complete (all required fields filled)
+  const isComplete = isAccountComplete(account);
+  
+  // Check onboarded status
+  const onboarded = account.onboarded === true ? true : false;
+  
+  return {
+    role,
+    onboarded,
+    isComplete,
+  };
 }
 
 /**
@@ -51,7 +101,6 @@ async function getUserRole(supabase: ReturnType<typeof createServerClient>, user
 function matchesProtectedRoute(pathname: string): { 
   auth: boolean; 
   roles?: AccountRole[];
-  requireAccountComplete?: boolean;
 } | null {
   // Exact matches first (most specific)
   if (ROUTE_PROTECTION[pathname]) {
@@ -68,26 +117,6 @@ function matchesProtectedRoute(pathname: string): {
   return null;
 }
 
-/**
- * Check if account is complete (has profile with username)
- */
-async function isAccountComplete(
-  supabase: ReturnType<typeof createServerClient>, 
-  userId: string
-): Promise<boolean> {
-  // Check if account exists (accounts no longer have required fields like username)
-  // Username is now on profiles, so we just check if account exists
-  const { data: account, error } = await supabase
-    .from('accounts')
-    .select('id')
-    .eq('user_id', userId)
-    .limit(1)
-    .single();
-
-  // Account is "complete" if it exists - user manages profiles separately
-  return !error && !!account;
-}
-
 export async function middleware(req: NextRequest) {
   const response = NextResponse.next({
     request: {
@@ -98,86 +127,104 @@ export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const protection = matchesProtectedRoute(pathname);
 
-  // No protection needed for this route
-  if (!protection) {
-    return response;
-  }
+  // Always refresh session for API routes to ensure cookies are set
+  // This is critical for authenticated API calls
+  const isApiRoute = pathname.startsWith('/api/');
 
+  // Create Supabase client to refresh session
+  // Use getAll() pattern like other server-side code to ensure cookies are read correctly
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return req.cookies.get(name)?.value;
+        getAll() {
+          return req.cookies.getAll();
         },
-        set(name: string, value: string, options: Record<string, unknown>) {
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-        },
-        remove(name: string, options: Record<string, unknown>) {
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            });
           });
         },
       },
     }
   );
 
+  // Refresh session for API routes (this ensures cookies are set)
+  if (isApiRoute) {
+    await supabase.auth.getUser();
+    return response;
+  }
+
   // Get session and refresh if needed (getUser triggers refresh, getSession does not)
   // This helps keep sessions alive across requests
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  // Check authentication requirement
-  if (protection.auth && (!user || authError)) {
+  // MIDDLEWARE ONLY HANDLES AUTHENTICATION, NOT ONBOARDING
+  // Onboarding checks are handled at the page level to prevent redirect loops
+  // This simplifies the flow and makes it easier to debug
+
+  // No protection needed for this route
+  if (!protection) {
+    return response;
+  }
+
+  // Check authentication requirement for protected routes
+  // Only redirect if there's actually no user
+  // If user exists, allow access even if there was an auth error (might be session refresh issue)
+  if (protection.auth && !user) {
+    // Log auth errors for debugging
+    if (authError) {
+      const errorMessage = authError.message || '';
+      const isSessionError = errorMessage.includes('session') || 
+                            errorMessage.includes('Session') ||
+                            errorMessage.includes('Auth session missing');
+      
+      if (!isSessionError) {
+        console.warn('[middleware] Auth error:', authError.message);
+      }
+    }
+    
     const redirectUrl = new URL('/login', req.url);
     redirectUrl.searchParams.set('redirect', pathname);
     redirectUrl.searchParams.set('message', 'Please sign in to access this page');
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Get account data if we need role check
+  let accountData: { role: AccountRole | null; onboarded: boolean | null; isComplete: boolean } | null = null;
+  
+  if (user && protection?.auth) {
+    accountData = await getUserAccountData(supabase, user.id);
+  }
+
   // Check role requirement
-  if (protection.roles && protection.roles.length > 0 && user) {
-    const userRole = await getUserRole(supabase, user.id);
-    
-    if (!userRole || !protection.roles.includes(userRole)) {
+  if (protection.roles && protection.roles.length > 0 && user && accountData) {
+    if (!accountData.role || !protection.roles.includes(accountData.role)) {
       const redirectUrl = new URL('/', req.url);
       redirectUrl.searchParams.set('message', `Access denied. Required role: ${protection.roles.join(' or ')}`);
       return NextResponse.redirect(redirectUrl);
     }
   }
 
-  // Check account completeness requirement
-  if (protection.requireAccountComplete && user) {
-    const accountComplete = await isAccountComplete(supabase, user.id);
-    
-    if (!accountComplete) {
-      // Redirect to account onboarding if account is not complete
-      const redirectUrl = new URL('/account/onboarding', req.url);
-      redirectUrl.searchParams.set('redirect', pathname);
-      redirectUrl.searchParams.set('message', 'Please complete your account setup first');
-      return NextResponse.redirect(redirectUrl);
-    }
-  }
-
-  // If on onboarding page but account already exists, redirect to profiles
-  if (pathname === '/account/onboarding' && user) {
-    const { data: account } = await supabase
+  // Update last_visit for authenticated users (except for static assets and API routes)
+  if (user && protection?.auth && !pathname.startsWith('/api/') && !pathname.startsWith('/_next/')) {
+    // Update last_visit asynchronously (don't block response)
+    supabase
       .from('accounts')
-      .select('id')
+      .update({ last_visit: new Date().toISOString() })
       .eq('user_id', user.id)
-      .limit(1)
-      .single();
-    
-    // If account exists, redirect to profiles (user should manage profiles there)
-    if (account) {
-      return NextResponse.redirect(new URL('/account/profiles', req.url));
-    }
+      .then(() => {
+        // Silently handle - don't block request
+      })
+      .catch((error) => {
+        // Log but don't fail request
+        console.error('Failed to update last_visit:', error);
+      });
   }
 
   return response;

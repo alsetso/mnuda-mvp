@@ -133,3 +133,5 @@ COMMENT ON INDEX pins_profile_status_visibility_idx IS
 -- This ensures when a profile is deleted, its pins are also deleted
 -- The constraint was added in migration 007, so this is just verification
 
+
+

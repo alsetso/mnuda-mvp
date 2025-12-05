@@ -301,3 +301,5 @@ GRANT SELECT ON public.onboarding_questions TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.onboarding_answers TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
 
+
+

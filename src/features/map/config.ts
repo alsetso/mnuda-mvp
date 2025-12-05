@@ -8,7 +8,7 @@ export const MAP_CONFIG = {
     }
     return token;
   })(),
-  MAPBOX_STYLE: process.env.NEXT_PUBLIC_MAPBOX_STYLE || 'mapbox://styles/mapbox/dark-v11',
+  MAPBOX_STYLE: process.env.NEXT_PUBLIC_MAPBOX_STYLE || 'mapbox://styles/mapbox/streets-v12',
   
   STRATEGIC_STYLES: {
     streets: 'mapbox://styles/mapbox/streets-v12',
@@ -37,6 +37,12 @@ export const MAP_CONFIG = {
     south: 43.5,
     east: -89.5,
     west: -97.5,
+  },
+  
+  GEOLOCATION_OPTIONS: {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0,
   },
 } as const;
 

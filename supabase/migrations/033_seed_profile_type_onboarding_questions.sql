@@ -64,3 +64,4 @@ INSERT INTO public.onboarding_questions (profile_type, key, label, description, 
 INSERT INTO public.onboarding_questions (profile_type, key, label, description, field_type, options, required, sort_order, active) VALUES
 ('organization', 'focus_region', 'Outline the community or region your organization focuses on improving.', 'This shows residents local programs, grants, incentives, and community resources.', 'map_area', NULL, true, 10, true);
 
+

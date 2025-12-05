@@ -80,16 +80,33 @@ export async function createServerClientWithAuth(cookieStore?: ReturnType<typeof
  * NEVER expose to client-side code
  */
 export function createServiceClient() {
-  if (!supabaseServiceKey) {
+  // Check at runtime, not just module load time
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) {
+    console.error('SUPABASE_SERVICE_ROLE_KEY is not set in environment');
     throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
   }
 
-  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+  if (!supabaseUrl) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
+  }
+
+  // Verify service key format (should start with eyJ for JWT)
+  if (!serviceKey.startsWith('eyJ') && !serviceKey.startsWith('sb_')) {
+    console.warn('Service role key format may be incorrect');
+  }
+
+  const client = createClient<Database>(supabaseUrl, serviceKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
     },
   });
+
+  // Verify client is using service role (service role bypasses RLS)
+  // The key itself determines if RLS is bypassed - no additional config needed
+  
+  return client;
 }
 

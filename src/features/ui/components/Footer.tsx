@@ -5,51 +5,76 @@ import Logo from './Logo';
 
 interface FooterProps {
   fixed?: boolean;
+  variant?: 'light' | 'dark';
 }
 
-export default function Footer({ fixed = false }: FooterProps) {
+export default function Footer({ fixed = false, variant = 'light' }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
+  const isDark = variant === 'dark';
   const footerClasses = fixed
-    ? 'fixed bottom-0 left-0 right-0 bg-gold-50 text-gray-700 border-t border-gold-200 z-10'
-    : 'bg-gold-50 text-gray-700 mt-auto border-t border-gold-200';
+    ? `fixed bottom-0 left-0 right-0 z-10 ${isDark ? 'bg-black/50 backdrop-blur-sm text-gray-300 border-t border-white/10' : 'bg-white text-gray-700 border-t border-gray-200'}`
+    : `${isDark ? 'bg-black/50 backdrop-blur-sm text-gray-300 mt-auto border-t border-white/10' : 'bg-white text-gray-700 mt-auto border-t border-gray-200'}`;
 
   return (
     <footer className={footerClasses} role="contentinfo">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-12 mb-10">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-6 mb-4">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <Logo size="lg" variant="default" />
+            <div className="flex items-center space-x-2 mb-2">
+              <Logo size="sm" variant="default" />
             </div>
-            <p className="text-sm text-gray-600 mb-6 max-w-md leading-relaxed">
-              MNUDA: Homes Bought. Projects Managed.
+            <p className={`text-xs mb-3 max-w-md leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              For the Love of Minnesota
             </p>
-            <div className="space-y-2">
-              <p className="text-xs text-gray-500">
-                <strong>MNUDA</strong>
-              </p>
-              <p className="text-xs text-gray-500">
-                Homes Bought. Projects Managed.
-              </p>
-            </div>
           </div>
 
-          {/* Services */}
+          {/* Navigation */}
           <div>
-            <h3 className="text-sm font-semibold text-black uppercase tracking-wider mb-4">
-              Services
+            <h3 className={`text-xs font-semibold uppercase tracking-wide mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Navigation
             </h3>
-            <nav aria-label="Services navigation">
-              <ul className="space-y-3">
+            <nav aria-label="Main navigation">
+              <ul className="space-y-1.5">
                 <li>
                   <Link 
-                    href="/community" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Community - Interactive map with community pins and property search"
+                    href="/" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
-                    Community
+                    Home
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/map" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    Map
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/explore" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    Explore
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/business/directory" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    Businesses
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/feed" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    Feed
                   </Link>
                 </li>
               </ul>
@@ -58,36 +83,49 @@ export default function Footer({ fixed = false }: FooterProps) {
 
           {/* Account & Legal */}
           <div>
-            <h3 className="text-sm font-semibold text-black uppercase tracking-wider mb-4">
+            <h3 className={`text-xs font-semibold uppercase tracking-wide mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
               Account & Legal
             </h3>
             <nav aria-label="Account and legal navigation">
-              <ul className="space-y-3">
+              <ul className="space-y-1.5">
                 <li>
                   <Link 
                     href="/login" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Sign In - Access your MNUDA account"
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
                     Sign In
                   </Link>
                 </li>
                 <li>
                   <Link 
-                    href="/settings" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Settings - Manage your account settings and preferences"
+                    href="/account/settings" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
                     Settings
                   </Link>
                 </li>
                 <li>
                   <Link 
-                    href="/terms-of-service" 
-                    className="text-sm text-gray-600 hover:text-black transition-colors"
-                    title="Terms of Service - Read our terms and conditions"
+                    href="/legal/terms-of-service" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                   >
                     Terms of Service
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/legal/privacy-policy" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/legal/community-guidelines" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    Community Guidelines
                   </Link>
                 </li>
               </ul>
@@ -96,12 +134,12 @@ export default function Footer({ fixed = false }: FooterProps) {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-gold-200">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-600 text-center md:text-left">
-              © {currentYear} MNUDA. All rights reserved. Homes Bought. Projects Managed.
+        <div className={`pt-3 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-2">
+            <p className={`text-xs text-center md:text-left ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              © {currentYear} MNUDA. All rights reserved.
             </p>
-            <div className="flex items-center gap-6 text-xs text-gray-500">
+            <div className={`flex items-center gap-4 text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
               <span>Minnesota, United States</span>
             </div>
           </div>

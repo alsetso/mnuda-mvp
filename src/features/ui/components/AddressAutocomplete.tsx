@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { geocodingService, AddressSuggestion } from '@/features/map/services/geocoding';
+import { GeocodingService, AddressSuggestion } from '@/features/map/services/geocodingService';
 
 interface AddressAutocompleteProps {
   value: string;
@@ -43,7 +43,7 @@ export default function AddressAutocomplete({
     setError(null);
 
     try {
-      const results = await geocodingService.getStreetSuggestions(query);
+      const results = await GeocodingService.getStreetSuggestions(query);
       setSuggestions(results);
       setShowSuggestions(results.length > 0);
       setSelectedIndex(-1);

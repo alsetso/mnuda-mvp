@@ -111,3 +111,5 @@ INSERT INTO public.onboarding_questions (account_type, key, label, description, 
 ('business', 'business_category', 'What category are you in?', NULL, 'single_select', '{"values": ["Retail", "Food & Dining", "Professional Services", "Construction", "Real Estate", "Other"]}', false, 40),
 ('business', 'visibility_boosts', 'Do you want visibility boosts?', NULL, 'boolean', NULL, false, 50);
 
+
+

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import { XMarkIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth';
@@ -179,11 +180,15 @@ export function ImageUpload({
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
           {currentUrls.map((url, index) => (
             <div key={index} className="relative group">
-              <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                <img
+              <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                <Image
                   src={url}
                   alt={`Upload ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover"
+                  unoptimized={url.startsWith('data:') || url.includes('supabase.co')}
+                  loading="lazy"
                 />
               </div>
               {!disabled && (
@@ -204,11 +209,15 @@ export function ImageUpload({
       {/* Single Image Display */}
       {!multiple && currentUrls && (
         <div className="mb-4 relative inline-block">
-          <div className="w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
-            <img
+          <div className="relative w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
+            <Image
               src={currentUrls}
-              alt="Upload preview"
-              className="w-full h-full object-cover"
+              alt={label || 'Uploaded image'}
+              fill
+              sizes="128px"
+              className="object-cover"
+              unoptimized={currentUrls.startsWith('data:') || currentUrls.includes('supabase.co')}
+              loading="lazy"
             />
           </div>
           {!disabled && (
@@ -265,4 +274,5 @@ export function ImageUpload({
     </div>
   );
 }
+
 

@@ -1,235 +1,71 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AccountSidebar from '@/components/AccountSidebar';
-import AccountHero from '@/components/AccountHero';
 import { 
-  CreditCardIcon, 
-  PlusIcon, 
-  TrashIcon, 
   CheckIcon,
   ExclamationCircleIcon,
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
-import { loadStripe } from '@stripe/stripe-js';
-import {
-  Elements,
-  PaymentElement,
-  useStripe,
-  useElements,
-} from '@stripe/react-stripe-js';
-import type { PaymentMethod, BillingData } from '@/lib/billingServer';
-
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''
-);
+import type { BillingData } from '@/lib/billingServer';
 
 interface BillingClientProps {
   initialBillingData: BillingData;
-}
-
-function AddPaymentMethodForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    const { error: submitError } = await elements.submit();
-    if (submitError) {
-      setError(submitError.message || 'Failed to submit payment method');
-      setLoading(false);
-      return;
-    }
-
-    const { error: confirmError } = await stripe.confirmSetup({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/account/billing`,
-      },
-      redirect: 'if_required',
-    });
-
-    if (confirmError) {
-      setError(confirmError.message || 'Failed to add payment method');
-      setLoading(false);
-    } else {
-      onSuccess();
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <PaymentElement />
-      {typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.protocol === 'http:' && (
-        <div className="p-3 bg-blue-50 border-2 border-blue-200 text-blue-700 rounded-lg text-sm">
-          <p className="font-semibold mb-1">Development Mode Notice</p>
-          <p className="text-xs">
-            The &quot;secure connection&quot; warning is expected in development. Stripe Elements still processes payments securely. 
-            To enable autofill, use HTTPS: <code className="bg-blue-100 px-1 rounded">npm run dev:https</code>
-          </p>
-        </div>
-      )}
-      {error && (
-        <div className="p-3 bg-red-50 border-2 border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
-          <ExclamationCircleIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
-      )}
-      <div className="flex items-center gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={!stripe || loading}
-          className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-        >
-          <CheckIcon className="w-4 h-4" />
-          Add Payment Method
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 border-2 border-black text-black rounded-lg font-semibold hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
 }
 
 export default function BillingClient({ initialBillingData }: BillingClientProps) {
   const router = useRouter();
   const [billingData, setBillingData] = useState<BillingData>(initialBillingData);
   const [error, setError] = useState<string | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [setupIntentClientSecret, setSetupIntentClientSecret] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [creatingSetupIntent, setCreatingSetupIntent] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [creatingCheckout, setCreatingCheckout] = useState(false);
 
-  // Fetch payment methods
-  const fetchPaymentMethods = async () => {
+
+  // Create checkout session and redirect to Stripe Checkout
+  const handleCheckout = async () => {
     try {
+      setCreatingCheckout(true);
       setError(null);
-      const response = await fetch('/api/billing/payment-methods');
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to fetch payment methods');
-      }
-
-      const data = await response.json();
-      setBillingData(prev => ({
-        ...prev,
-        paymentMethods: data.payment_methods || [],
-      }));
-    } catch (err) {
-      console.error('Error fetching payment methods:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch payment methods');
-    }
-  };
-
-  // Create setup intent for adding payment method
-  // Automatically creates Stripe customer if it doesn't exist
-  const createSetupIntent = async () => {
-    try {
-      setCreatingSetupIntent(true);
-      setError(null);
-      const response = await fetch('/api/billing/setup-intent', {
+      const response = await fetch('/api/billing/checkout', {
         method: 'POST',
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to create setup intent');
+        throw new Error(data.error || 'Failed to create checkout session');
       }
 
-      const data = await response.json();
-      setSetupIntentClientSecret(data.client_secret);
-      
-      // Update billing data if customer was created
-      if (data.customer_id && !billingData.hasCustomer) {
-        setBillingData(prev => ({
-          ...prev,
-          hasCustomer: true,
-          customerId: data.customer_id,
-        }));
-      }
-      
-      setShowAddForm(true);
+      const { url } = await response.json();
+      // Redirect to Stripe Checkout
+      window.location.href = url;
     } catch (err) {
-      console.error('Error creating setup intent:', err);
-      setError(err instanceof Error ? err.message : 'Failed to initialize payment form');
-    } finally {
-      setCreatingSetupIntent(false);
+      console.error('Error creating checkout session:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create checkout session');
+      setCreatingCheckout(false);
     }
   };
 
-  // Set default payment method
-  const setDefaultPaymentMethod = async (paymentMethodId: string) => {
-    try {
+  // Handle checkout session completion
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    const canceled = params.get('canceled');
+
+    if (sessionId) {
+      // Checkout completed successfully
       setError(null);
-      const response = await fetch('/api/billing/payment-methods', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ payment_method_id: paymentMethodId }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to set default payment method');
-      }
-
-      await fetchPaymentMethods();
-      router.refresh();
-    } catch (err) {
-      console.error('Error setting default payment method:', err);
-      setError(err instanceof Error ? err.message : 'Failed to set default payment method');
+      // Force a full page refresh to get latest subscription status
+      // Stripe Checkout automatically saves payment methods to the customer
+      window.location.href = '/account/billing';
+    } else if (canceled) {
+      // Checkout was canceled
+      setError('Checkout was canceled. You can try again anytime.');
+      // Clean up URL
+      window.history.replaceState({}, '', '/account/billing');
     }
-  };
+  }, [router]);
 
-  // Delete payment method
-  const deletePaymentMethod = async (paymentMethodId: string) => {
-    if (!confirm('Are you sure you want to remove this payment method?')) {
-      return;
-    }
-
-    try {
-      setError(null);
-      const response = await fetch(
-        `/api/billing/payment-methods?payment_method_id=${paymentMethodId}`,
-        {
-          method: 'DELETE',
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete payment method');
-      }
-
-      await fetchPaymentMethods();
-      router.refresh();
-    } catch (err) {
-      console.error('Error deleting payment method:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete payment method');
-    }
-  };
-
-  // Open Stripe Customer Portal
+  // Open Stripe Customer Portal (for managing existing subscriptions)
   const openCustomerPortal = async () => {
     try {
       setPortalLoading(true);
@@ -258,224 +94,216 @@ export default function BillingClient({ initialBillingData }: BillingClientProps
     }
   };
 
-  const handleAddSuccess = () => {
-    setShowAddForm(false);
-    setSetupIntentClientSecret(null);
-    fetchPaymentMethods();
-    router.refresh();
-  };
 
-  const handleAddCancel = () => {
-    setShowAddForm(false);
-    setSetupIntentClientSecret(null);
-  };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <AccountHero onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-      
-      <div className="flex flex-1 overflow-hidden">
-        <AccountSidebar 
-          className="border-r-2 border-gray-200 bg-gray-50" 
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
-        
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl xl:max-w-[90rem] 2xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-6 sm:py-8 lg:py-10 safe-area-inset">
-            <div className="space-y-6">
+    <div className="space-y-3">
+      {/* Header */}
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className="p-[10px] bg-gray-100 rounded-md">
+            <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </div>
+          <h1 className="text-sm font-semibold text-gray-900">Billing</h1>
+        </div>
+        <p className="text-xs text-gray-600">Manage your subscription and billing</p>
+      </div>
       
       {error && (
-        <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-start gap-2">
-          <ExclamationCircleIcon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+        <div className="bg-red-50 border border-red-200 text-red-700 px-[10px] py-[10px] rounded-md text-xs flex items-start gap-2">
+          <ExclamationCircleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Payment Methods Section */}
-      <div className="bg-white border-2 border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CreditCardIcon className="w-5 h-5 text-gray-600" />
-              <h2 className="text-lg font-black text-black">Payment Methods</h2>
-            </div>
-            {!showAddForm && (
-              <button
-                onClick={createSetupIntent}
-                disabled={creatingSetupIntent}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-white bg-black hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
-              >
-                {creatingSetupIntent ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <PlusIcon className="w-4 h-4" />
-                    Add Payment Method
-                  </>
-                )}
-              </button>
+      {/* Current Plan */}
+      <div className="bg-white border border-gray-200 rounded-md p-[10px]">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Current Plan</h3>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-gray-900">
+              {billingData.plan === 'pro' ? 'Pro' : 'Hobby'}
+            </span>
+            {billingData.isTrial && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                Trial
+              </span>
+            )}
+            {billingData.subscription_status && (
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                billingData.isActive
+                  ? 'bg-green-100 text-green-800'
+                  : billingData.subscription_status === 'past_due'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-gray-100 text-gray-800'
+              }`}>
+                {billingData.subscription_status === 'active' ? 'Active' :
+                 billingData.subscription_status === 'trialing' ? 'Trialing' :
+                 billingData.subscription_status === 'past_due' ? 'Past Due' :
+                 billingData.subscription_status === 'canceled' ? 'Canceled' :
+                 billingData.subscription_status === 'incomplete' ? 'Incomplete' :
+                 billingData.subscription_status}
+              </span>
             )}
           </div>
-        </div>
-
-        <div className="p-6">
-          {showAddForm && setupIntentClientSecret ? (
-            <div className="space-y-4">
-              <h3 className="text-base font-semibold text-gray-900">Add New Payment Method</h3>
-              <Elements
-                stripe={stripePromise}
-                options={{
-                  clientSecret: setupIntentClientSecret,
-                  appearance: {
-                    theme: 'stripe',
-                    variables: {
-                      colorPrimary: '#000000',
-                      colorBackground: '#ffffff',
-                      colorText: '#000000',
-                      colorDanger: '#dc2626',
-                      fontFamily: 'system-ui, sans-serif',
-                      spacingUnit: '4px',
-                      borderRadius: '8px',
-                    },
-                  },
-                }}
-              >
-                <AddPaymentMethodForm
-                  onSuccess={handleAddSuccess}
-                  onCancel={handleAddCancel}
-                />
-              </Elements>
-            </div>
-          ) : billingData.hasCustomer && billingData.paymentMethods.length === 0 ? (
-            <div className="text-center py-8">
-              <CreditCardIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">No payment methods on file</p>
-              <button
-                onClick={createSetupIntent}
-                disabled={creatingSetupIntent}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {creatingSetupIntent ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <PlusIcon className="w-4 h-4" />
-                    Add Your First Payment Method
-                  </>
-                )}
-              </button>
-            </div>
-          ) : billingData.hasCustomer ? (
-            <div className="space-y-3">
-              {billingData.paymentMethods.map((pm) => (
-                <div
-                  key={pm.id}
-                  className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold text-black">
-                      {pm.card?.brand ? pm.card.brand.charAt(0).toUpperCase() + pm.card.brand.slice(1) : 'Card'} •••• {pm.card?.last4}
-                    </span>
-                    {pm.is_default && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-black text-white">
-                        Default
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!pm.is_default && (
-                      <button
-                        onClick={() => setDefaultPaymentMethod(pm.id)}
-                        className="px-3 py-1.5 text-sm font-semibold text-black border-2 border-black rounded hover:bg-black hover:text-white transition-colors"
-                      >
-                        Set as Default
-                      </button>
-                    )}
-                    <button
-                      onClick={() => deletePaymentMethod(pm.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Remove payment method"
-                    >
-                      <TrashIcon className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <CreditCardIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">Get started by adding a payment method</p>
-              <button
-                onClick={createSetupIntent}
-                disabled={creatingSetupIntent}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {creatingSetupIntent ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <PlusIcon className="w-4 h-4" />
-                    Add Payment Method
-                  </>
-                )}
-              </button>
-            </div>
+          {billingData.plan === 'pro' && billingData.billing_mode === 'standard' && (
+            <p className="text-xs text-gray-600">$20/month</p>
+          )}
+          {billingData.plan === 'hobby' && (
+            <p className="text-xs text-gray-600">Free plan</p>
+          )}
+          {billingData.stripe_subscription_id && (
+            <p className="text-xs text-gray-500">
+              Subscription ID: {billingData.stripe_subscription_id.substring(0, 20)}...
+            </p>
           )}
         </div>
       </div>
 
-      {/* Subscriptions Section */}
+      {/* Plans Comparison Table */}
+      <div className="bg-white border border-gray-200 rounded-md overflow-hidden">
+        <div className="px-[10px] py-[10px] border-b border-gray-200 bg-gray-50">
+          <h2 className="text-sm font-semibold text-gray-900">Plans & Features</h2>
+          <p className="text-xs text-gray-600 mt-0.5">Compare Free and Pro plans</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="px-[10px] py-[10px] text-left text-xs font-semibold text-gray-900">Feature</th>
+                <th className="px-[10px] py-[10px] text-center text-xs font-semibold text-gray-900">Free</th>
+                <th className="px-[10px] py-[10px] text-center text-xs font-semibold text-gray-900 bg-gray-900 text-white">Pro</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Price</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">Free</td>
+                <td className="px-[10px] py-[10px] text-center text-xs font-medium text-gray-900 bg-gray-50">$20/month</td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Pins</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">10 pins</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Unlimited</td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Areas</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">3 areas</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Unlimited</td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Visibility</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">Public only</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Private + accounts_only</td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Profiles</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">1 profile</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Multiple profiles</td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">My Homes</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">1 home</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Unlimited</td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Notifications</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">—</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">
+                  <CheckIcon className="w-3 h-3 mx-auto text-gray-900" />
+                </td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Area Alerts</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">—</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">
+                  <CheckIcon className="w-3 h-3 mx-auto text-gray-900" />
+                </td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Pin Analytics</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">—</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">
+                  <CheckIcon className="w-3 h-3 mx-auto text-gray-900" />
+                </td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Data Export</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">—</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">
+                  <CheckIcon className="w-3 h-3 mx-auto text-gray-900" />
+                </td>
+              </tr>
+              <tr>
+                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Support</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">Community</td>
+                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Priority support</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="px-[10px] py-[10px] border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-end gap-2">
+            {billingData.plan === 'hobby' ? (
+              <button
+                onClick={handleCheckout}
+                disabled={creatingCheckout}
+                className="flex items-center gap-1.5 px-[10px] py-[10px] bg-gray-900 text-white rounded-md text-xs font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {creatingCheckout ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    Subscribe to Pro
+                    <ArrowRightIcon className="w-3 h-3" />
+                  </>
+                )}
+              </button>
+            ) : (
+              <p className="text-xs text-gray-600">
+                You&apos;re on the Pro plan
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Subscriptions & Billing Section */}
       {billingData.hasCustomer && (
-        <div className="bg-white border-2 border-gray-200 rounded-xl p-6">
-          <div className="flex items-start justify-between">
+        <div className="bg-white border border-gray-200 rounded-md p-[10px]">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <h3 className="text-lg font-black text-black mb-2">Subscriptions & Billing</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Manage your subscriptions, view invoices, and update billing information through the Stripe Customer Portal.
+              <h3 className="text-sm font-semibold text-gray-900 mb-1.5">Subscriptions & Billing</h3>
+              <p className="text-xs text-gray-600">
+                Access the Stripe Customer Portal to manage your subscription, update payment methods, view billing history and invoices, 
+                update your billing address, and cancel or modify your subscription. All payment methods are securely managed through Stripe.
               </p>
             </div>
             <button
               onClick={openCustomerPortal}
-              disabled={portalLoading || billingData.paymentMethods.length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              disabled={portalLoading}
+              className="flex items-center gap-1.5 px-[10px] py-[10px] bg-gray-900 text-white rounded-md text-xs font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
             >
               {portalLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Opening...
                 </>
               ) : (
                 <>
                   Manage Subscriptions
-                  <ArrowRightIcon className="w-4 h-4" />
+                  <ArrowRightIcon className="w-3 h-3" />
                 </>
               )}
             </button>
           </div>
-          {billingData.paymentMethods.length === 0 && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                Please add a payment method before managing subscriptions.
-              </p>
-            </div>
-          )}
         </div>
       )}
-            </div>
-          </div>
-        </main>
-      </div>
     </div>
   );
 }

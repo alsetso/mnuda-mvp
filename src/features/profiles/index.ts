@@ -1,4 +1,7 @@
-export { ProfileService } from './services/profileService';
-export type { Profile, CreateProfileData, UpdateProfileData } from './services/profileService';
-export { ProfileProvider, useProfile } from './contexts/ProfileContext';
+// Profile feature exports
+// Stub implementation - profiles table has been removed
 
+export { ProfileProvider, useProfile } from './contexts/ProfileContext';
+export type { Profile } from './contexts/ProfileContext';
+export { formatProfileType, getAllProfileTypes, isValidProfileType } from './constants/profileTypes';
+export type { ProfileType } from './constants/profileTypes';

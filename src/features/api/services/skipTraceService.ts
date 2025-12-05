@@ -7,8 +7,18 @@ export type SkipTraceApiType = 'name' | 'address' | 'phone' | 'email';
 export interface SkipTraceResult {
   id: string;
   user_id: string;
+  profile_id: string | null;
   api_type: SkipTraceApiType;
   search_query: string;
+  call_type: string | null;
+  source: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  address_street: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip: string | null;
+  address_full: string | null;
   developer_data: Record<string, unknown> | null;
   raw_response: Record<string, unknown>;
   created_at: string;
@@ -189,7 +199,8 @@ export class SkipTraceService {
   static async executeSkipTrace(
     apiType: SkipTraceApiType,
     searchQuery: string,
-    params: SkipTraceSearchParams
+    params: SkipTraceSearchParams,
+    profileId?: string | null
   ): Promise<SkipTraceResult> {
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -234,15 +245,29 @@ export class SkipTraceService {
     const developerData = this.parseDeveloperData(rawResponse);
 
     // Save to database only if API call succeeded
+    const insertData: {
+      user_id: string;
+      profile_id?: string;
+      api_type: SkipTraceApiType;
+      search_query: string;
+      developer_data: Record<string, unknown> | null;
+      raw_response: Record<string, unknown>;
+    } = {
+      user_id: user.id,
+      api_type: apiType,
+      search_query: searchQuery,
+      developer_data: developerData,
+      raw_response: rawResponse,
+    };
+
+    // Add profile_id if provided
+    if (profileId) {
+      insertData.profile_id = profileId;
+    }
+
     const { data, error } = await supabase
       .from('skip_tracing')
-      .insert({
-        user_id: user.id,
-        api_type: apiType,
-        search_query: searchQuery,
-        developer_data: developerData,
-        raw_response: rawResponse,
-      })
+      .insert(insertData)
       .select()
       .single();
 

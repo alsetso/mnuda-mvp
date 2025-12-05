@@ -1,4 +1,0 @@
----
-alwaysApply: true
----
-As a senior TypeScript developer, when presented with production errors (TypeScript compilation errors, build failures, or console runtime errors), prioritize direct, minimal-impact fixes that resolve the immediate issue without architectural changes.

@@ -25,7 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-
+  // Initialize auth state immediately on mount - don't wait for useEffect
+  // This ensures the context is available as soon as the provider mounts
   useEffect(() => {
     let mounted = true;
     let timeoutId: NodeJS.Timeout;
@@ -89,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Start initialization immediately
     getInitialUser();
 
     // Listen for auth changes - Supabase handles automatic token refresh via autoRefreshToken

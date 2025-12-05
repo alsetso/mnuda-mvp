@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { withAuthRetry } from '@/lib/authHelpers';
+import { Tag } from '@/features/tags/services/tagService';
 
 export interface PinCategory {
   id: string;
@@ -14,44 +15,78 @@ export interface PinCategory {
   updated_at: string;
 }
 
+export interface PinMedia {
+  type: 'image' | 'video';
+  url: string;
+  filename: string;
+  mime_type?: string;
+  size?: number;
+  width?: number;
+  height?: number;
+  duration?: number; // For videos, in seconds
+  thumbnail_url?: string; // For videos
+  order?: number;
+  uploaded_at?: string;
+}
+
 export interface Pin {
   id: string;
   profile_id: string | null;
-  emoji: string;
+  user_id?: string; // Added for backward compatibility
   name: string;
-  visibility: 'public' | 'private';
   description: string | null;
-  address: string;
-  lat: number;
-  long: number;
-  category_id: string | null;
-  subcategory: string | null;
+  lat: number | null;
+  lng: number | null; // Renamed from long
+  long?: number; // Backward compatibility alias
+  visibility: 'public' | 'private' | 'accounts_only';
+  status: 'active' | 'draft' | 'archived' | 'hidden' | 'completed';
+  emoji?: string;
+  address?: string;
+  tag_id: string | null; // Required for user-created pins
+  tag?: Tag; // Populated tag object (via join)
+  subcategory?: string | null;
+  media?: PinMedia[] | null; // Array of media objects (images/videos)
   created_at: string;
   updated_at: string;
 }
 
 export interface CreatePinData {
-  emoji: string;
-  name: string;
-  visibility?: 'public' | 'private';
+  name: string; // Required
   description?: string | null;
-  address: string;
   lat: number;
-  long: number;
-  category_id?: string | null;
+  lng: number; // Renamed from long
+  visibility?: 'public' | 'private' | 'accounts_only';
+  emoji?: string;
+  address?: string;
+  tag_id: string; // Required for user-created pins
   subcategory?: string | null;
+  media?: PinMedia[] | null; // Array of media objects (images/videos)
 }
 
 export interface UpdatePinData {
-  emoji?: string;
   name?: string;
-  visibility?: 'public' | 'private';
   description?: string | null;
-  address?: string;
   lat?: number;
-  long?: number;
-  category_id?: string | null;
+  lng?: number;
+  visibility?: 'public' | 'private' | 'accounts_only';
+  status?: 'active' | 'draft' | 'archived' | 'hidden' | 'completed';
+  emoji?: string;
+  address?: string;
+  tag_id?: string;
   subcategory?: string | null;
+  media?: PinMedia[] | null; // Array of media objects (images/videos)
+}
+
+export interface PinQueryFilters {
+  tag_id?: string | string[];
+  bbox?: {
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+  };
+  status?: 'active' | 'draft' | 'archived' | 'hidden' | 'completed';
+  profile_id?: string;
 }
 
 export class PinCategoryService {
@@ -112,7 +147,7 @@ export class PinCategoryService {
       const category = pin.category;
       const accessList = pin.access_list || [];
       // If access_list is empty, it's accessible to all
-      const isAccessible = accessList.length === 0 || accessList.includes(accountType);
+      const isAccessible = accessList.length === 0 || accessList.includes(profileType);
       
       if (!categoryAccessMap.has(category)) {
         categoryAccessMap.set(category, false);
@@ -159,19 +194,62 @@ export class PinCategoryService {
 
 export class PinService {
   /**
-   * Get all public pins and user's own pins (if authenticated)
-   * For anonymous users, returns only public pins
-   * Optionally filter by category IDs (server-side filtering)
+   * Get pins with filtering
+   * Supports filtering by tag, bounding box, and status
+   * Map queries should use this method with bbox parameter
    */
-  static async getAllPins(categoryIds?: string[]): Promise<Pin[]> {
+  static async getPins(filters?: PinQueryFilters): Promise<Pin[]> {
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Query pins with tag joined via tag_id
+    // Use explicit foreign key reference: tags!pins_tag_id_fkey
+    // This ensures Supabase discovers the relationship correctly
     let query = supabase
       .from('pins')
-      .select('*');
+      .select(`
+        *,
+        tags!pins_tag_id_fkey (
+          id,
+          slug,
+          label,
+          emoji,
+          description,
+          entity_type,
+          display_order,
+          is_active,
+          is_public
+        )
+      `);
 
+    // Apply tag filter
+    if (filters?.tag_id) {
+      if (Array.isArray(filters.tag_id)) {
+        query = query.in('tag_id', filters.tag_id);
+      } else {
+        query = query.eq('tag_id', filters.tag_id);
+      }
+    }
+
+    // Apply bounding box filter (for map queries)
+    if (filters?.bbox) {
+      query = query
+        .gte('lat', filters.bbox.minLat)
+        .lte('lat', filters.bbox.maxLat)
+        .gte('lng', filters.bbox.minLng)
+        .lte('lng', filters.bbox.maxLng);
+    }
+
+    // Apply status filter (default to active)
+    const status = filters?.status || 'active';
+    query = query.eq('status', status);
+
+    // Apply profile_id filter if provided
+    if (filters?.profile_id) {
+      query = query.eq('profile_id', filters.profile_id);
+    }
+
+    // Apply visibility filter based on authentication
     if (user) {
-      // Get user's profile IDs through accounts
       const { data: account } = await supabase
         .from('accounts')
         .select('id')
@@ -187,31 +265,17 @@ export class PinService {
         const profileIds = profiles?.map(p => p.id) || [];
         
         if (profileIds.length > 0) {
-          // Authenticated users can see public pins OR their own pins (by profile_id)
           const profileIdFilters = profileIds.map(id => `profile_id.eq.${id}`).join(',');
-          query = query.or(`visibility.eq.public,${profileIdFilters}`);
+          query = query.or(`visibility.eq.public,visibility.eq.accounts_only,${profileIdFilters}`);
         } else {
-          // No profiles, only public pins
-          query = query.eq('visibility', 'public');
+          query = query.in('visibility', ['public', 'accounts_only']);
         }
       } else {
-        // No account, only public pins
-        query = query.eq('visibility', 'public');
+        query = query.in('visibility', ['public', 'accounts_only']);
       }
     } else {
       // Anonymous users can only see public pins
       query = query.eq('visibility', 'public');
-    }
-
-    // Filter by category IDs if provided (server-side filtering)
-    // If empty array is passed, return empty result (no categories selected)
-    // If undefined, return all pins (no filtering)
-    if (categoryIds !== undefined) {
-      if (categoryIds.length === 0) {
-        // No categories selected, return empty array
-        return [];
-      }
-      query = query.in('category_id', categoryIds);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -221,11 +285,131 @@ export class PinService {
       throw new Error(`Failed to fetch pins: ${error.message}`);
     }
 
-    return data || [];
+    // Transform the data to include tag object and backward compatibility
+    const transformedPins = (data || []).map((pin: any) => {
+      // Handle tag join - Supabase may return as object or array
+      let tag = null;
+      if (pin.tags) {
+        // If it's an array (shouldn't happen for one-to-one, but handle it)
+        if (Array.isArray(pin.tags)) {
+          tag = pin.tags[0] || null;
+        } else {
+          // It's an object
+          tag = pin.tags;
+        }
+      }
+      
+      return {
+        ...pin,
+        tag,
+        tags: undefined,
+        // Backward compatibility: map lng to long
+        long: pin.lng,
+      };
+    });
+
+    return transformedPins;
   }
 
   /**
-   * Get user's own pins
+   * Get all public pins and user's own pins (if authenticated)
+   * For anonymous users, returns only public pins
+   * Optionally filter by tag IDs (server-side filtering) - DEPRECATED, use getPins instead
+   * Includes tags via join
+   */
+  static async getAllPins(tagIds?: string[]): Promise<Pin[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Query pins with tag joined via tag_id
+    // Use explicit foreign key reference: tags!pins_tag_id_fkey
+    // This ensures Supabase discovers the relationship correctly
+    let query = supabase
+      .from('pins')
+      .select(`
+        *,
+        tags!pins_tag_id_fkey (
+          id,
+          slug,
+          label,
+          emoji,
+          description,
+          entity_type,
+          display_order,
+          is_active,
+          is_public
+        )
+      `);
+
+    // RLS policies handle visibility filtering:
+    // - Public pins are visible to everyone
+    // - Users can see their own pins (by profile_id) regardless of visibility
+    // For authenticated users, we don't filter by visibility - let RLS handle it
+    // This ensures all user-owned pins are returned regardless of visibility setting
+    if (!user) {
+      // Anonymous users can only see public pins
+      query = query.eq('visibility', 'public');
+    }
+    // For authenticated users, no visibility filter - RLS will filter appropriately
+
+    // Only show active pins (exclude draft, archived, hidden, completed)
+    query = query.eq('status', 'active');
+
+    // Filter by tag IDs if provided
+    // If empty array is passed, return empty result (no tags selected)
+    // If undefined, return all pins (no filtering)
+    if (tagIds !== undefined) {
+      if (tagIds.length === 0) {
+        // No tags selected, return empty array
+        return [];
+      }
+      // Filter by tag_id directly
+      query = query.in('tag_id', tagIds);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching pins:', error);
+      throw new Error(`Failed to fetch pins: ${error.message}`);
+    }
+
+    // Transform the data to include tag object and ensure lng/long compatibility
+    const transformedPins = (data || []).map((pin: any) => {
+      // Handle tag join - Supabase may return as object, array, or null
+      let tag = null;
+      if (pin.tags) {
+        // If it's an array (shouldn't happen for one-to-one, but handle it)
+        if (Array.isArray(pin.tags)) {
+          tag = pin.tags.length > 0 ? pin.tags[0] : null;
+        } else if (typeof pin.tags === 'object') {
+          // It's an object - check if it has the expected properties
+          if (pin.tags.id || pin.tags.label) {
+            tag = pin.tags;
+          }
+        }
+      }
+      
+      // If tag join failed but we have tag_id, we could fetch it separately
+      // but for now we'll just log a warning
+      if (!tag && pin.tag_id) {
+        console.warn(`Tag join failed for pin ${pin.id} with tag_id ${pin.tag_id}. Join data:`, pin.tags);
+      }
+      
+      return {
+        ...pin,
+        tag, // Single tag object
+        tags: undefined, // Remove the join data
+        // Ensure both lng and long are set for backward compatibility
+        lng: pin.lng ?? pin.long ?? null,
+        long: pin.lng ?? pin.long ?? null, // Backward compatibility alias
+      };
+    });
+
+    return transformedPins;
+  }
+
+  /**
+   * Get user's own pins with tags
    */
   static async getUserPins(): Promise<Pin[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -257,7 +441,20 @@ export class PinService {
 
     const { data, error } = await supabase
       .from('pins')
-      .select('*')
+      .select(`
+        *,
+        tags (
+          id,
+          slug,
+          label,
+          emoji,
+          description,
+          entity_type,
+          display_order,
+          is_active,
+          is_public
+        )
+      `)
       .in('profile_id', profileIds)
       .order('created_at', { ascending: false });
 
@@ -266,66 +463,91 @@ export class PinService {
       throw new Error(`Failed to fetch user pins: ${error.message}`);
     }
 
-    return data || [];
+    // Transform to include tag object and parse media
+    return (data || []).map((pin: any) => {
+      // Parse media if it's a string (JSONB can come as string)
+      let media = pin.media;
+      if (typeof media === 'string') {
+        try {
+          media = JSON.parse(media);
+        } catch (e) {
+          console.warn('Failed to parse media JSON:', e);
+          media = null;
+        }
+      }
+
+      return {
+        ...pin,
+        tag: pin.tags || null,
+        tags: undefined, // Remove the join data
+        media: media || null,
+      };
+    });
   }
 
   /**
    * Create a new pin
+   * Requires name and tag_id
    */
-  static async createPin(data: CreatePinData, profileId?: string): Promise<Pin> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      throw new Error('User not authenticated');
+  static async createPin(data: CreatePinData, profileId: string): Promise<Pin> {
+    // Validate required fields
+    if (!profileId) {
+      throw new Error('profile_id is required');
+    }
+    if (!data.name?.trim()) {
+      throw new Error('name is required');
+    }
+    if (!data.tag_id) {
+      throw new Error('tag_id is required');
+    }
+    if (data.lat == null || data.lng == null) {
+      throw new Error('Latitude and longitude are required');
     }
 
-    // Get profile_id if not provided
-    let pinProfileId = profileId;
-    if (!pinProfileId) {
-      const { data: account } = await supabase
-        .from('accounts')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+    // Prepare insert data - simple and direct
+    const insertData = {
+      profile_id: profileId,
+      tag_id: data.tag_id,
+      name: data.name.trim(),
+      lat: data.lat,
+      lng: data.lng,
+      description: data.description?.trim() || null,
+      address: data.address || null,
+      emoji: data.emoji || null,
+      subcategory: data.subcategory || null,
+      visibility: data.visibility || 'public',
+      status: 'active' as const,
+      media: data.media || null,
+    };
 
-      if (account) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('account_id', account.id)
-          .limit(1)
-          .single();
-
-        pinProfileId = profile?.id || null;
-      }
-    }
-
-    const { data: pin, error } = await supabase
+    // Create the pin
+    const { data: pin, error: pinError } = await supabase
       .from('pins')
-      .insert({
-        profile_id: pinProfileId,
-        emoji: data.emoji,
-        name: data.name,
-        visibility: data.visibility || 'public',
-        description: data.description || null,
-        address: data.address,
-        lat: data.lat,
-        long: data.long,
-        category_id: data.category_id || null,
-        subcategory: data.subcategory || null,
-      })
+      .insert(insertData)
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating pin:', error);
-      throw new Error(`Failed to create pin: ${error.message}`);
+    if (pinError) {
+      console.error('Error creating pin:', pinError);
+      console.error('Pin data being inserted:', JSON.stringify(insertData, null, 2));
+      throw new Error(`Failed to create pin: ${pinError.message}`);
     }
 
-    return pin;
+    if (!pin) {
+      throw new Error('Pin was created but no data was returned');
+    }
+
+    // Fetch the pin with tag
+    const fetchedPin = await this.getPinById(pin.id);
+    if (!fetchedPin) {
+      throw new Error('Failed to fetch created pin');
+    }
+    return fetchedPin;
   }
 
   /**
    * Update a pin
+   * Supports updating all pin fields
    */
   static async updatePin(pinId: string, data: UpdatePinData): Promise<Pin> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -355,9 +577,26 @@ export class PinService {
       throw new Error('No profiles found');
     }
 
+    // Build update object
+    const updateData: any = {};
+
+    // Update fields
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.lat !== undefined) updateData.lat = data.lat;
+    if (data.lng !== undefined) updateData.lng = data.lng;
+    if (data.visibility !== undefined) updateData.visibility = data.visibility;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.emoji !== undefined) updateData.emoji = data.emoji;
+    if (data.address !== undefined) updateData.address = data.address;
+    if (data.tag_id !== undefined) updateData.tag_id = data.tag_id;
+    if (data.subcategory !== undefined) updateData.subcategory = data.subcategory;
+    if (data.media !== undefined) updateData.media = data.media;
+
+    // Update pin fields
     const { data: pin, error } = await supabase
       .from('pins')
-      .update(data)
+      .update(updateData)
       .eq('id', pinId)
       .in('profile_id', profileIds)
       .select()
@@ -372,7 +611,12 @@ export class PinService {
       throw new Error('Pin not found or access denied');
     }
 
-    return pin;
+    // Fetch the updated pin with tag
+    const fetchedPin = await this.getPinById(pinId);
+    if (!fetchedPin) {
+      throw new Error('Failed to fetch updated pin');
+    }
+    return fetchedPin;
   }
 
   /**
@@ -419,7 +663,7 @@ export class PinService {
   }
 
   /**
-   * Get a pin by ID
+   * Get a pin by ID with tags
    * For anonymous users, returns pin only if it's public
    */
   static async getPinById(pinId: string): Promise<Pin | null> {
@@ -427,7 +671,20 @@ export class PinService {
 
     let query = supabase
       .from('pins')
-      .select('*')
+      .select(`
+        *,
+        tags (
+          id,
+          slug,
+          label,
+          emoji,
+          description,
+          entity_type,
+          display_order,
+          is_active,
+          is_public
+        )
+      `)
       .eq('id', pinId);
 
     if (user) {
@@ -470,7 +727,48 @@ export class PinService {
       throw new Error(`Failed to fetch pin: ${error.message}`);
     }
 
-    return data;
+    if (!data) return null;
+
+    // Parse media if it's a string (JSONB can come as string)
+    let media = data.media;
+    if (typeof media === 'string') {
+      try {
+        media = JSON.parse(media);
+      } catch (e) {
+        console.warn('Failed to parse media JSON:', e);
+        media = null;
+      }
+    }
+
+    // Transform to include tag object and backward compatibility
+    return {
+      ...data,
+      tag: data.tags || null,
+      tags: undefined,
+      media: media || null,
+      // Backward compatibility: map lng to long
+      long: data.lng,
+    };
+  }
+
+  /**
+   * Get pins for map display with bounding box
+   * Optimized query for map rendering
+   */
+  static async getPinsForMap(filters: {
+    tag_id?: string | string[];
+    bbox: {
+      minLat: number;
+      maxLat: number;
+      minLng: number;
+      maxLng: number;
+    };
+    status?: 'active' | 'draft' | 'archived' | 'hidden' | 'completed';
+  }): Promise<Pin[]> {
+    return this.getPins({
+      ...filters,
+      status: filters.status || 'active',
+    });
   }
 }
 

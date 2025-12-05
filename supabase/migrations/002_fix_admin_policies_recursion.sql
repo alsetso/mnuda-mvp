@@ -35,3 +35,5 @@ CREATE POLICY "Admins can insert accounts"
   TO authenticated
   WITH CHECK (public.is_admin());
 
+
+

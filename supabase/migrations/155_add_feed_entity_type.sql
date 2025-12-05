@@ -1,0 +1,183 @@
+-- Add 'feed' as a valid entity type for page views tracking
+-- This allows tracking views of the main feed page
+
+-- ============================================================================
+-- STEP 1: Update page_views table CHECK constraint to include 'feed'
+-- ============================================================================
+
+ALTER TABLE public.page_views
+  DROP CONSTRAINT IF EXISTS page_views_entity_type_check;
+
+ALTER TABLE public.page_views
+  ADD CONSTRAINT page_views_entity_type_check 
+  CHECK (entity_type IN ('post', 'article', 'city', 'county', 'account', 'business', 'feed'));
+
+-- ============================================================================
+-- STEP 2: Update record_page_view function to accept 'feed' entity type
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.record_page_view(
+  p_entity_type TEXT,
+  p_entity_id UUID DEFAULT NULL,
+  p_entity_slug TEXT DEFAULT NULL,
+  p_account_id UUID DEFAULT NULL,
+  p_ip_address INET DEFAULT NULL
+)
+RETURNS INTEGER AS $$
+DECLARE
+  v_view_count INTEGER;
+  v_table_name TEXT;
+  v_entity_id_for_update UUID;
+BEGIN
+  -- Validate entity_type
+  IF p_entity_type NOT IN ('post', 'article', 'city', 'county', 'account', 'business', 'feed') THEN
+    RAISE EXCEPTION 'Invalid entity_type: %', p_entity_type;
+  END IF;
+  
+  -- Map entity_type to table name (feed doesn't have a table)
+  v_table_name := CASE p_entity_type
+    WHEN 'post' THEN 'posts'
+    WHEN 'article' THEN 'articles'
+    WHEN 'city' THEN 'cities'
+    WHEN 'county' THEN 'counties'
+    WHEN 'account' THEN 'accounts'
+    WHEN 'business' THEN 'businesses'
+    WHEN 'feed' THEN NULL -- Feed doesn't have a table with view_count
+    ELSE NULL
+  END;
+  
+  -- Resolve entity_id based on entity_type and provided identifiers
+  IF p_entity_id IS NOT NULL THEN
+    -- Direct entity_id provided - use it
+    v_entity_id_for_update := p_entity_id;
+  ELSIF p_entity_slug IS NOT NULL THEN
+    IF p_entity_type = 'account' THEN
+      -- Resolve username to account ID
+      SELECT id INTO v_entity_id_for_update
+      FROM public.accounts
+      WHERE username = p_entity_slug
+      LIMIT 1;
+      
+      IF v_entity_id_for_update IS NULL THEN
+        RAISE EXCEPTION 'Account not found for username: %', p_entity_slug;
+      END IF;
+    ELSIF p_entity_type IN ('post', 'article') THEN
+      -- Resolve slug to entity ID for posts/articles
+      EXECUTE format(
+        'SELECT id FROM public.%I WHERE slug = $1 LIMIT 1',
+        v_table_name
+      )
+      USING p_entity_slug
+      INTO v_entity_id_for_update;
+      
+      IF v_entity_id_for_update IS NULL THEN
+        RAISE EXCEPTION '% not found for slug: %', p_entity_type, p_entity_slug;
+      END IF;
+    ELSIF p_entity_type = 'feed' THEN
+      -- Feed doesn't need entity_id resolution, use NULL
+      v_entity_id_for_update := NULL;
+    ELSE
+      -- For other entity types, slug resolution not supported
+      RAISE EXCEPTION 'Slug lookup not supported for entity_type: %', p_entity_type;
+    END IF;
+  ELSE
+    -- For feed, allow NULL entity_id and entity_slug (we'll use entity_slug='feed')
+    IF p_entity_type = 'feed' THEN
+      v_entity_id_for_update := NULL;
+    ELSE
+      RAISE EXCEPTION 'Either entity_id or entity_slug must be provided';
+    END IF;
+  END IF;
+  
+  -- Insert page view record
+  INSERT INTO public.page_views (
+    entity_type,
+    entity_id,
+    entity_slug,
+    account_id,
+    ip_address,
+    viewed_at
+  )
+  VALUES (
+    p_entity_type,
+    v_entity_id_for_update,
+    CASE 
+      WHEN p_entity_type = 'account' AND p_entity_slug IS NOT NULL THEN p_entity_slug
+      WHEN p_entity_type IN ('post', 'article') AND p_entity_slug IS NOT NULL THEN p_entity_slug
+      WHEN p_entity_type = 'feed' AND p_entity_slug IS NOT NULL THEN p_entity_slug
+      ELSE NULL
+    END,
+    p_account_id,
+    p_ip_address,
+    NOW()
+  );
+  
+  -- Update view_count on entity table (only if table exists and has view_count column)
+  IF v_entity_id_for_update IS NOT NULL AND v_table_name IS NOT NULL THEN
+    BEGIN
+      EXECUTE format(
+        'UPDATE public.%I SET view_count = COALESCE(view_count, 0) + 1 WHERE id = $1 RETURNING view_count',
+        v_table_name
+      )
+      USING v_entity_id_for_update
+      INTO v_view_count;
+    EXCEPTION
+      WHEN undefined_column THEN
+        -- Column doesn't exist, skip update but still record the page view
+        v_view_count := 0;
+        RAISE WARNING 'view_count column does not exist on table %', v_table_name;
+    END;
+  ELSE
+    -- For feed or entities without tables, return 0 (we track in page_views table)
+    v_view_count := 0;
+  END IF;
+  
+  RETURN COALESCE(v_view_count, 0);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================================
+-- STEP 3: Create function to get feed statistics
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.get_feed_stats(
+  p_hours INTEGER DEFAULT 24
+)
+RETURNS TABLE (
+  total_loads BIGINT,
+  unique_visitors BIGINT,
+  accounts_active BIGINT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    -- Total loads: count of all page views for feed within time period
+    COUNT(*)::BIGINT AS total_loads,
+    
+    -- Unique visitors: distinct accounts + distinct IPs (for anonymous)
+    (
+      COUNT(DISTINCT account_id) FILTER (WHERE account_id IS NOT NULL) +
+      COUNT(DISTINCT ip_address) FILTER (WHERE account_id IS NULL AND ip_address IS NOT NULL)
+    )::BIGINT AS unique_visitors,
+    
+    -- Accounts active: distinct accounts that viewed feed
+    COUNT(DISTINCT account_id) FILTER (WHERE account_id IS NOT NULL)::BIGINT AS accounts_active
+  FROM public.page_views
+  WHERE entity_type = 'feed'
+    AND viewed_at >= NOW() - (p_hours || ' hours')::INTERVAL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================================
+-- STEP 4: Grant permissions
+-- ============================================================================
+
+GRANT EXECUTE ON FUNCTION public.get_feed_stats TO anon, authenticated;
+
+-- ============================================================================
+-- STEP 5: Add comments
+-- ============================================================================
+
+COMMENT ON FUNCTION public.get_feed_stats IS
+  'Returns feed statistics: total_loads (all views), unique_visitors (distinct accounts + IPs), and accounts_active (distinct accounts only). p_hours parameter filters to last N hours (default 24).';
+

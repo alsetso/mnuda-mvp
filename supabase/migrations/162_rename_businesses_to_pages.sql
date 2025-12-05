@@ -1,0 +1,371 @@
+-- Rename businesses table to pages
+-- Updates table name, foreign keys, indexes, triggers, and functions
+-- Supports flexible page types (businesses, personal brands, organizations)
+
+-- ============================================================================
+-- STEP 1: Rename table
+-- ============================================================================
+
+ALTER TABLE public.businesses RENAME TO pages;
+
+-- ============================================================================
+-- STEP 2: Rename indexes
+-- ============================================================================
+
+ALTER INDEX IF EXISTS businesses_account_id_idx RENAME TO pages_account_id_idx;
+ALTER INDEX IF EXISTS businesses_name_idx RENAME TO pages_name_idx;
+ALTER INDEX IF EXISTS businesses_industry_idx RENAME TO pages_industry_idx;
+ALTER INDEX IF EXISTS businesses_lat_lng_idx RENAME TO pages_lat_lng_idx;
+ALTER INDEX IF EXISTS businesses_service_areas_idx RENAME TO pages_service_areas_idx;
+
+-- ============================================================================
+-- STEP 3: Rename trigger
+-- ============================================================================
+
+ALTER TRIGGER update_businesses_updated_at ON public.pages 
+  RENAME TO update_pages_updated_at;
+
+-- ============================================================================
+-- STEP 4: Update page_entity_type enum to include 'page'
+-- ============================================================================
+
+-- First ensure the enum type exists (from migration 127)
+DO $$ BEGIN
+  CREATE TYPE public.page_entity_type AS ENUM (
+    'post',
+    'article',
+    'city',
+    'county',
+    'profile',
+    'account',
+    'business',
+    'page'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+-- Add 'page' value if it doesn't exist
+DO $$ 
+BEGIN
+  -- Check if 'page' value exists in the enum
+  IF NOT EXISTS (
+    SELECT 1 
+    FROM pg_enum 
+    WHERE enumlabel = 'page' 
+    AND enumtypid = 'public.page_entity_type'::regtype
+  ) THEN
+    ALTER TYPE public.page_entity_type ADD VALUE 'page';
+  END IF;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+-- ============================================================================
+-- STEP 5: Update record_page_view function to support 'page' entity type
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.record_page_view(
+  p_entity_type TEXT,
+  p_entity_id UUID DEFAULT NULL,
+  p_entity_slug TEXT DEFAULT NULL,
+  p_account_id UUID DEFAULT NULL,
+  p_ip_address INET DEFAULT NULL
+)
+RETURNS INTEGER AS $$
+DECLARE
+  v_view_count INTEGER;
+  v_table_name TEXT;
+  v_entity_id_for_update UUID;
+BEGIN
+  -- Validate entity_type (support both 'business' and 'page' for migration compatibility)
+  IF p_entity_type NOT IN ('post', 'article', 'city', 'county', 'account', 'business', 'page', 'feed', 'map') THEN
+    RAISE EXCEPTION 'Invalid entity_type: %', p_entity_type;
+  END IF;
+  
+  -- Map entity_type to table name (both 'business' and 'page' map to 'pages')
+  v_table_name := CASE p_entity_type
+    WHEN 'post' THEN 'posts'
+    WHEN 'article' THEN 'articles'
+    WHEN 'city' THEN 'cities'
+    WHEN 'county' THEN 'counties'
+    WHEN 'account' THEN 'accounts'
+    WHEN 'business' THEN 'pages'
+    WHEN 'page' THEN 'pages'
+    ELSE NULL
+  END;
+  
+  -- Resolve entity_id based on entity_type and provided identifiers
+  IF p_entity_id IS NOT NULL THEN
+    -- Direct entity_id provided - use it
+    v_entity_id_for_update := p_entity_id;
+  ELSIF p_entity_slug IS NOT NULL THEN
+    -- Need to resolve slug to entity_id based on entity_type
+    IF p_entity_type = 'account' THEN
+      -- Accounts: resolve username to account_id
+      SELECT id INTO v_entity_id_for_update
+      FROM public.accounts
+      WHERE username = p_entity_slug
+      LIMIT 1;
+    ELSIF p_entity_type IN ('post', 'article') THEN
+      -- Posts/Articles: resolve slug to id
+      EXECUTE format('SELECT id FROM public.%I WHERE slug = $1 LIMIT 1', v_table_name)
+      USING p_entity_slug
+      INTO v_entity_id_for_update;
+    ELSIF p_entity_type IN ('city', 'county') THEN
+      -- Cities/Counties: resolve slug to id
+      EXECUTE format('SELECT id FROM public.%I WHERE slug = $1 LIMIT 1', v_table_name)
+      USING p_entity_slug
+      INTO v_entity_id_for_update;
+    ELSIF p_entity_type IN ('business', 'page') THEN
+      -- Page pages: 'business' or 'directory' slugs don't resolve to entity_id
+      -- These are page-level tracking, not page-specific
+      v_entity_id_for_update := NULL;
+    ELSE
+      -- For other entity types, slug resolution not supported
+      RAISE EXCEPTION 'Slug lookup not supported for entity_type: %', p_entity_type;
+    END IF;
+  ELSE
+    -- For feed, business, page, or map page slugs, allow NULL entity_id
+    IF p_entity_type IN ('feed', 'business', 'page', 'map') THEN
+      v_entity_id_for_update := NULL;
+    ELSE
+      RAISE EXCEPTION 'Either entity_id or entity_slug must be provided';
+    END IF;
+  END IF;
+  
+  -- Insert page view record
+  INSERT INTO public.page_views (
+    entity_type,
+    entity_id,
+    entity_slug,
+    account_id,
+    ip_address,
+    viewed_at
+  )
+  VALUES (
+    -- Normalize 'business' to 'page' for new records
+    CASE WHEN p_entity_type = 'business' THEN 'page' ELSE p_entity_type END,
+    v_entity_id_for_update,
+    CASE 
+      WHEN p_entity_type = 'account' AND p_entity_slug IS NOT NULL THEN p_entity_slug
+      WHEN p_entity_type IN ('post', 'article') AND p_entity_slug IS NOT NULL THEN p_entity_slug
+      WHEN p_entity_type = 'feed' AND p_entity_slug IS NOT NULL THEN p_entity_slug
+      WHEN p_entity_type IN ('business', 'page') AND p_entity_slug IS NOT NULL THEN p_entity_slug
+      WHEN p_entity_type = 'map' AND p_entity_slug IS NOT NULL THEN p_entity_slug
+      ELSE NULL
+    END,
+    p_account_id,
+    p_ip_address,
+    NOW()
+  );
+  
+  -- Update view_count on entity table (only if table exists and has view_count column)
+  IF v_entity_id_for_update IS NOT NULL AND v_table_name IS NOT NULL THEN
+    BEGIN
+      EXECUTE format(
+        'UPDATE public.%I SET view_count = COALESCE(view_count, 0) + 1 WHERE id = $1 RETURNING view_count',
+        v_table_name
+      )
+      USING v_entity_id_for_update
+      INTO v_view_count;
+    EXCEPTION
+      WHEN undefined_column THEN
+        -- Column doesn't exist, skip update but still record the page view
+        v_view_count := 0;
+        RAISE WARNING 'view_count column does not exist on table %', v_table_name;
+    END;
+  ELSE
+    -- For feed, business, page, or map page slugs, return 0 (we track in page_views table)
+    v_view_count := 0;
+  END IF;
+  
+  RETURN COALESCE(v_view_count, 0);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================================
+-- STEP 6: Rename and update get_business_page_stats to get_page_stats
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.get_page_stats(
+  p_page_slug TEXT,
+  p_hours INTEGER DEFAULT 24
+)
+RETURNS TABLE (
+  total_loads BIGINT,
+  unique_visitors BIGINT,
+  accounts_active BIGINT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    -- Total loads: count of all page views for the page within time period
+    COUNT(*)::BIGINT AS total_loads,
+    
+    -- Unique visitors: distinct accounts + distinct IPs (for anonymous)
+    (
+      COUNT(DISTINCT account_id) FILTER (WHERE account_id IS NOT NULL) +
+      COUNT(DISTINCT ip_address) FILTER (WHERE account_id IS NULL AND ip_address IS NOT NULL)
+    )::BIGINT AS unique_visitors,
+    
+    -- Accounts active: distinct accounts that viewed the page
+    COUNT(DISTINCT account_id) FILTER (WHERE account_id IS NOT NULL)::BIGINT AS accounts_active
+  FROM public.page_views
+  WHERE entity_type IN ('business', 'page')
+    AND entity_slug = p_page_slug
+    AND viewed_at >= NOW() - (p_hours || ' hours')::INTERVAL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant permissions
+GRANT EXECUTE ON FUNCTION public.get_page_stats TO anon, authenticated;
+
+-- Add comment
+COMMENT ON FUNCTION public.get_page_stats IS
+  'Returns page statistics for a specific page slug (e.g., "business", "directory"). Returns total_loads (all views), unique_visitors (distinct accounts + IPs), and accounts_active (distinct accounts only). p_hours parameter filters to last N hours (default 24). Supports both "business" and "page" entity types for migration compatibility.';
+
+-- Drop old function if it exists
+DROP FUNCTION IF EXISTS public.get_business_page_stats(TEXT, INTEGER);
+
+-- ============================================================================
+-- STEP 7: Update RLS policies for pages table
+-- ============================================================================
+
+-- Drop old policies
+DROP POLICY IF EXISTS "Users can view own businesses" ON public.pages;
+DROP POLICY IF EXISTS "Users can insert own businesses" ON public.pages;
+DROP POLICY IF EXISTS "Users can update own businesses" ON public.pages;
+DROP POLICY IF EXISTS "Users can delete own businesses" ON public.pages;
+DROP POLICY IF EXISTS "Public can view all businesses" ON public.pages;
+DROP POLICY IF EXISTS "Admins can view all businesses" ON public.pages;
+DROP POLICY IF EXISTS "Admins can update all businesses" ON public.pages;
+DROP POLICY IF EXISTS "Admins can insert businesses" ON public.pages;
+DROP POLICY IF EXISTS "Admins can delete all businesses" ON public.pages;
+
+-- Create new policies for pages
+-- Users can view their own pages (via account ownership)
+CREATE POLICY "Users can view own pages"
+  ON public.pages
+  FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.accounts
+      WHERE accounts.id = pages.account_id
+      AND accounts.user_id = auth.uid()
+    )
+  );
+
+-- Users can insert their own pages
+CREATE POLICY "Users can insert own pages"
+  ON public.pages
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.accounts
+      WHERE accounts.id = pages.account_id
+      AND accounts.user_id = auth.uid()
+    )
+  );
+
+-- Users can update their own pages
+CREATE POLICY "Users can update own pages"
+  ON public.pages
+  FOR UPDATE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.accounts
+      WHERE accounts.id = pages.account_id
+      AND accounts.user_id = auth.uid()
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.accounts
+      WHERE accounts.id = pages.account_id
+      AND accounts.user_id = auth.uid()
+    )
+  );
+
+-- Users can delete their own pages
+CREATE POLICY "Users can delete own pages"
+  ON public.pages
+  FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.accounts
+      WHERE accounts.id = pages.account_id
+      AND accounts.user_id = auth.uid()
+    )
+  );
+
+-- Public can view all pages (for public directory)
+CREATE POLICY "Public can view all pages"
+  ON public.pages
+  FOR SELECT
+  TO authenticated, anon
+  USING (true);
+
+-- Admins can view all pages
+CREATE POLICY "Admins can view all pages"
+  ON public.pages
+  FOR SELECT
+  TO authenticated
+  USING (public.is_admin());
+
+-- Admins can update all pages
+CREATE POLICY "Admins can update all pages"
+  ON public.pages
+  FOR UPDATE
+  TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+-- Admins can insert pages
+CREATE POLICY "Admins can insert pages"
+  ON public.pages
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (public.is_admin());
+
+-- Admins can delete all pages
+CREATE POLICY "Admins can delete all pages"
+  ON public.pages
+  FOR DELETE
+  TO authenticated
+  USING (public.is_admin());
+
+-- ============================================================================
+-- STEP 8: Update page_views RLS policy for anonymous access
+-- ============================================================================
+
+-- Drop old policy
+DROP POLICY IF EXISTS "anon_can_read_business_page_stats" ON public.page_views;
+
+-- Add policy for anonymous users to read page views (for stats only)
+CREATE POLICY "anon_can_read_page_stats"
+  ON public.page_views FOR SELECT
+  TO anon
+  USING (entity_type IN ('business', 'page') AND entity_slug IN ('business', 'directory'));
+
+-- ============================================================================
+-- STEP 9: Update table and column comments
+-- ============================================================================
+
+COMMENT ON TABLE public.pages IS 'Pages managed at the account level - can be businesses, personal brands, organizations, etc. Created and managed by accounts';
+COMMENT ON COLUMN public.pages.account_id IS 'References accounts.id - the account that owns this page';
+COMMENT ON COLUMN public.pages.name IS 'Page name';
+COMMENT ON COLUMN public.pages.type IS 'Type of page (business, personal brand, organization, etc.)';
+COMMENT ON COLUMN public.pages.address IS 'Full page address';
+COMMENT ON COLUMN public.pages.lat IS 'Page latitude coordinate';
+COMMENT ON COLUMN public.pages.lng IS 'Page longitude coordinate';
+COMMENT ON COLUMN public.pages.email IS 'Page email address';
+COMMENT ON COLUMN public.pages.phone IS 'Page phone number';
+COMMENT ON COLUMN public.pages.industry IS 'Page industry';
+COMMENT ON COLUMN public.pages.hours IS 'Page hours (stored as text)';
+COMMENT ON COLUMN public.pages.service_areas IS 'Array of city UUIDs (references cities.id) where the page provides services';
+

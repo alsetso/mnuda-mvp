@@ -1,0 +1,81 @@
+-- Storage RLS Roles Reference
+-- Standard roles used across all storage buckets
+
+-- ============================================================================
+-- SUPABASE STORAGE ROLES
+-- ============================================================================
+--
+-- Standard roles for storage policies:
+-- 1. `anon` - Anonymous/unauthenticated users
+-- 2. `authenticated` - Logged-in users
+-- 3. `service_role` - Backend/service access (bypasses RLS, no policies needed)
+--
+-- ============================================================================
+-- STANDARD POLICY PATTERN FOR PUBLIC BUCKETS
+-- ============================================================================
+--
+-- SELECT (Public Read):
+--   TO authenticated, anon
+--   - Allows both logged-in and anonymous users to view files
+--   - Used for: profile-images, project-photos, feed-images, logos, etc.
+--
+-- INSERT/UPDATE/DELETE (Authenticated Only):
+--   TO authenticated
+--   - Only logged-in users can upload/update/delete
+--   - Folder ownership check: (storage.foldername(name))[1] = auth.uid()::text
+--
+-- ============================================================================
+-- CURRENT BUCKET STATUS
+-- ============================================================================
+--
+-- feed-images: 0 policies (needs migration 098)
+--   - SELECT: authenticated, anon
+--   - INSERT/UPDATE/DELETE: authenticated
+--
+-- project-photos: 4 policies ✓
+--   - SELECT: authenticated, anon
+--   - INSERT/UPDATE/DELETE: authenticated (with project ownership check)
+--
+-- profile-images: 4 policies ✓
+--   - SELECT: authenticated, anon
+--   - INSERT/UPDATE/DELETE: authenticated
+--
+-- logos: 4 policies ✓
+--   - SELECT: authenticated, anon
+--   - INSERT/UPDATE/DELETE: authenticated
+--
+-- cover-photos: 4 policies ✓
+--   - SELECT: authenticated, anon
+--   - INSERT/UPDATE/DELETE: authenticated
+--
+-- members_business_logo: 5 policies ✓
+--   - SELECT: authenticated, anon
+--   - INSERT/UPDATE/DELETE: authenticated
+--
+-- marketplace-images: 4 policies ✓
+--   - SELECT: authenticated, anon
+--   - INSERT/UPDATE/DELETE: authenticated
+--
+-- avatars: 4 policies ✓
+--   - SELECT: authenticated, anon
+--   - INSERT/UPDATE/DELETE: authenticated
+--
+-- property-docs: 0 policies (private bucket, may need different roles)
+--   - Should be: authenticated only (no anon)
+--   - INSERT/UPDATE/DELETE: authenticated
+--
+-- ============================================================================
+-- NOTES
+-- ============================================================================
+--
+-- 1. service_role does NOT need policies - it bypasses RLS entirely
+-- 2. All public buckets follow the same pattern: SELECT for all, modify for authenticated
+-- 3. Private buckets (like property-docs) should restrict SELECT to authenticated only
+-- 4. Folder ownership check ensures users can only manage files in their own folder
+
+
+
+
+
+
+

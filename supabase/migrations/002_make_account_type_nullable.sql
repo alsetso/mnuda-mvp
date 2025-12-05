@@ -6,3 +6,5 @@ ALTER TABLE public.accounts
 
 -- Note: account_type can now be NULL until user completes onboarding
 
+
+

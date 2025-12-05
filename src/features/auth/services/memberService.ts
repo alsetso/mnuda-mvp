@@ -2,33 +2,61 @@ import { supabase } from '@/lib/supabase';
 import { withAuthRetry } from '@/lib/authHelpers';
 
 export type AccountRole = 'general' | 'admin';
-export type ProfileType = 'homeowner' | 'renter' | 'investor' | 'realtor' | 'wholesaler' | 'contractor' | 'services' | 'developer' | 'property_manager' | 'organization';
+export type ProfileType = 'homeowner' | 'renter' | 'student' | 'worker' | 'business';
 
 // Legacy alias for backward compatibility during migration
 export type AccountType = ProfileType;
 
+export type AccountTrait = 
+  | 'homeowner'
+  | 'buyer'
+  | 'investor'
+  | 'realtor'
+  | 'wholesaler'
+  | 'lender'
+  | 'title';
+
+export type Plan = 'hobby' | 'pro';
+export type BillingMode = 'standard' | 'trial';
+
 export interface Account {
   id: string;
   user_id: string;
+  username: string | null;
   first_name: string | null;
   last_name: string | null;
   gender: string | null;
   age: number | null;
   image_url: string | null;
+  cover_image_url: string | null;
+  bio: string | null;
+  city_id: string | null;
+  view_count: number;
   role: AccountRole;
+  traits: AccountTrait[] | null;
   stripe_customer_id: string | null;
+  plan: Plan;
+  billing_mode: BillingMode;
+  subscription_status: string | null;
+  stripe_subscription_id: string | null;
+  onboarded: boolean;
   created_at: string;
   updated_at: string;
   last_visit: string | null;
 }
 
 export interface UpdateAccountData {
+  username?: string | null;
   first_name?: string | null;
   last_name?: string | null;
   gender?: string | null;
   age?: number | null;
   image_url?: string | null;
+  cover_image_url?: string | null;
+  bio?: string | null;
+  city_id?: string | null;
   role?: AccountRole;
+  traits?: AccountTrait[] | null;
 }
 
 export class AccountService {

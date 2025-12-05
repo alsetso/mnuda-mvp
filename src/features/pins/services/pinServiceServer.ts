@@ -42,35 +42,19 @@ export class PinServiceServer {
       .from('pins')
       .select('*');
 
-    if (user && !authError) {
-      // Get user's profile IDs through accounts
-      const { data: account } = await supabase
-        .from('accounts')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (account) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('account_id', account.id);
-
-        const profileIds = profiles?.map(p => p.id) || [];
-        
-        if (profileIds.length > 0) {
-          const profileIdFilters = profileIds.map(id => `profile_id.eq.${id}`).join(',');
-          query = query.or(`visibility.eq.public,${profileIdFilters}`);
-        } else {
-          query = query.eq('visibility', 'public');
-        }
-      } else {
-        query = query.eq('visibility', 'public');
-      }
-    } else {
+    // RLS policies handle visibility filtering:
+    // - Public pins are visible to everyone
+    // - Users can see their own pins (by profile_id) regardless of visibility
+    // For authenticated users, we don't filter by visibility - let RLS handle it
+    // This ensures all user-owned pins are returned regardless of visibility setting
+    if (!user || authError) {
       // Anonymous users can only see public pins
       query = query.eq('visibility', 'public');
     }
+    // For authenticated users, no visibility filter - RLS will filter appropriately
+
+    // Only show active pins (exclude draft, archived, hidden, completed)
+    query = query.eq('status', 'active');
 
     // Filter by category IDs if provided (server-side filtering)
     // If empty array is passed, return empty result (no categories selected)

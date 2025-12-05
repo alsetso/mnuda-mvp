@@ -31,11 +31,8 @@ export const getServerAuth = cache(async (): Promise<ServerAuthUser | null> => {
           getAll() {
             return cookieStore.getAll();
           },
-          set() {
+          setAll() {
             // Server components can't set cookies
-          },
-          remove() {
-            // Server components can't remove cookies
           },
         },
       }

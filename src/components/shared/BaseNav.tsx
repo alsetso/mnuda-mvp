@@ -1,0 +1,244 @@
+'use client';
+
+import { useState, useEffect, ReactNode } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { Bars3Icon, XMarkIcon, BellIcon } from '@heroicons/react/24/outline';
+
+export interface NavLink {
+  href: string;
+  label: string;
+  icon?: React.ComponentType<{ className?: string }> | null;
+  isNotification?: boolean;
+  isAccount?: boolean;
+  unreadCount?: number;
+  account?: any;
+}
+
+interface BaseNavProps {
+  /** Navigation links to display */
+  navLinks: NavLink[];
+  /** Logo source path */
+  logo?: string;
+  /** Logo alt text */
+  logoAlt?: string;
+  /** Background color classes */
+  bgColor?: string;
+  /** Border color classes */
+  borderColor?: string;
+  /** Text color classes for links */
+  textColor?: string;
+  /** Active link color classes */
+  activeColor?: string;
+  /** Right section content (auth buttons, etc.) */
+  rightSection?: ReactNode;
+  /** Search section (displayed between nav links and right section) */
+  searchSection?: ReactNode;
+  /** Show scroll effect */
+  showScrollEffect?: boolean;
+  /** Custom mobile menu content */
+  mobileMenuContent?: ReactNode;
+  /** Sticky positioning */
+  sticky?: boolean;
+  /** Notification dropdown component */
+  notificationDropdown?: ReactNode;
+  /** Account dropdown component */
+  accountDropdown?: ReactNode;
+  /** Handler for notification click */
+  onNotificationClick?: () => void;
+  /** Handler for account click */
+  onAccountClick?: () => void;
+  /** Profile photo component for account nav item */
+  profilePhotoComponent?: ReactNode;
+}
+
+export default function BaseNav({
+  navLinks,
+  logo = '/MNUDA-2.svg',
+  logoAlt = 'MNUDA',
+  bgColor = 'bg-white',
+  borderColor = 'border-gray-200',
+  textColor = 'text-gray-600',
+  activeColor = 'text-black',
+  rightSection,
+  searchSection,
+  showScrollEffect = false,
+  mobileMenuContent,
+  sticky = true,
+  notificationDropdown,
+  accountDropdown,
+  onNotificationClick,
+  onAccountClick,
+  profilePhotoComponent,
+}: BaseNavProps) {
+  const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!showScrollEffect) return;
+
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [showScrollEffect]);
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    return pathname.startsWith(href);
+  };
+
+  const stickyClass = sticky ? 'sticky top-0 z-50' : '';
+
+  return (
+    <nav className={`${bgColor} ${stickyClass} border-b ${borderColor} transition-all duration-200`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-3 items-center h-14 gap-4">
+          {/* Left Column: Navigation Links (Desktop) / Hamburger (Mobile) */}
+          <div className="flex items-center gap-0.5 sm:gap-1 lg:gap-2 min-w-0">
+            {/* Desktop: Show nav links */}
+            <div className="hidden md:flex items-center gap-0.5 sm:gap-1 lg:gap-2 min-w-0 justify-start">
+              {navLinks.map((link, index) => {
+                const Icon = link.icon;
+                const active = isActive(link.href);
+                
+                // Handle special nav items (notifications)
+                if (link.isNotification) {
+                  const hasUnread = (link.unreadCount ?? 0) > 0;
+                  return (
+                    <div key={`notification-${index}`} className="relative flex-shrink-0">
+                      <button
+                        onClick={onNotificationClick}
+                        className="flex flex-col items-center justify-center px-2 py-1 min-w-[60px] transition-all duration-200 text-gray-700 hover:text-gold-600"
+                        aria-label={`Notifications${hasUnread ? ` (${link.unreadCount} unread)` : ''}`}
+                      >
+                        <div className="relative">
+                          <BellIcon className="w-5 h-5 mb-0.5" />
+                          {hasUnread && (
+                            <span 
+                              className="absolute -top-0.5 -right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-gold-50"
+                              aria-label={`${link.unreadCount} unread notifications`}
+                            />
+                          )}
+                        </div>
+                        <span className="text-[10px] font-medium mt-0.5 hidden lg:inline">Notifications</span>
+                        <span className="text-[10px] font-medium mt-0.5 lg:hidden">Notify</span>
+                      </button>
+                      {notificationDropdown}
+                    </div>
+                  );
+                }
+                
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex flex-col items-center justify-center px-1.5 sm:px-2 py-1 min-w-[50px] sm:min-w-[60px] transition-all duration-200 flex-shrink-0 ${
+                      active
+                        ? `${activeColor}`
+                        : `${textColor} hover:${activeColor}`
+                    }`}
+                  >
+                    {Icon && <Icon className="w-5 h-5 mb-0.5" />}
+                    <span className={`text-[9px] sm:text-[10px] font-medium mt-0.5 ${
+                      active ? 'border-b-2 border-current pb-0.5' : ''
+                    }`}>
+                      {link.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+            
+            {/* Mobile: Show hamburger menu */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 transition-colors text-gray-600 hover:text-black flex-shrink-0"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? (
+                <XMarkIcon className="w-6 h-6" />
+              ) : (
+                <Bars3Icon className="w-6 h-6" />
+              )}
+            </button>
+          </div>
+
+          {/* Center Column: Logo/Emblem (Always Centered) */}
+          <div className="flex items-center justify-center min-w-0">
+            <Link href="/" className="hover:opacity-80 transition-opacity flex-shrink-0" aria-label="Home">
+              <Image
+                src={logo}
+                alt={logoAlt}
+                width={logo.includes('emblem') ? 32 : 100}
+                height={logo.includes('emblem') ? 32 : 20}
+                className={logo.includes('emblem') ? 'w-6 h-6 sm:w-7 sm:h-7 md:w-7 md:h-7 lg:w-8 lg:h-8' : 'w-16 sm:w-20 md:w-20 lg:w-[100px] h-auto'}
+                style={{ 
+                  maxWidth: logo.includes('emblem') ? '32px' : '100px', 
+                  height: 'auto', 
+                  display: 'block' 
+                }}
+                priority
+              />
+            </Link>
+          </div>
+
+          {/* Right Column: Right Section (Desktop) / Me Icon (Mobile) */}
+          <div className="flex items-center justify-end gap-0.5 sm:gap-1 min-w-0">
+            {rightSection}
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className={`md:hidden border-t ${borderColor} py-4`}>
+            {mobileMenuContent ? (
+              <div onClick={(e) => {
+                // Close menu when clicking on links
+                const target = e.target as HTMLElement;
+                if (target.tagName === 'A' || target.closest('a')) {
+                  setIsMobileMenuOpen(false);
+                }
+              }}>
+                {mobileMenuContent}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {navLinks.map((link) => {
+                  const Icon = link.icon;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`block px-3 py-2 text-base font-medium transition-colors flex items-center gap-2 ${
+                        isActive(link.href)
+                          ? `${activeColor} bg-gray-100`
+                          : `${textColor} hover:${activeColor} hover:bg-gray-100`
+                      }`}
+                    >
+                      {Icon && <Icon className="w-5 h-5" />}
+                      {link.label}
+                    </Link>
+                  );
+                })}
+                {rightSection && (
+                  <div className="pt-4 border-t border-gray-200">
+                    {rightSection}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+}
+

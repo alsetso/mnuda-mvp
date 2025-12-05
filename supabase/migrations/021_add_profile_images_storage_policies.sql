@@ -55,3 +55,5 @@ CREATE POLICY "Public can view profile images"
   TO authenticated, anon
   USING (bucket_id = 'profile-images');
 
+
+

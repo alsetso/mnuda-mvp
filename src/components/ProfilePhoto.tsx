@@ -1,21 +1,19 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { ProfileService, Profile } from '@/features/profiles/services/profileService';
+import { UserIcon } from '@heroicons/react/24/outline';
 import { Account, AccountService } from '@/features/auth';
 
 interface ProfilePhotoProps {
-  profile?: Profile | null;
   account?: Account | null;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   editable?: boolean;
-  onUpdate?: (updatedProfile: Profile) => void;
+  onUpdate?: (updatedAccount: Account) => void;
   className?: string;
 }
 
 export default function ProfilePhoto({ 
-  profile,
   account,
   size = 'md', 
   editable = false, 
@@ -43,47 +41,14 @@ export default function ProfilePhoto({
     xl: 'w-12 h-12'
   };
 
-  const avatarUrl = profile?.profile_image || account?.image_url || null;
-  const displayName = profile ? ProfileService.getDisplayName(profile) : AccountService.getDisplayName(account) || '';
+  const avatarUrl = account?.image_url || null;
+  const displayName = AccountService.getDisplayName(account) || '';
   const email = account?.user_id || '';
 
-  const getInitials = (): string => {
-    if (displayName) {
-      const names = displayName.trim().split(/\s+/);
-      if (names.length >= 2) {
-        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-      }
-      return names[0][0].toUpperCase();
-    }
-    if (email) {
-      return email[0].toUpperCase();
-    }
-    return 'U';
-  };
-
-  const getBackgroundColor = (): string => {
-    if (avatarUrl) return '';
-    
-    // Generate a consistent color based on profile ID or account email
-    const seed = profile?.id || account?.id || email || 'default';
-    const colors = [
-      'bg-gold-500',
-      'bg-green-500', 
-      'bg-gray-500',
-      'bg-orange-500',
-      'bg-amber-500',
-      'bg-yellow-500',
-      'bg-red-500',
-      'bg-stone-500'
-    ];
-    
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    
-    return colors[Math.abs(hash) % colors.length];
-  };
+  // Reset error state when avatar URL changes
+  useEffect(() => {
+    setImageError(false);
+  }, [avatarUrl]);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -111,22 +76,22 @@ export default function ProfilePhoto({
         try {
           const base64Data = e.target?.result as string;
           
-          if (!profile) {
-            setUploadError('No profile selected');
+          if (!account) {
+            setUploadError('No account selected');
             return;
           }
           
-          // Update profile with new image URL
-          const updatedProfile = await ProfileService.updateProfile(profile.id, {
-            profile_image: base64Data,
+          // Update account with new image URL
+          const updatedAccount = await AccountService.updateCurrentAccount({
+            image_url: base64Data,
           });
 
-          if (updatedProfile && onUpdate) {
-            onUpdate(updatedProfile);
+          if (updatedAccount && onUpdate) {
+            onUpdate(updatedAccount);
           }
         } catch (error) {
           console.error('Error updating avatar:', error);
-          setUploadError('Failed to update profile photo');
+          setUploadError('Failed to update account photo');
         } finally {
           setIsUploading(false);
         }
@@ -140,22 +105,22 @@ export default function ProfilePhoto({
   };
 
   const handleRemovePhoto = async () => {
-    if (!profile) return;
+    if (!account) return;
     
     setIsUploading(true);
     setUploadError('');
 
     try {
-      const updatedProfile = await ProfileService.updateProfile(profile.id, {
-        profile_image: null,
+      const updatedAccount = await AccountService.updateCurrentAccount({
+        image_url: null,
       });
 
-      if (updatedProfile && onUpdate) {
-        onUpdate(updatedProfile);
+      if (updatedAccount && onUpdate) {
+        onUpdate(updatedAccount);
       }
     } catch (error) {
       console.error('Error removing avatar:', error);
-      setUploadError('Failed to remove profile photo');
+      setUploadError('Failed to remove account photo');
     } finally {
       setIsUploading(false);
     }
@@ -164,7 +129,7 @@ export default function ProfilePhoto({
   return (
     <div className={`relative ${className}`}>
       {/* Profile Photo */}
-      <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-200 flex items-center justify-center ${getBackgroundColor()} text-white font-medium border-2 border-gray-300 relative`}>
+      <div className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-gray-300 relative`}>
         {avatarUrl && !imageError ? (
           <Image
             src={avatarUrl}
@@ -176,9 +141,7 @@ export default function ProfilePhoto({
             unoptimized={avatarUrl.startsWith('data:') || avatarUrl.includes('supabase.co')}
           />
         ) : (
-          <span className={`${iconSizes[size]} font-semibold`}>
-            {getInitials()}
-          </span>
+          <UserIcon className={iconSizes[size]} />
         )}
       </div>
 

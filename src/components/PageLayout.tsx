@@ -1,37 +1,31 @@
 'use client';
 
 import React from 'react';
-import AppHeader from '@/features/session/components/AppHeader';
-import Footer from '@/features/ui/components/Footer';
-import { useAuth } from '@/features/auth';
-import { useServerAuth } from '@/components/ServerAuthProvider';
-import type { ServerAuthUser } from '@/lib/authServer';
-import { SessionData } from '@/features/session/services/sessionStorage';
 
+/**
+ * @deprecated PageLayout is deprecated. Use AppWrapper for app pages or SimplePageLayout for public/marketing pages.
+ * 
+ * This component has been refactored to remove AppHeader and Footer dependencies.
+ * It now serves as a simple content wrapper with container and styling options.
+ * 
+ * Migration:
+ * - For app pages: Replace <PageLayout> with <AppWrapper>
+ * - For public/marketing pages: Use <SimplePageLayout> instead
+ */
 interface PageLayoutProps {
   children: React.ReactNode;
   /**
-   * Show header - defaults to true for authenticated pages
+   * @deprecated Header is no longer rendered. Use AppWrapper for app pages.
    */
   showHeader?: boolean;
   /**
-   * Show footer
-   * - When user is NOT logged in: Footer always shows (ignores this prop)
-   * - When user IS logged in: Respects this prop (defaults to false for authenticated pages)
+   * @deprecated Footer is no longer rendered. Use SimplePageLayout for public pages with footer.
    */
   showFooter?: boolean;
   /**
-   * Custom header configuration
+   * @deprecated Header props are no longer used.
    */
-  headerProps?: {
-    currentSession?: SessionData | null;
-    sessions?: SessionData[];
-    onNewSession?: () => Promise<SessionData>;
-    onSessionSwitch?: (sessionId: string) => void;
-    updateUrl?: boolean;
-    showSessionSelector?: boolean;
-    showMobileToggle?: boolean;
-  };
+  headerProps?: Record<string, unknown>;
   /**
    * Page container max width class
    */
@@ -45,39 +39,30 @@ interface PageLayoutProps {
    */
   contentPadding?: string;
   /**
-   * Server-side auth data to prevent header flash
-   * Pass this from server components that use getServerAuth()
+   * @deprecated Server auth is no longer used.
    */
-  serverAuth?: ServerAuthUser | null;
+  serverAuth?: unknown;
 }
 
 /**
- * Unified Page Layout Component
+ * Simple Content Wrapper Component
  * 
- * Enterprise-grade layout wrapper that ensures consistent header/footer
- * across all pages with proper flex layout and no duplication.
+ * Legacy wrapper that provides container, background, and padding styling.
  * 
- * Features:
- * - Single source of truth for header/footer
- * - Conditional rendering for auth pages
- * - Proper flex layout with sticky header
- * - Consistent spacing and containers
- * - No footer duplication
+ * NOTE: This component no longer renders header or footer.
+ * - Use AppWrapper for app pages (includes AppTop header and AppContent)
+ * - Use SimplePageLayout for public/marketing pages (includes SimpleNav and Footer)
  */
 export default function PageLayout({
   children,
-  showHeader = true,
-  showFooter = true,
-  headerProps = {},
+  showHeader: _showHeader,
+  showFooter: _showFooter,
+  headerProps: _headerProps,
   containerMaxWidth = '7xl',
-  backgroundColor = 'bg-gold-100',
+  backgroundColor = 'bg-[#f4f2ef]',
   contentPadding = 'px-4 sm:px-6 lg:px-8 py-8',
-  serverAuth,
+  serverAuth: _serverAuth,
 }: PageLayoutProps) {
-  // Prefer server auth to prevent flash, fallback to client auth
-  const serverAuthUser = useServerAuth();
-  const { user: clientUser } = useAuth();
-  const user = serverAuth || serverAuthUser || clientUser;
   const maxWidthClass = {
     sm: 'max-w-screen-sm',
     md: 'max-w-screen-md',
@@ -88,85 +73,35 @@ export default function PageLayout({
     full: 'max-w-full',
   }[containerMaxWidth];
 
-  // Footer logic:
-  // - Always show footer when user is NOT logged in (public pages)
-  // - When logged in, respect the showFooter prop (default false for authenticated pages)
-  const shouldShowFooter = !user ? true : showFooter;
-
-  // Height and overflow logic:
-  // - When contentPadding is provided: use min-h-screen (allows natural scrolling)
-  // - When contentPadding is empty and no footer: use h-screen with overflow-hidden (fixed viewport)
-  // - When contentPadding is empty but footer exists: use min-h-screen (allows scrolling)
-  const heightClass = shouldShowFooter === false && contentPadding === '' ? 'h-screen' : '';
-  const overflowClass = shouldShowFooter === false && contentPadding === '' ? 'overflow-hidden' : '';
-  const minHeightClass = shouldShowFooter !== false || contentPadding !== '' ? 'min-h-screen' : '';
-
   return (
-    <div className={`flex flex-col ${backgroundColor} ${heightClass} ${overflowClass} ${minHeightClass}`} style={{ 
-      margin: 0, 
-      padding: 0, 
-      height: shouldShowFooter === false && contentPadding === '' ? '100vh' : undefined,
-      width: '100%',
-      maxWidth: '100vw',
-      position: 'relative'
-    }}>
-      {/* Header - Sticky */}
-      {showHeader && (
-        <div className="flex-shrink-0" style={{ margin: 0, padding: 0 }}>
-          <AppHeader
-            currentSession={headerProps.currentSession ?? null}
-            sessions={headerProps.sessions ?? []}
-            onNewSession={
-              headerProps.onNewSession ??
-              (async () => ({
-                id: '',
-                name: '',
-                createdAt: Date.now(),
-                lastAccessed: Date.now(),
-                nodes: [],
-                locationTrackingActive: false,
-                isActive: true,
-              }))
-            }
-            onSessionSwitch={headerProps.onSessionSwitch ?? (() => {})}
-            updateUrl={headerProps.updateUrl ?? false}
-            showSessionSelector={headerProps.showSessionSelector ?? false}
-            showMobileToggle={headerProps.showMobileToggle ?? false}
-            serverAuth={serverAuth || serverAuthUser}
-          />
-        </div>
-      )}
-
+    <div 
+      className={`flex flex-col min-h-screen ${backgroundColor}`} 
+      style={{ 
+        margin: 0, 
+        padding: 0, 
+        width: '100%',
+        maxWidth: '100vw',
+        position: 'relative'
+      }}
+    >
       {/* Main Content */}
-      <div className="flex flex-1 min-h-0 overflow-hidden" style={{ margin: 0, padding: 0, marginTop: showHeader ? '3rem' : '0' }}>
-        {/* Main Content - Scrollable area */}
-        <main className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'} overflow-y-auto`} style={{ 
+      <main 
+        className={`flex-1 ${maxWidthClass !== 'max-w-full' ? `${maxWidthClass} mx-auto w-full` : 'w-full'}`} 
+        style={{ 
           maxWidth: '100vw', 
           margin: 0, 
-          padding: 0, 
-          paddingTop: showHeader && contentPadding ? '0' : '0',
+          padding: 0,
           width: '100%',
-          minHeight: 0,
-          flexShrink: 1,
-          position: 'relative',
-          height: contentPadding ? undefined : '100%'
-        }}>
-          <div className={contentPadding || ''} style={contentPadding ? { margin: 0, width: '100%' } : { width: '100%', margin: 0, padding: 0 }}>
-            {children}
-          </div>
-        </main>
-      </div>
-
-      {/* Footer - Auto at bottom 
-          Logic:
-          - Always shows when user is NOT logged in (public pages)
-          - When logged in, shows only if showFooter={true}
-      */}
-      {shouldShowFooter && (
-        <div className="flex-shrink-0">
-          <Footer />
+          position: 'relative'
+        }}
+      >
+        <div 
+          className={contentPadding || ''} 
+          style={contentPadding ? { margin: 0, width: '100%' } : { width: '100%', margin: 0, padding: 0 }}
+        >
+          {children}
         </div>
-      )}
+      </main>
     </div>
   );
 }

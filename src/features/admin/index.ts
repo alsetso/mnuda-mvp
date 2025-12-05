@@ -1,18 +1,9 @@
-// Admin services
-export { AdminPinService } from './services/pinAdminService';
-export type { AdminPin } from './services/pinAdminService';
+// Admin services (for inline editing on city/county pages)
+export { CityAdminService } from './services/cityAdminService';
+export type { City, CreateCityData, UpdateCityData } from './services/cityAdminService';
 
-export { AdminAreaService } from './services/areaAdminService';
-export type { AdminArea } from './services/areaAdminService';
-
-export { AdminMemberService } from './services/memberAdminService';
-export type { AdminMember } from './services/memberAdminService';
-
-export { AdminBusinessService } from './services/businessAdminService';
-export type { AdminBusiness } from './services/businessAdminService';
-
-export { OnboardingQuestionAdminService } from './services/onboardingQuestionAdminService';
-export type { CreateOnboardingQuestionData, UpdateOnboardingQuestionData } from './services/onboardingQuestionAdminService';
+export { CountyAdminService } from './services/countyAdminService';
+export type { County, CreateCountyData, UpdateCountyData } from './services/countyAdminService';
 
 // Base admin service
 export { BaseAdminService } from './services/baseAdminService';

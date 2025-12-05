@@ -1,0 +1,905 @@
+name,population,county
+Minneapolis,"428,579",Hennepin
+Saint Paul ,"307,465",Ramsey
+Rochester,"123,624",Olmsted
+Bloomington,"88,344",Hennepin
+Duluth,"87,986",St. Louis
+Brooklyn Park,"82,893",Hennepin
+Woodbury,"80,596",Washington
+Plymouth,"78,551",Hennepin
+Lakeville,"77,971",Dakota
+Blaine,"75,172","Anoka
+Ramsey"
+Maple Grove,"72,739",Hennepin
+St. Cloud,"72,145","Stearns
+Benton
+Sherburne"
+Eagan,"67,240",Dakota
+Burnsville,"64,864",Dakota
+Coon Rapids,"63,807",Anoka
+Eden Prairie,"62,905",Hennepin
+Apple Valley,"55,272",Dakota
+Edina,"53,564",Hennepin
+Minnetonka,"52,651",Hennepin
+St. Louis Park,"49,899",Hennepin
+Shakopee †,"48,401",Scott
+Mankato †,"46,459","Blue Earth
+Nicollet
+Le Sueur"
+Moorhead †,"45,726",Clay
+Cottage Grove,"42,760",Washington
+Maplewood,"40,142",Ramsey
+Richfield,"36,491",Hennepin
+Inver Grove Heights,"36,226",Dakota
+Roseville,"35,637",Ramsey
+Andover,"33,426",Anoka
+Savage,"32,896",Scott
+Brooklyn Center,"31,755",Hennepin
+Fridley,"30,679",Anoka
+Rosemount,"30,581",Dakota
+Oakdale,"30,441",Washington
+Chaska †,"30,167",Carver
+Ramsey,"28,999",Anoka
+Prior Lake,"28,018",Scott
+Elk River †,"27,606",Sherburne
+Shoreview,"26,939",Ramsey
+Austin †,"26,690",Mower
+Owatonna †,"26,626",Steele
+Winona †,"26,173",Winona
+Chanhassen,"25,746","Carver
+Hennepin"
+Faribault †,"24,983",Rice
+Farmington,"24,464",Dakota
+Otsego,"23,875",Wright
+White Bear Lake,"23,479","Ramsey
+Washington"
+Champlin,"23,045",Hennepin
+Lino Lakes,"22,774",Anoka
+Hastings †,"22,502","Dakota
+Washington"
+New Brighton,"22,374",Ramsey
+Columbia Heights,"22,358",Anoka
+Crystal,"22,082",Hennepin
+West St. Paul,"21,920",Dakota
+Willmar †,"21,892",Kandiyohi
+St. Michael,"21,681",Wright
+Northfield,"21,316","Rice
+Dakota"
+Golden Valley,"21,263",Hennepin
+New Hope,"20,745",Hennepin
+Forest Lake,"20,700",Washington
+South St. Paul,"20,590",Dakota
+Sartell,"19,979","Stearns
+Benton"
+Hopkins,"19,462",Hennepin
+Stillwater †,"19,386",Washington
+Albert Lea †,"18,159",Freeborn
+Anoka †,"18,068",Anoka
+Ham Lake,"16,905",Anoka
+Red Wing †,"16,788",Goodhue
+Hugo,"16,765",Washington
+Buffalo †,"16,736",Wright
+Hibbing,"15,940",St. Louis
+Bemidji †,"15,733",Beltrami
+Monticello,"15,482",Wright
+Alexandria †,"14,914",Douglas
+Hutchinson,"14,708",McLeod
+Rogers,"14,493",Hennepin
+Brainerd †,"14,400",Crow Wing
+Fergus Falls †,"14,258",Otter Tail
+Lake Elmo,"14,161",Washington
+North Mankato,"14,241","Nicollet
+Blue Earth"
+Marshall †,"13,996",Lyon
+Robbinsdale,"13,993",Hennepin
+New Ulm †,"13,970",Brown
+Sauk Rapids,"13,832",Benton
+Waconia,"13,831",Carver
+Worthington †,"13,754",Nobles
+Vadnais Heights,"13,108",Ramsey
+Big Lake,"12,855",Sherburne
+Mounds View,"12,841",Ramsey
+North St. Paul,"12,644",Ramsey
+Cloquet,"12,475",Carlton
+St. Peter †,"12,456",Nicollet
+East Bethel,"12,288",Anoka
+North Branch,"12,258",Chisago
+Victoria,"11,937",Carver
+Mendota Heights,"11,542",Dakota
+Grand Rapids †,"11,244",Itasca
+Cambridge †,"10,974",Isanti
+Dayton,"10,744","Hennepin
+Wright"
+Little Canada,"10,590",Ramsey
+Hermantown,"10,265",St. Louis
+Fairmont †,"10,176",Martin
+Detroit Lakes †,"10,033",Becker
+St. Anthony,"9,993","Hennepin
+Ramsey"
+Arden Hills,"9,490",Ramsey
+Oak Grove,"9,327",Anoka
+Little Falls †,"9,206",Morrison
+Baxter,"9,186",Crow Wing
+Minnetrista,"9,091",Hennepin
+Waseca †,"9,067",Waseca
+Mound,"9,031",Hennepin
+East Grand Forks,"8,915",Polk
+Thief River Falls †,"8,779",Pennington
+Albertville,"8,555",Wright
+St. Francis,"8,523","Anoka
+Isanti"
+Waite Park,"8,504",Stearns
+Corcoran,"8,378",Hennepin
+Virginia,"8,267",St. Louis
+New Prague,"8,235","Scott
+Le Sueur"
+Orono,"8,228",Hennepin
+Mahtomedi,"8,199",Washington
+Wyoming,"8,173",Chisago
+Shorewood,"7,557",Hennepin
+Delano,"7,513",Wright
+Isanti,"7,493",Isanti
+Belle Plaine,"7,444",Scott
+Crookston †,"7,269",Polk
+Medina,"7,209",Hennepin
+Kasson,"7,207",Dodge
+Spring Lake Park,"7,083","Anoka
+Ramsey"
+St. Joseph,"6,992",Stearns
+Stewartville,"6,919",Olmsted
+Jordan,"6,831",Scott
+Carver,"6,810",Carver
+Byron,"6,809",Olmsted
+Zimmerman,"6,772",Sherburne
+Litchfield †,"6,515",Meeker
+Chisago City,"5,953",Chisago
+Glencoe †,"5,659",McLeod
+Credit River,"5,589",Scott
+International Falls †,"5,498",Koochiching
+Newport,"5,415",Washington
+St. Paul Park,"5,381",Washington
+Princeton,"5,329","Mille Lacs
+Sherburne"
+Lake City,"5,306","Wabasha
+Goodhue"
+Montevideo †,"5,300",Chippewa
+La Crescent,"5,257","Houston
+Winona"
+Becker,"5,252",Sherburne
+North Oaks,"5,232",Ramsey
+Elko New Market,"5,193",Scott
+Morris †,"5,192",Stevens
+Lonsdale,"5,066",Rice
+Redwood Falls †,"5,038","Redwood
+Renville"
+Lindstrom,"5,026",Chisago
+Falcon Heights,"5,002",Ramsey
+Circle Pines,"4,944",Anoka
+Luverne †,"4,941",Rock
+Dilworth,"4,811",Clay
+Windom †,"4,797",Cottonwood
+Rockford,"4,796","Wright
+Hennepin"
+Watertown,"4,774",Carver
+St. James †,"4,750",Watonwan
+Sauk Centre,"4,682",Stearns
+Oak Park Heights,"4,674",Washington
+Chisholm,"4,667",St. Louis
+Nowthen,"4,565",Anoka
+Park Rapids †,"4,381",Hubbard
+Stacy,"4,378",Chisago
+Wadena †,"4,373","Wadena
+Otter Tail"
+Cold Spring,"4,326",Stearns
+Wayzata,"4,308",Hennepin
+Columbus,"4,307",Anoka
+Le Sueur,"4,230","Le Sueur
+Nicollet
+Sibley"
+Hanover,"4,229","Wright
+Hennepin"
+Cannon Falls,"4,201",Goodhue
+Rice Lake,"4,168",St. Louis
+Goodview,"4,088",Winona
+St. Charles,"4,057",Winona
+Pipestone †,"4,034",Pipestone
+Zumbrota,"4,013",Goodhue
+Centerville,"3,956",Anoka
+Scandia,"3,951",Washington
+Grant,"3,942",Washington
+Montrose,"3,925",Wright
+Melrose,"3,911",Stearns
+Pine Island,"3,870","Goodhue
+Olmsted"
+Pine City †,"3,865",Pine
+Bayport,"3,785",Washington
+Mora †,"3,779",Kanabec
+Norwood Young America,"3,774",Carver
+St. Augusta,"3,767",Stearns
+Deephaven,"3,762",Hennepin
+Independence,"3,710",Hennepin
+Long Prairie †,"3,710",Todd
+Perham,"3,708",Otter Tail
+Montgomery,"3,537",Le Sueur
+Plainview,"3,498",Wabasha
+Sleepy Eye,"3,489",Brown
+Annandale,"3,487",Wright
+Two Harbors †,"3,456",Lake
+Eveleth,"3,415",St. Louis
+Benson †,"3,414",Swift
+Rush City,"3,353",Chisago
+Eagle Lake,"3,333",Blue Earth
+Breckenridge †,"3,308",Wilkin
+Jackson †,"3,252",Jackson
+Ely,"3,214",St. Louis
+Blue Earth †,"3,159",Faribault
+Proctor,"3,076",St. Louis
+Staples,"3,075","Todd
+Wadena"
+Empire,"3,068",Dakota
+Lexington,"3,062",Anoka
+Milaca †,"3,060",Mille Lacs
+Chatfield,"3,023","Fillmore
+Olmsted"
+Moose Lake,"3,003",Carlton
+Afton,"2,949",Washington
+Dodge Center,"2,939",Dodge
+Greenfield,"2,908",Hennepin
+Albany,"2,874",Stearns
+Mountain Iron,"2,847",St. Louis
+Cokato,"2,782",Wright
+Caledonia †,"2,767",Houston
+Barnesville,"2,765",Clay
+Breezy Point,"2,750",Crow Wing
+Cohasset,"2,723",Itasca
+Roseau †,"2,699",Roseau
+Granite Falls †,"2,678","Yellow Medicine
+Chippewa"
+Foley †,"2,666",Benton
+Glenwood †,"2,657",Pope
+Wabasha †,"2,598",Wabasha
+Pelican Rapids,"2,594",Otter Tail
+Paynesville,"2,586",Stearns
+Mayer,"2,534",Carver
+Le Center †,"2,528",Le Sueur
+Osseo,"2,526",Hennepin
+Lake Crystal,"2,485",Blue Earth
+Rockville,"2,471",Stearns
+Sandstone,"2,466",Pine
+Janesville,"2,462",Waseca
+Pequot Lakes,"2,462",Crow Wing
+Spring Valley,"2,445",Fillmore
+Madelia,"2,430",Watonwan
+Crosslake,"2,412",Crow Wing
+Wells,"2,401",Faribault
+Lauderdale,"2,341",Ramsey
+Gaylord †,"2,334",Sibley
+Crosby,"2,328",Crow Wing
+Arlington,"2,314",Sibley
+Olivia †,"2,306",Renville
+Excelsior,"2,296",Hennepin
+Hawley,"2,274",Clay
+Howard Lake,"2,247",Wright
+Waverly,"2,241",Wright
+Clearwater,"2,221","Wright
+Stearns"
+Winsted,"2,221",McLeod
+Maple Lake,"2,214",Wright
+Rice,"2,207",Benton
+Aitkin †,"2,174",Aitkin
+St. Bonifacius,"2,169",Hennepin
+Nisswa,"2,156",Crow Wing
+Cologne,"2,097",Carver
+Tracy,"2,041",Lyon
+Oronoco,"2,040",Olmsted
+Eyota,"2,025",Olmsted
+Coleraine,"1,995",Itasca
+Springfield,"1,995",Brown
+Hoyt Lakes,"1,988",St. Louis
+Warroad,"1,983",Roseau
+Ortonville †,"1,970",Big Stone
+Slayton †,"1,967",Murray
+Mountain Lake,"1,944",Cottonwood
+Blooming Prairie,"1,938","Steele
+Dodge"
+Long Lake,"1,937",Hennepin
+Hinckley,"1,918",Pine
+Lester Prairie,"1,895",McLeod
+Kenyon,"1,872",Goodhue
+Rushford,"1,852",Fillmore
+Dundas,"1,806",Rice
+Rock Creek,"1,778",Pine
+Braham,"1,776","Isanti
+Kanabec"
+Silver Bay,"1,776",Lake
+Waterville,"1,763",Le Sueur
+Osakis,"1,747","Douglas
+Todd"
+Avon,"1,742",Stearns
+Lakefield,"1,710",Jackson
+Ada †,"1,696",Norman
+Canby,"1,664",Yellow Medicine
+Lakeland,"1,664",Washington
+Gilbert,"1,655",St. Louis
+Aurora,"1,652",St. Louis
+Maple Plain,"1,648",Hennepin
+Spring Park,"1,641",Hennepin
+Mapleton,"1,639",Blue Earth
+Warren †,"1,549",Marshall
+Tonka Bay,"1,540",Hennepin
+Richmond,"1,521",Stearns
+Dassel,"1,520",Meeker
+Lewiston,"1,512",Winona
+Madison †,"1,488",Lac qui Parle
+New York Mills,"1,481",Otter Tail
+Pierz,"1,461",Morrison
+Dawson,"1,431",Lac qui Parle
+Starbuck,"1,419",Pope
+Clara City,"1,390",Chippewa
+Winnebago,"1,381",Faribault
+Fosston,"1,377",Polk
+Babbitt,"1,370",St. Louis
+Glyndon,"1,369",Clay
+Menahga,"1,366",Wadena
+Medford,"1,362",Steele
+Hayfield,"1,361",Dodge
+Minneota,"1,355",Lyon
+Appleton,"1,352",Swift
+Medicine Lake,"1,343",Hennepin
+Wheaton †,"1,334",Traverse
+Winthrop,"1,332",Sibley
+Red Lake Falls †,"1,327",Red Lake
+Fulda,"1,326",Murray
+New London,"1,316",Kandiyohi
+Preston †,"1,316",Fillmore
+Madison Lake,"1,314",Blue Earth
+Frazee,"1,310",Becker
+Grand Marais †,"1,306",Cook
+Bagley †,"1,304",Clearwater
+Royalton,"1,280","Morrison
+Benton"
+Elbow Lake †,"1,276",Grant
+Renville,"1,271",Renville
+Goodhue,"1,244",Goodhue
+Edgerton,"1,231",Pipestone
+Fairfax,"1,217",Renville
+Mahnomen †,"1,216",Mahnomen
+Shafer,"1,203",Chisago
+Spring Grove,"1,202",Houston
+Adrian,"1,198",Nobles
+New Richland,"1,189",Waseca
+Grand Meadow,"1,155",Mower
+Dellwood,"1,147",Washington
+East Gull Lake,"1,147",Cass
+Cottonwood,"1,146",Lyon
+Harris,"1,142",Chisago
+Elgin,"1,139",Wabasha
+Lake Shore,"1,123",Cass
+Nicollet,"1,114",Nicollet
+Mantorville †,"1,110",Dodge
+Wanamingo,"1,109",Goodhue
+Tyler,"1,102",Lincoln
+Spicer,"1,099",Kandiyohi
+Atwater,"1,098",Kandiyohi
+Truman,"1,069",Martin
+Eden Valley,"1,068","Meeker
+Stearns"
+Taylors Falls,"1,056",Chisago
+Sherburn,"1,050",Martin
+Harmony,"1,030",Fillmore
+Parkers Prairie,"1,029",Otter Tail
+Morristown,"1,016",Rice
+Watkins,"1,010",Meeker
+Lake St. Croix Beach,"1,005",Washington
+Scanlon,998,Carlton
+Hector,994,Renville
+Henderson,988,Sibley
+Bird Island,986,Renville
+Walker †,982,Cass
+Houston,970,Houston
+Le Roy,970,Mower
+Keewatin,968,Itasca
+Biwabik,965,St. Louis
+Carlton †,962,Carlton
+Nashwauk,961,Itasca
+Hilltop,956,Anoka
+Buhl,945,St. Louis
+Baudette †,935,Lake of the Woods
+Deer River,930,Itasca
+Pine River,925,Cass
+Kimball,919,Stearns
+Battle Lake,914,Otter Tail
+Morgan,879,Redwood
+Mazeppa,869,Wabasha
+Emily,863,Crow Wing
+Henning,857,Otter Tail
+Hancock,856,Stevens
+Silver Lake,855,McLeod
+Hallock †,853,Kittson
+Landfall,843,Washington
+West Concord,842,Dodge
+Birchwood Village,838,Washington
+Onamia,830,Mille Lacs
+Browerville,829,Todd
+Stockton,829,Winona
+Isle,827,Mille Lacs
+Clarkfield,820,Yellow Medicine
+Blackduck,816,Beltrami
+Bovey,813,Itasca
+St. Stephen,812,Stearns
+Rushford Village,799,Fillmore
+Raymond,796,"Kandiyohi
+Chippewa"
+Gibbon,788,Sibley
+Kerkhoven,783,Swift
+Lamberton,781,Redwood
+Fertile,780,Polk
+Lilydale,779,Dakota
+Dover,771,Olmsted
+Cleveland,769,Le Sueur
+Elysian,759,"Le Sueur
+Waseca"
+Sebeka,753,Wadena
+Holdingford,746,Stearns
+Wabasso,745,Redwood
+Belgrade,742,Stearns
+Westbrook,734,Cottonwood
+Walnut Grove,733,Redwood
+Courtland,724,Nicollet
+Ottertail,721,Otter Tail
+Kasota,718,Le Sueur
+St. Clair,717,Blue Earth
+Hampton,714,Dakota
+Lake Park,714,Becker
+Greenwood,713,Hennepin
+Lanesboro,712,Fillmore
+Hoffman,709,Grant
+Brownton,706,McLeod
+Mabel,705,Fillmore
+Adams,700,Mower
+Twin Valley,697,Norman
+Welcome,695,Martin
+Green Isle,694,Sibley
+Trimont,689,Martin
+Motley,686,"Morrison
+Cass"
+Freeport,685,Stearns
+Cass Lake,683,Cass
+Clarks Grove,682,Freeborn
+Rollingstone,682,Winona
+Clear Lake,679,Sherburne
+Lake Benton,678,Lincoln
+Greenbush,674,Roseau
+Karlstad,671,Kittson
+La Prairie,666,Itasca
+Hills,665,Rock
+Clarissa,661,Todd
+Minnesota Lake,660,"Faribault
+Blue Earth"
+Ellendale,658,Steele
+Marine on St. Croix,658,Washington
+Brownsdale,648,Mower
+Brooten,646,"Stearns
+Pope"
+Taconite,642,Itasca
+Buffalo Lake,641,Renville
+Center City †,640,Chisago
+Grove City,634,Meeker
+Hill City,615,Aitkin
+Randall,614,Morrison
+Barnum,610,Carlton
+Loretto,610,Hennepin
+Marble,606,Itasca
+Hendricks,603,Lincoln
+Sabin,601,Clay
+Butterfield,597,Watonwan
+Heron Lake,592,Jackson
+Evansville,587,Douglas
+Balaton,585,Lyon
+McIntosh,581,Polk
+Foreston,579,Mille Lacs
+Jasper,579,"Pipestone
+Rock"
+Alden,575,Freeborn
+Stephen,574,Marshall
+Deerwood,570,Crow Wing
+Audubon,569,Becker
+Kandiyohi,565,Kandiyohi
+Ironton,564,Crow Wing
+Glenville,558,Freeborn
+Racine,558,Mower
+Halstad,551,Norman
+Bertha,548,Todd
+Hamburg,548,Carver
+Brownsville,545,Houston
+Elmore,545,Faribault
+Good Thunder,545,Blue Earth
+Eagle Bend,543,Todd
+Ivanhoe †,542,Lincoln
+Ranier,540,Koochiching
+Minnetonka Beach,537,Hennepin
+Hokah,535,Houston
+Pillager,531,Cass
+Argyle,529,Marshall
+Littlefork,527,Koochiching
+Lyle,526,Mower
+Sunfish Lake,522,Dakota
+Cook,520,St. Louis
+Floodwood,517,St. Louis
+Franklin,516,Renville
+Amboy,515,Blue Earth
+Gem Lake,515,Ramsey
+Verndale,512,Wadena
+Willernie,512,Washington
+Graceville,511,Big Stone
+Prinsburg,511,Kandiyohi
+Browns Valley,505,Traverse
+Brandon,500,Douglas
+Brewster,500,Nobles
+Jenkins,500,Crow Wing
+Claremont,499,Dodge
+Geneva,499,Freeborn
+Cosmos,495,Meeker
+Sacred Heart,494,Renville
+Ellsworth,487,Nobles
+Kiester,487,Faribault
+Rothsay,487,"Wilkin
+Otter Tail"
+Carlos,486,Douglas
+Upsala,481,Morrison
+Bethel,480,Anoka
+Pennock,480,Kandiyohi
+Ashby,472,Grant
+Ulen,472,Clay
+Stewart,470,McLeod
+Lafayette,469,Nicollet
+Clearbrook,468,Clearwater
+Sturgeon Lake,468,Pine
+Altura,465,Winona
+Randolph,458,Dakota
+Wrenshall,454,Carlton
+Fifty Lakes,449,Crow Wing
+New Germany,448,Carver
+Danube,447,Renville
+Miltona,442,Douglas
+Lynd,435,Lyon
+Wykoff,430,Fillmore
+Vermillion,429,Dakota
+Kellogg,426,Wabasha
+Tower,421,St. Louis
+Akeley,418,Hubbard
+Badger,417,Roseau
+Milan,416,Chippewa
+New Auburn,413,Sibley
+Chokio,411,Stevens
+Oklee,407,Red Lake
+Fountain,406,Fillmore
+Bigfork,403,Itasca
+Fisher,403,Polk
+Rose Creek,403,Mower
+Morton,402,Renville
+Ogilvie,400,Kanabec
+Waubun,399,Mahnomen
+Remer,397,Cass
+Willow River,396,Pine
+Alvarado,388,Marshall
+Erskine,387,Polk
+Herman,386,Grant
+Hanska,385,Brown
+Nevis,385,Hubbard
+Pine Springs,384,Washington
+Ghent,378,Lyon
+McGregor,378,Aitkin
+Barrett,377,Grant
+Woodland,377,Hennepin
+Comfrey,376,"Brown
+Cottonwood"
+Wood Lake,373,Yellow Medicine
+Clinton,371,Big Stone
+New Munich,367,Stearns
+Round Lake,367,Nobles
+Rushmore,364,Nobles
+Underwood,363,Otter Tail
+Emmons,360,Freeborn
+Vergas,357,Otter Tail
+Russell,356,Lyon
+Bricelyn,350,Faribault
+Newfolden,343,Marshall
+St. Marys Point,342,Washington
+Lancaster,340,Kittson
+Long Beach,339,Pope
+Darwin,338,Meeker
+Jeffers,338,Cottonwood
+Garfield,337,Douglas
+Swanville,337,"Morrison
+Todd"
+Lowry,335,Pope
+Finlayson,333,Pine
+Deer Creek,332,Otter Tail
+Askov,331,Pine
+Lakeland Shores,330,Washington
+Cuyuna,327,Crow Wing
+Wilmont,326,Nobles
+Dexter,325,Mower
+Plato,325,McLeod
+Calumet,324,Itasca
+Grey Eagle,324,Todd
+St. Martin,318,Stearns
+Sanborn,318,Redwood
+Vernon Center,315,Blue Earth
+Canton,313,Fillmore
+Cyrus,312,Pope
+Hartland,311,Freeborn
+Buckman,309,Morrison
+Maynard,304,Chippewa
+Hollandale,303,Freeborn
+Hackensack,300,Cass
+Murdock,298,Swift
+Ceylon,295,Martin
+Middle River,294,Marshall
+Dakota,290,Winona
+Belview,285,Redwood
+Hendrum,282,Norman
+Skyline,282,Blue Earth
+Granada,281,Martin
+Nerstrand,278,Rice
+Plummer,273,Red Lake
+Beaver Creek,272,Rock
+Bowlus,271,Morrison
+Kensington,270,Douglas
+Chandler,269,Murray
+Vesta,268,Redwood
+Backus,266,Cass
+Gonvick,266,Clearwater
+Utica,266,Winona
+Wilton,266,Beltrami
+Eitzen,262,Houston
+Freeborn,257,Freeborn
+St. Hilaire,256,Pennington
+Milroy,254,Redwood
+Hewitt,250,Todd
+Hayward,249,Freeborn
+Kelliher,249,Beltrami
+Wahkon,249,Mille Lacs
+Cromwell,246,Carlton
+Lake Wilson,245,Murray
+Lake Lillian,243,Kandiyohi
+Pease,243,Mille Lacs
+Climax,241,Polk
+Oslo,239,Marshall
+Hanley Falls,238,Yellow Medicine
+Echo,235,Yellow Medicine
+Peterson,227,Fillmore
+Ostrander,226,Fillmore
+Villard,224,Pope
+Donnelly,223,Stevens
+Gary,223,Norman
+Pemberton,222,Blue Earth
+Bigelow,220,Nobles
+Elrosa,219,Stearns
+Gilman,219,Benton
+Dennison,218,"Goodhue
+Rice"
+Sobieski,218,Morrison
+Northrop,217,Martin
+Ruthton,217,Pipestone
+Currie,214,Murray
+Dalton,214,Otter Tail
+Frost,214,Faribault
+Storden,214,Cottonwood
+Orr,213,St. Louis
+Bluffton,212,Otter Tail
+Rutledge,212,Pine
+Flensburg,210,Morrison
+Lewisville,207,Watonwan
+Beardsley,206,Big Stone
+Greenwald,205,Stearns
+Lucan,205,Redwood
+Ogema,205,Becker
+Waldorf,203,Waseca
+Hitterdal,202,Clay
+Lismore,202,Nobles
+Garrison,201,Crow Wing
+Okabena,201,Jackson
+Magnolia,188,Rock
+Forada,187,Douglas
+Kingston,187,Meeker
+Meire Grove,186,Stearns
+Mendota,185,Dakota
+Warba,184,Itasca
+Minnesota City,183,Winona
+Nelson,183,Douglas
+South Haven,183,Wright
+Callaway,180,Becker
+Tenstrike,180,Beltrami
+Hardwick,179,Rock
+Easton,177,Faribault
+Bellechester,175,"Goodhue
+Wabasha"
+Shelly,175,Norman
+Holland,173,Pipestone
+Kettle River,173,Carlton
+Watson,173,Chippewa
+Winger,172,Polk
+Big Falls,171,Koochiching
+Grygla,171,Marshall
+Dent,170,Otter Tail
+Lake Bronson,170,Kittson
+Delavan,169,Faribault
+Felton,169,Clay
+Palisade,169,Aitkin
+Wright,169,Carlton
+Waltham,167,Mower
+Wendell,167,Grant
+Kennedy,166,Kittson
+Elizabeth,165,Otter Tail
+Campbell,164,Wilkin
+Iona,164,Murray
+Winton,163,St. Louis
+Porter,162,Yellow Medicine
+Steen,162,Rock
+Longville,158,Cass
+Grasston,157,Kanabec
+Roosevelt,156,"Roseau
+Lake of the Woods"
+Williams,156,Lake of the Woods
+Northome,154,Koochiching
+Zumbro Falls,154,Wabasha
+Bena,152,Cass
+Conger,151,Freeborn
+Kilkenny,151,Le Sueur
+Clements,148,Redwood
+Mapleview,148,Mower
+Kinney,147,St. Louis
+Millville,144,Wabasha
+Laporte,142,Hubbard
+Bellingham,141,Lac qui Parle
+Blomkest,140,Kandiyohi
+Boyd,140,Lac qui Parle
+Meadowlands,140,St. Louis
+Shevlin,139,Clearwater
+Coates,136,Dakota
+Heidelberg,135,Le Sueur
+Roscoe,134,Stearns
+Bingham Lake,133,Cottonwood
+Elkton,132,Mower
+Erhard,132,Otter Tail
+Miesville,132,Dakota
+Taunton,132,Lyon
+Brook Park,131,Pine
+Twin Lakes,130,Freeborn
+Hammond,129,Wabasha
+Chickamaw Beach,128,Cass
+Dunnell,127,Martin
+Elba,127,Winona
+Clontarf,126,Swift
+Odin,124,Watonwan
+Lastrup,123,Morrison
+Ormsby,123,"Watonwan
+Martin"
+Beaver Bay,122,Lake
+Burtrum,122,Todd
+Harding,122,Morrison
+Wolverton,122,Wilkin
+Foxhome,121,Wilkin
+Federal Dam,119,Cass
+Brooks,117,Red Lake
+Garvin,117,Lyon
+Brookston,116,St. Louis
+Marietta,116,Lac qui Parle
+Elmdale,115,Morrison
+Riverton,115,Crow Wing
+Trommald,113,Crow Wing
+Biscay,111,McLeod
+Woodstock,111,Pipestone
+Avoca,108,Murray
+De Graff,108,Swift
+Effie,107,Itasca
+Goodridge,107,Pennington
+Quamba,107,Kanabec
+Iron Junction,106,St. Louis
+Perley,106,Norman
+Mentor,103,Polk
+Odessa,103,Big Stone
+McKinley,102,St. Louis
+Squaw Lake,102,Itasca
+Danvers,100,Swift
+Trosky,100,Pipestone
+Comstock,99,Clay
+Millerville,99,Douglas
+Minneiska,97,"Wabasha
+Winona"
+Alpha,96,Jackson
+Sunburg,95,Kandiyohi
+Alberta,94,Stevens
+Borup,93,Norman
+St. Anthony,93,Stearns
+St. Leo,91,Yellow Medicine
+West Union,91,Todd
+Beltrami,90,Polk
+Lengby,89,Polk
+Georgetown,87,Clay
+Holt,87,Marshall
+Holloway,86,Swift
+Arco,85,Lincoln
+Revere,85,Redwood
+Bejou,83,Mahnomen
+Bruno,83,Pine
+Darfur,83,Watonwan
+Fort Ripley,82,Crow Wing
+Nimrod,82,Wadena
+Seaforth,82,Redwood
+Turtle River,82,Beltrami
+Bock,80,Mille Lacs
+New Trier,80,Dakota
+Dundee,79,Nobles
+Zemple,79,Itasca
+Nielsville,78,Polk
+Viking,78,Marshall
+Lake Henry,77,Stearns
+Richville,77,Otter Tail
+Kerrick,76,Pine
+La Salle,75,Watonwan
+Solway,72,Beltrami
+Wanda,72,Redwood
+Dumont,71,Traverse
+Evan,71,Brown
+Spring Hill,71,Stearns
+Clitherall,70,Otter Tail
+Genola,70,Morrison
+Walters,70,Faribault
+Whalan,69,Fillmore
+Strandquist,68,Marshall
+Taopi,68,Mower
+Wolf Lake,67,Becker
+Nassau,66,Lac qui Parle
+Sargeant,66,Mower
+Nashua,64,Wilkin
+Kent,63,Wilkin
+Manhattan Beach,63,Crow Wing
+Tamarack,61,Aitkin
+Tintah,61,Traverse
+Henriette,60,Pine
+Kenneth,60,Rock
+Cedar Mills,59,Meeker
+Vining,59,Otter Tail
+Ihlen,58,Pipestone
+St. Rosa,58,Stearns
+Wilder,57,Jackson
+Farwell,56,Pope
+Halma,56,Kittson
+Gully,55,Polk
+Hadley,55,Murray
+Hatfield,54,Pipestone
+Dovray,53,Murray
+Hazel Run,53,Yellow Medicine
+Mizpah,53,Koochiching
+Manchester,52,Freeborn
+Leonidas,51,St. Louis
+St. Vincent,50,Kittson
+Myrtle,49,Freeborn
+Norcross,49,Grant
+Urbank,48,Otter Tail
+Sedan,46,Pope
+Westport,46,Pope
+Delhi,45,Redwood
+Leonard,43,Clearwater
+McGrath,41,Aitkin
+Regal,40,Kandiyohi
+Denham,39,Pine
+Humboldt,39,Kittson
+Trail,38,Polk
+Aldrich,34,Wadena
+Cobden,32,Brown
+Doran,30,Wilkin
+Louisburg,29,Lac qui Parle
+Strathcona,28,Roseau
+Correll,27,Big Stone
+Boy River,24,Cass
+Johnson,24,Big Stone
+Florence,21,Lyon
+Hillman,21,Morrison
+Donaldson,17,Kittson
+Barry,14,Big Stone
+Funkley,12,Beltrami
+Kinbrae,10,Nobles

@@ -15,6 +15,12 @@ const getSupabaseHostname = (): string | null => {
 const supabaseHostname = getSupabaseHostname();
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   images: {
     remotePatterns: [
       {
@@ -47,6 +53,31 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'api.mapbox.com',
+        port: '',
+        pathname: '/**',
+      },
+      // Shopify image domains
+      {
+        protocol: 'https',
+        hostname: 'cdn.shopify.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.myshopify.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'shop.mnuda.com',
+        port: '',
+        pathname: '/**',
+      },
       // Add Supabase hostname if available
       ...(supabaseHostname ? [{
         protocol: 'https' as const,
@@ -55,82 +86,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       }] : []),
     ],
-  },
-  async redirects() {
-    return [
-      // Redirect old routes to home page
-      {
-        source: '/for-sale/mn',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-sale/mn/cities',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-sale/mn/counties',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-sale/mn/zips',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-sale/mn/:slug',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-sale/mn/county/:slug',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-sale/mn/zip/:zip',
-        destination: '/',
-        permanent: true,
-      },
-      // Redirect old for-rent routes to home page
-      {
-        source: '/for-rent/mn',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-rent/mn/cities',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-rent/mn/counties',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-rent/mn/zips',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-rent/mn/:slug',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-rent/mn/county/:slug',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/for-rent/mn/zip/:zip',
-        destination: '/',
-        permanent: true,
-      },
-    ];
   },
 };
 

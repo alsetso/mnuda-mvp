@@ -1,0 +1,175 @@
+import { cache } from 'react';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
+import { Database } from '@/types/supabase';
+import type { Plan, BillingMode } from '@/features/auth/services/memberService';
+
+/**
+ * Normalized subscription state object
+ */
+export interface SubscriptionState {
+  plan: Plan;
+  billingMode: BillingMode;
+  isActive: boolean;
+  isComped: boolean;
+  isTrial: boolean;
+  subscriptionStatus: string | null;
+}
+
+/**
+ * Get account subscription state
+ * 
+ * Loads the account from Supabase and returns a normalized subscription state object.
+ * Use this helper in protected routes, dashboards, and feature-gated components.
+ * 
+ * Uses React cache() to deduplicate requests within the same render.
+ * Returns default values if user is not authenticated or account doesn't exist.
+ * 
+ * @returns Normalized subscription state object
+ * 
+ * @example
+ * ```ts
+ * // In a server component
+ * const subscriptionState = await getAccountSubscriptionState();
+ * 
+ * if (subscriptionState.plan === 'hobby') {
+ *   return <LimitedAccessView />;
+ * }
+ * 
+ * if (subscriptionState.plan === 'pro') {
+ *   return <FullAccessView />;
+ * }
+ * ```
+ */
+export const getAccountSubscriptionState = cache(async (): Promise<SubscriptionState> => {
+  const cookieStore = await cookies();
+  
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        set() {
+          // Server components can't set cookies
+        },
+        remove() {
+          // Server components can't remove cookies
+        },
+      },
+    }
+  );
+  
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError || !user) {
+    // Return default state for unauthenticated users
+    return {
+      plan: 'hobby',
+      billingMode: 'standard',
+      isActive: false,
+      isComped: false,
+      isTrial: false,
+      subscriptionStatus: null,
+    };
+  }
+
+  // Get account with subscription fields
+  const { data: account, error: accountError } = await supabase
+    .from('accounts')
+    .select('plan, billing_mode, subscription_status, stripe_subscription_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (accountError || !account) {
+    // Return default state if account doesn't exist
+    return {
+      plan: 'hobby',
+      billingMode: 'standard',
+      isActive: false,
+      isComped: false,
+      isTrial: false,
+      subscriptionStatus: null,
+    };
+  }
+
+  // Normalize plan (ensure it's 'hobby' or 'pro')
+  const plan: Plan = account.plan === 'pro' ? 'pro' : 'hobby';
+  
+  // Normalize billing mode (ensure it's 'standard' or 'trial')
+  const billingMode: BillingMode = account.billing_mode === 'trial' ? 'trial' : 'standard';
+  
+  // Determine if subscription is active
+  const subscriptionStatus = account.subscription_status || null;
+  const isActive = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+  
+  // Determine if account is comped (has subscription_id but status might be inactive)
+  // Comped accounts have a subscription but may not be actively paying
+  const isComped = !!account.stripe_subscription_id && !isActive;
+  
+  // Determine if in trial
+  const isTrial = billingMode === 'trial' || subscriptionStatus === 'trialing';
+
+  return {
+    plan,
+    billingMode,
+    isActive,
+    isComped,
+    isTrial,
+    subscriptionStatus,
+  };
+});
+
+/**
+ * Feature gating helper functions
+ * 
+ * Use these in server components, loaders, middleware, or RLS-safe queries
+ */
+
+/**
+ * Check if user has access to a feature based on plan
+ * 
+ * @param requiredPlan - Minimum plan required ('hobby' or 'pro')
+ * @returns 'limited_access' for hobby plan, 'full_access' for pro plan, or null if not authenticated
+ */
+export async function getFeatureAccess(requiredPlan: Plan = 'hobby'): Promise<'limited_access' | 'full_access' | null> {
+  const state = await getAccountSubscriptionState();
+  
+  if (!state.isActive && !state.isComped) {
+    return null; // Not authenticated or no subscription
+  }
+  
+  if (state.plan === 'hobby') {
+    return 'limited_access';
+  }
+  
+  if (state.plan === 'pro') {
+    return 'full_access';
+  }
+  
+  return 'limited_access'; // Default to limited
+}
+
+/**
+ * Check if user has pro plan access
+ * 
+ * @returns true if user has pro plan and active subscription
+ */
+export async function hasProAccess(): Promise<boolean> {
+  const state = await getAccountSubscriptionState();
+  return state.plan === 'pro' && (state.isActive || state.isComped);
+}
+
+/**
+ * Check if user has active subscription
+ * 
+ * @returns true if user has an active subscription (active or trialing)
+ */
+export async function hasActiveSubscription(): Promise<boolean> {
+  const state = await getAccountSubscriptionState();
+  return state.isActive;
+}
+
+

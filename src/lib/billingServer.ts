@@ -20,6 +20,12 @@ export interface BillingData {
   hasCustomer: boolean;
   customerId: string | null;
   paymentMethods: PaymentMethod[];
+  plan: 'hobby' | 'pro';
+  billing_mode: 'standard' | 'trial';
+  subscription_status: string | null;
+  stripe_subscription_id: string | null;
+  isActive: boolean;
+  isTrial: boolean;
 }
 
 /**
@@ -61,21 +67,54 @@ export const getServerBillingData = cache(async (): Promise<BillingData> => {
       hasCustomer: false,
       customerId: null,
       paymentMethods: [],
+      plan: 'hobby',
+      billing_mode: 'standard',
+      subscription_status: null,
+      stripe_subscription_id: null,
+      isActive: false,
+      isTrial: false,
     };
   }
 
-  // Get account with Stripe customer ID
+  // Get account with Stripe customer ID and subscription info
   const { data: account, error: accountError } = await supabase
     .from('accounts')
-    .select('stripe_customer_id')
+    .select('stripe_customer_id, plan, billing_mode, subscription_status, stripe_subscription_id')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (accountError || !account?.stripe_customer_id) {
+  if (accountError || !account) {
     return {
       hasCustomer: false,
       customerId: null,
       paymentMethods: [],
+      plan: 'hobby',
+      billing_mode: 'standard',
+      subscription_status: null,
+      stripe_subscription_id: null,
+      isActive: false,
+      isTrial: false,
+    };
+  }
+
+  const plan = (account.plan as 'hobby' | 'pro') || 'hobby';
+  const billingMode = (account.billing_mode as 'standard' | 'trial') || 'standard';
+  const subscriptionStatus = account.subscription_status || null;
+  const stripeSubscriptionId = account.stripe_subscription_id || null;
+  const isActive = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+  const isTrial = billingMode === 'trial' || subscriptionStatus === 'trialing';
+
+  if (!account.stripe_customer_id) {
+    return {
+      hasCustomer: false,
+      customerId: null,
+      paymentMethods: [],
+      plan,
+      billing_mode: billingMode,
+      subscription_status: subscriptionStatus,
+      stripe_subscription_id: stripeSubscriptionId,
+      isActive,
+      isTrial,
     };
   }
 
@@ -108,6 +147,12 @@ export const getServerBillingData = cache(async (): Promise<BillingData> => {
         } : null,
         is_default: pm.id === defaultPaymentMethodId,
       })),
+      plan,
+      billing_mode: billingMode,
+      subscription_status: subscriptionStatus,
+      stripe_subscription_id: stripeSubscriptionId,
+      isActive,
+      isTrial,
     };
   } catch (error) {
     console.error('Error fetching billing data:', error);
@@ -116,6 +161,12 @@ export const getServerBillingData = cache(async (): Promise<BillingData> => {
       hasCustomer: true,
       customerId: account.stripe_customer_id,
       paymentMethods: [],
+      plan,
+      billing_mode: billingMode,
+      subscription_status: subscriptionStatus,
+      stripe_subscription_id: stripeSubscriptionId,
+      isActive,
+      isTrial,
     };
   }
 });

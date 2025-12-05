@@ -2,6 +2,24 @@
 import { Address, AddressWithCoordinates, GeocodingResult, Coordinates } from '../types';
 import { MAP_CONFIG } from '../config';
 
+// Address suggestion interface for autocomplete
+export interface AddressSuggestion {
+  id: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  fullAddress: string;
+  coordinates: [number, number];
+}
+
+// Reverse geocoding result
+export interface ReverseGeocodeResult {
+  address: string;
+  success: boolean;
+  error?: string;
+}
+
 interface CachedGeocodingResult extends GeocodingResult {
   cachedAt: number;
   expiresAt: number;
@@ -320,6 +338,176 @@ export class GeocodingService {
       totalRequests: this.stats.totalRequests,
       cacheHits: this.stats.cacheHits,
     };
+  }
+
+  // Reverse geocode coordinates to get address
+  static async reverseGeocode(lat: number, lng: number): Promise<ReverseGeocodeResult> {
+    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || MAP_CONFIG.MAPBOX_TOKEN;
+    
+    if (!token || token === 'your_mapbox_token_here') {
+      return {
+        address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+        success: false,
+        error: 'Mapbox token not configured',
+      };
+    }
+
+    try {
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json`;
+      const params = new URLSearchParams({
+        access_token: token,
+        types: 'address',
+        limit: '1',
+      });
+
+      const response = await fetch(`${url}?${params}`);
+      if (!response.ok) {
+        throw new Error(`Geocoding request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.features || data.features.length === 0) {
+        return {
+          address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+          success: false,
+          error: 'No address found',
+        };
+      }
+
+      const feature = data.features[0];
+      const address = feature.place_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+      return {
+        address,
+        success: true,
+      };
+    } catch (err) {
+      console.error('Reverse geocoding error:', err);
+      return {
+        address: `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+        success: false,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      };
+    }
+  }
+
+  // Get street address suggestions for autocomplete
+  static async getStreetSuggestions(query: string): Promise<AddressSuggestion[]> {
+    if (!query?.trim() || query.length < 2) {
+      return [];
+    }
+
+    const token = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || MAP_CONFIG.MAPBOX_TOKEN;
+    
+    if (!token || token === 'your_mapbox_token_here') {
+      return this.getMockSuggestions(query);
+    }
+
+    try {
+      const url = `${MAP_CONFIG.GEOCODING_BASE_URL}/${encodeURIComponent(query.trim())}.json`;
+      const params = new URLSearchParams({
+        access_token: token,
+        types: 'address',
+        limit: '5',
+        country: MAP_CONFIG.GEOCODING_COUNTRY || 'US',
+      });
+
+      const response = await fetch(`${url}?${params}`);
+      if (!response.ok) {
+        throw new Error(`Mapbox API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return this.transformMapboxFeatures(data.features || []);
+    } catch (error) {
+      console.error('Geocoding API failed:', error);
+      return this.getMockSuggestions(query);
+    }
+  }
+
+  // Transform Mapbox features to AddressSuggestion format
+  private static transformMapboxFeatures(features: any[]): AddressSuggestion[] {
+    return features.map((feature, index) => {
+      const [lng, lat] = feature.center;
+      const addressComponents = this.parseAddressComponents(feature);
+
+      return {
+        id: feature.id || `mapbox-${index}`,
+        ...addressComponents,
+        fullAddress: feature.place_name || feature.text || 'Unknown Address',
+        coordinates: [lng, lat]
+      };
+    });
+  }
+
+  // Parse address components from Mapbox feature
+  private static parseAddressComponents(feature: any): Pick<AddressSuggestion, 'street' | 'city' | 'state' | 'zip'> {
+    const context = feature.context || [];
+    const contextMap = this.createContextMap(context);
+    
+    const streetNumber = contextMap.address || '';
+    const streetName = contextMap.street || '';
+    const city = contextMap.place || '';
+    let state = contextMap.region || '';
+    const zip = contextMap.postcode || '';
+
+    // Normalize state
+    const regionContext = context.find((c: any) => c.id?.startsWith('region.'));
+    if (regionContext?.short_code) {
+      const stateCode = regionContext.short_code.split('-')[1];
+      if (stateCode) {
+        state = stateCode;
+      }
+    } else if (state.toLowerCase() === 'minnesota') {
+      state = 'MN';
+    }
+
+    const street = streetNumber && streetName 
+      ? `${streetNumber} ${streetName}`.trim()
+      : streetName || feature.text || feature.place_name?.split(',')[0] || '';
+
+    return { street, city, state, zip };
+  }
+
+  // Create context map from Mapbox context array
+  private static createContextMap(context: Array<{ id: string; text: string; short_code?: string }>): Record<string, string> {
+    return context.reduce((map, item) => {
+      const type = item.id.split('.')[0];
+      map[type] = item.text;
+      return map;
+    }, {} as Record<string, string>);
+  }
+
+  // Mock suggestions for development
+  private static getMockSuggestions(query: string): AddressSuggestion[] {
+    const mockAddresses: AddressSuggestion[] = [
+      {
+        id: 'mock-1',
+        street: '123 Main St',
+        city: 'Minneapolis',
+        state: 'MN',
+        zip: '55401',
+        fullAddress: '123 Main St, Minneapolis, MN 55401',
+        coordinates: [-93.2650, 44.9778]
+      },
+      {
+        id: 'mock-2',
+        street: '456 Oak Ave',
+        city: 'Saint Paul',
+        state: 'MN',
+        zip: '55102',
+        fullAddress: '456 Oak Ave, Saint Paul, MN 55102',
+        coordinates: [-93.0931, 44.9537]
+      },
+    ];
+
+    const normalizedQuery = query.toLowerCase().trim();
+    return mockAddresses.filter(addr =>
+      addr.street.toLowerCase().includes(normalizedQuery) ||
+      addr.city.toLowerCase().includes(normalizedQuery) ||
+      addr.fullAddress.toLowerCase().includes(normalizedQuery)
+    );
   }
 
   // Health check method

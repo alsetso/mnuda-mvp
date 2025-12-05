@@ -1,396 +1,81 @@
-'use client';
-
-import { useMemo, useState } from 'react';
-import PageLayout from '@/components/PageLayout';
-import { useAuth, AccountType } from '@/features/auth';
-import { navItems, getNavItemsByCategory } from '@/config/navigation';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import SimplePageLayout from '@/components/SimplePageLayout';
+import { getServerAuth } from '@/lib/authServer';
 
-export default function Home() {
-  const { user, isLoading: authLoading } = useAuth();
-
-  // Filter nav items to exclude Home and Settings from the directory
-  // Must be called unconditionally (hooks rules)
-  const directoryItems = useMemo(() => {
-    return navItems.filter(item => item.href !== '/' && item.href !== '/account/settings');
-  }, []);
-
-  const categorizedItems = useMemo(() => {
-    return getNavItemsByCategory();
-  }, []);
-
-  // Show loading state while checking auth
-  if (authLoading) {
-    return (
-      <PageLayout showFooter={false}>
-        <div className="min-h-screen bg-gold-100 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <div className="text-gray-600 font-medium">Loading...</div>
-          </div>
-        </div>
-      </PageLayout>
-    );
+export default async function Home() {
+  // Server-side auth check - redirect if logged in
+  const auth = await getServerAuth();
+  if (auth) {
+    redirect('/feed');
   }
-
-  // If user is logged in, show directory page
-  if (user) {
-    return (
-      <PageLayout showHeader={true} showFooter={false} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
-        <div className="min-h-screen py-12 bg-gold-100">
-          <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-
-            {/* Value Proposition Section */}
-            <div className="mb-12 text-center">
-              <h1 className="text-4xl sm:text-5xl font-bold text-black mb-4">
-                Minnesota Platform for Under Development & Acquisition
-              </h1>
-              <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed mb-6">
-                Connect with real estate professionals across Minnesota. Discover development opportunities, 
-                property acquisitions, and build your network of developers, investors, and service providers.
-              </p>
-            </div>
-
-            {/* Directory Section */}
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-black mb-4 text-center">
-                Explore Features
-              </h2>
-              <p className="text-gray-600 text-center mb-8 max-w-2xl mx-auto">
-                Connect, discover, and collaborate with tools designed for real estate development and acquisition.
-              </p>
-
-              {/* Grouped by Category */}
-              <div className="space-y-12">
-                {Array.from(categorizedItems.entries())
-                  .filter(([category]) => category !== 'Main' && category !== 'Account')
-                  .map(([category, items]) => (
-                    <div key={category}>
-                      <h3 className="text-xl font-bold text-black mb-4 pb-2 border-b border-gray-300">
-                        {category}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {items.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              className="group bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
-                            >
-                              <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
-                                  <Icon className="w-6 h-6 text-gold-600" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="text-lg font-bold text-black mb-2 group-hover:text-gold-600 transition-colors">
-                                    {item.name}
-                                  </h4>
-                                  <p className="text-sm text-gray-600 leading-relaxed">
-                                    {item.description}
-                                  </p>
-                                </div>
-                              </div>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-
-              {/* Unlisted items (if any) */}
-              {directoryItems.filter(item => !item.category || item.category === 'Other').length > 0 && (
-                <div className="mt-12">
-                  <h3 className="text-xl font-bold text-black mb-4 pb-2 border-b border-gray-300">
-                    Other
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {directoryItems
-                      .filter(item => !item.category || item.category === 'Other')
-                      .map((item) => {
-                        const Icon = item.icon;
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            className="group bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-gold-500 hover:shadow-lg transition-all duration-200"
-                          >
-                            <div className="flex items-start gap-4">
-                              <div className="flex-shrink-0 w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center group-hover:bg-gold-200 transition-colors">
-                                <Icon className="w-6 h-6 text-gold-600" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-lg font-bold text-black mb-2 group-hover:text-gold-600 transition-colors">
-                                  {item.name}
-                                </h4>
-                                <p className="text-sm text-gray-600 leading-relaxed">
-                                  {item.description}
-                                </p>
-                              </div>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </PageLayout>
-    );
-  }
-
-  // If user is not logged in, show landing page with stepper form
-  return <HomepageStepperForm />;
-}
-
-// Stepper Form Component
-function HomepageStepperForm() {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState({
-    accountType: '' as AccountType | '',
-  });
-
-  const accountTypeOptions = [
-    {
-      value: 'homeowner' as AccountType,
-      label: 'Homeowner',
-      description: 'A fast, fair solution for their property problem. (roofing, selling, repairs, bids, cleanup, cash offers, guidance)',
-    },
-    {
-      value: 'renter' as AccountType,
-      label: 'Renter',
-      description: 'A safer, cleaner, better neighborhood to live in.',
-    },
-    {
-      value: 'investor' as AccountType,
-      label: 'Investor',
-      description: 'Consistent access to profitable deals.',
-    },
-    {
-      value: 'realtor' as AccountType,
-      label: 'Realtor',
-      description: 'More listings, more clients, and faster closings.',
-    },
-    {
-      value: 'wholesaler' as AccountType,
-      label: 'Wholesaler',
-      description: 'Buyers who will reliably take their deals.',
-    },
-    {
-      value: 'contractor' as AccountType,
-      label: 'Contractor',
-      description: 'High-quality jobs they can start immediately.',
-    },
-    {
-      value: 'services' as AccountType,
-      label: 'Services',
-      description: 'A steady stream of customers who need your specialized services. (title, inspections, lending, junk removal, cleaning, lawn, snow, etc.)',
-    },
-    {
-      value: 'developer' as AccountType,
-      label: 'Developer',
-      description: 'Land, projects, and partners for big builds or redevelopment.',
-    },
-    {
-      value: 'property_manager' as AccountType,
-      label: 'Property Manager',
-      description: 'Reliable tenants and fast solutions to property issues.',
-    },
-    {
-      value: 'organization' as AccountType,
-      label: 'Organization',
-      description: 'Local exposure and new customers.',
-    },
-  ];
-
-  const steps = [
-    {
-      question: 'What describes you best?',
-      options: accountTypeOptions,
-    },
-    {
-      question: 'Confirm your selection',
-      isConfirmation: true,
-    },
-  ];
-
-  const getVisibleSteps = () => {
-    return steps;
-  };
-
-  const getSelectedAccountType = () => {
-    return accountTypeOptions.find(opt => opt.value === formData.accountType);
-  };
-
-  const handleOptionSelect = (value: string) => {
-    setFormData(prev => ({ ...prev, accountType: value as AccountType }));
-    
-    // Auto-advance to confirmation step
-    setTimeout(() => {
-      setCurrentStep(prev => prev + 1);
-    }, 300);
-  };
-
-  const handleConfirm = () => {
-    // Navigate to landing page for selected account type
-    if (formData.accountType) {
-      window.location.href = `/lp/${formData.accountType}`;
-    }
-  };
-
-
-  const visibleSteps = getVisibleSteps();
-  const totalSteps = visibleSteps.length;
-  const isConfirmationStep = visibleSteps[currentStep]?.isConfirmation;
-  const selectedType = getSelectedAccountType();
 
   return (
-    <PageLayout showHeader={true} showFooter={true} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
-      <section className="min-h-screen flex items-center bg-black text-white py-12 sm:py-16 md:py-20 lg:py-24 xl:py-32 relative overflow-hidden">
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
-            backgroundSize: '40px 40px'
-          }}></div>
-        </div>
-        
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 w-full relative z-10">
-          {/* Progress Indicator */}
-          <div className="mb-8 sm:mb-12">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              {Array.from({ length: totalSteps }).map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    index <= currentStep
-                      ? 'bg-gold-500 w-8'
-                      : 'bg-white/20 w-2'
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="text-center text-sm text-gray-400">
-              Step {currentStep + 1} of {totalSteps}
-            </p>
-          </div>
-
-          {isConfirmationStep ? (
-            <div className="text-center">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 sm:mb-12 leading-tight">
-                {visibleSteps[currentStep]?.question}
-              </h2>
-              
-              {selectedType && (
-                <div className="max-w-2xl mx-auto space-y-6 mb-8">
-                  <div className="bg-white/10 backdrop-blur-sm border-2 border-white/30 rounded-lg p-6 sm:p-8">
-                    <div className="text-left space-y-4">
-                      <div>
-                        <div className="text-sm sm:text-base text-gray-400 mb-2">
-                          You are a
-                        </div>
-                        <div className="text-2xl sm:text-3xl font-bold text-white">
-                          {selectedType.label}
-                        </div>
-                      </div>
-                      <div className="border-t border-white/20 pt-4">
-                        <div className="text-sm sm:text-base text-gray-400 mb-2">
-                          You are looking for
-                        </div>
-                        <div className="text-lg sm:text-xl text-gray-200 leading-relaxed">
-                          {selectedType.description}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+    <SimplePageLayout contentPadding="px-0" footerVariant="light">
+      <div>
+        {/* Hero Section */}
+        <section className="bg-[#f4f2ef] py-3 w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+          <div className="w-full px-[10px]">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-center max-w-7xl mx-auto">
+              {/* Left Side - Sign-in Content */}
+              <div className="space-y-3">
+                {/* Minnesota Badge */}
+                <div>
+                  <span className="inline-block px-[10px] py-[10px] bg-gray-700 text-white text-xs font-medium rounded-md tracking-wide uppercase">
+                    Minnesota Only
+                  </span>
                 </div>
-              )}
-
-              <div className="flex gap-4 justify-center">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(prev => prev - 1)}
-                  className="px-6 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white font-bold hover:bg-white/20 transition-all"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirm}
-                  className="px-6 py-3 bg-gold-500 text-black font-bold rounded-lg hover:bg-gold-600 transition-all shadow-lg flex items-center justify-center gap-2"
-                >
-                  Continue
-                  <ArrowRightIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center">
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-3 sm:mb-4 leading-tight">
-                {visibleSteps[currentStep]?.question}
-              </h2>
-              {currentStep === 0 && (
-                <p className="text-lg sm:text-xl text-gray-300 mb-8 sm:mb-12">
-                  See what we provide.
-                </p>
-              )}
-              
-              <div className="space-y-3 sm:space-y-4 max-w-2xl mx-auto">
-                {visibleSteps[currentStep]?.options.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handleOptionSelect(option.value)}
-                    className="w-full px-6 py-5 bg-white/10 backdrop-blur-sm border-2 border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-gold-500 transition-all text-left group"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="text-lg sm:text-xl font-bold mb-1">
-                          {option.label}
-                        </div>
-                        {option.description && (
-                          <div className="text-sm sm:text-base text-gray-300 leading-relaxed">
-                            {option.description}
-                          </div>
-                        )}
-                      </div>
-                      <ArrowRightIcon className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
-                    </div>
-                  </button>
-                ))}
                 
-                {/* Community button - show below options */}
-                {currentStep === 0 && (
+                {/* Headline */}
+                <h1 className="text-sm font-semibold text-gray-900 leading-tight tracking-tight">
+                  Discover new opportunities
+                </h1>
+                
+                {/* CTA Buttons */}
+                <div className="space-y-3">
                   <Link
-                    href="/map"
-                    className="block w-full px-6 py-4 bg-gold-500/20 backdrop-blur-sm border-2 border-gold-500/50 rounded-lg text-white text-lg sm:text-xl font-semibold hover:bg-gold-500/30 hover:border-gold-500 transition-all text-center group mt-4"
+                    href="/login"
+                    className="block w-full px-[10px] py-[10px] bg-transparent border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-900 font-medium rounded-md transition-colors text-center"
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <span>Explore Minnesota Development & Acquisition Map</span>
-                      <ArrowRightIcon className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
+                    Sign in with email
                   </Link>
-                )}
+                </div>
+
+                {/* Legal Text */}
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  By continuing, you agree to MNUDA's{' '}
+                  <Link href="/legal/user-agreement" className="text-gray-600 hover:text-gray-900 underline">User Agreement</Link>,{' '}
+                  <Link href="/legal/privacy-policy" className="text-gray-600 hover:text-gray-900 underline">Privacy Policy</Link>, and{' '}
+                  <Link href="/legal/community-guidelines" className="text-gray-600 hover:text-gray-900 underline">Community Guidelines</Link>.
+                </p>
+
+                {/* Join Prompt */}
+                <p className="text-xs text-gray-600">
+                  New to MNUDA?{' '}
+                  <Link href="/login" className="text-gray-900 font-medium hover:underline">
+                    Join now
+                  </Link>
+                </p>
               </div>
 
-              {/* Back button for steps after the first */}
-              {currentStep > 0 && (
-                <div className="mt-8">
-                  <button
-                    onClick={() => setCurrentStep(prev => prev - 1)}
-                    className="px-6 py-3 bg-white/10 border-2 border-white/30 rounded-lg text-white font-bold hover:bg-white/20 transition-all"
-                  >
-                    Back
-                  </button>
+              {/* Right Side - Illustration */}
+              <div className="hidden lg:block">
+                <div className="w-full h-[480px] relative rounded-md overflow-hidden bg-white/50">
+                  <Image
+                    src="/guy-on-computer.png"
+                    alt="Person working at computer"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
                 </div>
-              )}
+              </div>
             </div>
-          )}
-        </div>
-      </section>
-    </PageLayout>
+          </div>
+        </section>
+      </div>
+    </SimplePageLayout>
   );
 }
+

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/features/ui/components/Logo';
 import { useAuth } from '@/features/auth';
-import PageLayout from '@/components/PageLayout';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 
 function isValidEmail(email: string): boolean {
@@ -98,81 +97,113 @@ export default function LoginPage() {
   // Redirect if already authenticated (after OTP verification or on page load)
   useEffect(() => {
     if (!isLoading && user) {
-      router.push('/account/settings');
+      // Get redirect URL from query params
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectTo = urlParams.get('redirect') || '/account/settings';
+      
+      // Check onboarding status with timeout
+      const checkOnboardingAndRedirect = async () => {
+        try {
+          // Set timeout to prevent infinite loading
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout')), 3000)
+          );
+          
+          const { AccountService } = await import('@/features/auth');
+          const accountPromise = AccountService.getCurrentAccount();
+          
+          const account = await Promise.race([accountPromise, timeoutPromise]) as Awaited<ReturnType<typeof AccountService.getCurrentAccount>> | null;
+          
+          // Only redirect to onboarding if explicitly not onboarded
+          // If account doesn't exist or is null, just go to redirect URL
+          if (account && account.onboarded === false) {
+            router.replace('/account/onboarding');
+          } else {
+            router.replace(redirectTo);
+          }
+        } catch (error) {
+          console.warn('Error checking onboarding status, redirecting anyway:', error);
+          // On error or timeout, just redirect to the intended destination
+          // Don't force onboarding - let the destination page handle it
+          router.replace(redirectTo);
+        }
+      };
+
+      checkOnboardingAndRedirect();
     }
   }, [isLoading, user, router]);
 
   // Show loading state while checking authentication or verifying OTP
   if (isLoading || loading) {
     return (
-      <PageLayout showHeader={false} showFooter={false} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
-      <div className="min-h-screen bg-gold-100 flex items-center justify-center">
-        <div className="text-center">
+      <div className="flex flex-col min-h-screen bg-[#f4f2ef]">
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center">
             <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+            <p className="text-gray-600">Loading...</p>
+          </div>
         </div>
       </div>
-      </PageLayout>
     );
   }
 
   // Don't render login form if user is authenticated (will redirect)
   if (user) {
     return (
-      <PageLayout showHeader={false} showFooter={false} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
-      <div className="min-h-screen bg-gold-100 flex items-center justify-center">
-        <div className="text-center">
+      <div className="flex flex-col min-h-screen bg-[#f4f2ef]">
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center">
             <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting...</p>
+            <p className="text-gray-600">Redirecting...</p>
+          </div>
         </div>
       </div>
-      </PageLayout>
     );
   }
 
   return (
-    <PageLayout showHeader={false} showFooter={false} containerMaxWidth="full" backgroundColor="bg-gold-100" contentPadding="">
-      <section className="min-h-screen flex items-center bg-gradient-to-b from-gold-100 via-gold-50 to-gold-100 py-16 lg:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+    <div className="flex flex-col min-h-screen bg-[#f4f2ef]">
+      <section className="min-h-screen flex items-center bg-[#f4f2ef] py-3">
+        <div className="max-w-7xl mx-auto px-[10px] w-full">
           <div className="max-w-md mx-auto">
             {/* Logo */}
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-3">
           <Link href="/" className="hover:opacity-80 transition-opacity">
                 <Logo size="lg" variant="default" />
           </Link>
         </div>
 
             {/* Hero Section */}
-            <div className="text-center mb-10">
-              <div className="inline-block mb-4">
-                <span className="text-xs font-bold tracking-widest uppercase text-gold-600 bg-gold-200/50 px-4 py-2 rounded-full">
+            <div className="text-center mb-3">
+              <div className="inline-block mb-3">
+                <span className="text-xs font-medium tracking-widest uppercase text-gray-700 bg-gray-200 px-[10px] py-[10px] rounded-md">
                   Sign In
                 </span>
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-black mb-4 leading-tight">
+              <h1 className="text-sm font-semibold tracking-tight text-gray-900 mb-3 leading-tight">
                 Welcome Back
               </h1>
-              <p className="text-lg text-gray-700">
+              <p className="text-xs text-gray-600">
                 Enter your email address to continue to your account
         </p>
       </div>
 
             {/* Form Card */}
-            <div className="bg-white rounded-2xl p-8 border border-gold-200 shadow-lg">
+            <div className="bg-white rounded-md p-[10px] border border-gray-200">
           {!otpSent ? (
-            <form className="space-y-6" onSubmit={handleSendOtp}>
+            <form className="space-y-3" onSubmit={handleSendOtp}>
               {message && (
-                    <div className={`px-4 py-3 rounded-lg text-sm ${
+                    <div className={`px-[10px] py-[10px] rounded-md text-xs ${
                   message.includes('Check your email') 
-                        ? 'bg-green-50 border border-green-200 text-green-700' 
-                        : 'bg-red-50 border border-red-200 text-red-700'
+                        ? 'bg-gray-50 border border-gray-200 text-gray-700' 
+                        : 'bg-gray-50 border border-gray-200 text-gray-700'
                 }`}>
                   {message}
                 </div>
               )}
 
               <div>
-                    <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
+                    <label htmlFor="email" className="block text-xs font-medium text-gray-900 mb-1.5">
                       Email Address
                 </label>
                     <div>
@@ -185,14 +216,14 @@ export default function LoginPage() {
                     value={email}
                     onChange={handleEmailChange}
                     onBlur={handleEmailBlur}
-                        className={`w-full px-4 py-3 border rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-black sm:text-sm ${
-                      emailError ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300'
+                        className={`w-full px-[10px] py-[10px] border rounded-md text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 ${
+                      emailError ? 'border-gray-300 focus:border-gray-500 focus:ring-gray-500' : 'border-gray-200'
                     }`}
                     placeholder="your.email@example.com"
                   />
                 </div>
                 {emailError && (
-                      <p className="mt-2 text-sm text-red-600">{emailError}</p>
+                      <p className="mt-1.5 text-xs text-gray-600">{emailError}</p>
                 )}
               </div>
 
@@ -200,7 +231,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                      className="w-full flex justify-center items-center gap-2 py-3 px-6 border border-transparent rounded-xl text-base font-bold text-white bg-black hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+                      className="w-full flex justify-center items-center gap-2 py-[10px] px-[10px] border border-transparent rounded-md text-xs font-medium text-white bg-gray-900 hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? (
                         <>
@@ -220,19 +251,19 @@ export default function LoginPage() {
               </div>
             </form>
           ) : (
-            <form className="space-y-6" onSubmit={handleVerifyOtp}>
+            <form className="space-y-3" onSubmit={handleVerifyOtp}>
               {message && (
-                    <div className={`px-4 py-3 rounded-lg text-sm ${
+                    <div className={`px-[10px] py-[10px] rounded-md text-xs ${
                   message.includes('successful') 
-                        ? 'bg-green-50 border border-green-200 text-green-700' 
-                        : 'bg-red-50 border border-red-200 text-red-700'
+                        ? 'bg-gray-50 border border-gray-200 text-gray-700' 
+                        : 'bg-gray-50 border border-gray-200 text-gray-700'
                 }`}>
                   {message}
                 </div>
               )}
 
               <div>
-                    <label htmlFor="otp" className="block text-sm font-semibold text-gray-900 mb-2">
+                    <label htmlFor="otp" className="block text-xs font-medium text-gray-900 mb-1.5">
                       Verification Code
                 </label>
                     <div>
@@ -244,12 +275,12 @@ export default function LoginPage() {
                     required
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                        className="appearance-none block w-full px-4 py-4 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-black sm:text-base text-center text-3xl tracking-widest font-mono text-gray-900"
+                        className="appearance-none block w-full px-[10px] py-[10px] border border-gray-200 rounded-md placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500 text-center text-xs tracking-widest font-mono text-gray-900"
                     placeholder="000000"
                   />
                 </div>
-                    <p className="mt-3 text-sm text-gray-600">
-                      Enter the 6-digit code sent to <span className="font-semibold text-gray-900">{email}</span>
+                    <p className="mt-1.5 text-xs text-gray-600">
+                      Enter the 6-digit code sent to <span className="font-medium text-gray-900">{email}</span>
                 </p>
               </div>
 
@@ -257,7 +288,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading || otp.length !== 6}
-                      className="w-full flex justify-center items-center gap-2 py-3 px-6 border border-transparent rounded-xl text-base font-bold text-white bg-black hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+                      className="w-full flex justify-center items-center gap-2 py-[10px] px-[10px] border border-transparent rounded-md text-xs font-medium text-white bg-gray-900 hover:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? (
                         <>
@@ -276,7 +307,7 @@ export default function LoginPage() {
                 </button>
               </div>
 
-                  <div className="text-center pt-4 border-t border-gray-200">
+                  <div className="text-center pt-3 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => {
@@ -286,7 +317,7 @@ export default function LoginPage() {
                     setEmailError('');
                     setEmail('');
                   }}
-                      className="text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                      className="text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   Use a different email
                 </button>
@@ -296,10 +327,10 @@ export default function LoginPage() {
         </div>
 
             {/* Footer Link */}
-            <div className="text-center mt-8">
+            <div className="text-center mt-3">
               <Link
                 href="/"
-                className="text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                className="text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors"
               >
                 ← Back to home
               </Link>
@@ -307,6 +338,6 @@ export default function LoginPage() {
       </div>
     </div>
       </section>
-    </PageLayout>
+    </div>
   );
 }

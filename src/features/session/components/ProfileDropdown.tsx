@@ -4,10 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, AccountService, Account } from '@/features/auth';
-import { ProfileService, Profile } from '@/features/profiles/services/profileService';
-import { useProfile } from '@/features/profiles/contexts/ProfileContext';
 import ProfilePhoto from '@/components/ProfilePhoto';
-import { CheckIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { CheckIcon } from '@heroicons/react/24/outline';
 
 interface ProfileDropdownProps {
   className?: string;
@@ -19,7 +17,6 @@ export default function ProfileDropdown({ className = '' }: ProfileDropdownProps
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { selectedProfile, profiles, setSelectedProfile, refreshProfiles } = useProfile();
 
   useEffect(() => {
     const fetchAccount = async () => {
@@ -78,16 +75,7 @@ export default function ProfileDropdown({ className = '' }: ProfileDropdownProps
     );
   }
 
-  const handleProfileSwitch = async (profile: Profile) => {
-    setSelectedProfile(profile);
-    setIsOpen(false);
-    // Refresh the page to load new profile experience
-    router.refresh();
-  };
-
-  const displayName = selectedProfile 
-    ? ProfileService.getDisplayName(selectedProfile)
-    : AccountService.getDisplayName(account);
+  const displayName = AccountService.getDisplayName(account);
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -101,7 +89,6 @@ export default function ProfileDropdown({ className = '' }: ProfileDropdownProps
         }`}
       >
         <ProfilePhoto 
-          profile={selectedProfile}
           account={account}
           size="sm"
           editable={false}
@@ -127,63 +114,9 @@ export default function ProfileDropdown({ className = '' }: ProfileDropdownProps
               <p className="text-xs text-gray-400">Account</p>
             </div>
 
-            {/* Profile Switcher */}
-            <div className="px-4 py-2 border-b border-header-focus">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Switch Profile</p>
-              {profiles.length > 0 ? (
-                <div className="space-y-1">
-                  {profiles.map((profile) => {
-                    const isSelected = selectedProfile?.id === profile.id;
-                    const profileDisplayName = ProfileService.getDisplayName(profile);
-                    return (
-                      <button
-                        key={profile.id}
-                        onClick={() => handleProfileSwitch(profile)}
-                        className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded transition-all duration-200 ${
-                          isSelected
-                            ? 'bg-gold-500/20 text-gold-400 border border-gold-500/30'
-                            : 'text-gray-300 hover:text-gold-400 hover:bg-header-focus/60'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <ProfilePhoto 
-                            profile={profile}
-                            account={account}
-                            size="xs"
-                            editable={false}
-                          />
-                          <div className="flex-1 min-w-0 text-left">
-                            <p className="font-medium truncate">{profileDisplayName}</p>
-                            <p className="text-xs text-gray-400 capitalize">
-                              {profile.profile_type?.replace(/_/g, ' ')}
-                            </p>
-                          </div>
-                        </div>
-                        {isSelected && (
-                          <CheckIcon className="w-4 h-4 text-gold-400 flex-shrink-0" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="px-3 py-2 text-sm text-gray-400">
-                  <p className="mb-2">No profiles yet</p>
-                  <Link
-                    href="/account/profiles"
-                    onClick={() => setIsOpen(false)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gold-500/20 hover:bg-gold-500/30 text-gold-400 rounded-lg transition-colors text-xs font-medium"
-                  >
-                    <PlusIcon className="w-3.5 h-3.5" />
-                    Set Up Profile
-                  </Link>
-                </div>
-              )}
-            </div>
-
             {/* Navigation Links */}
             <Link
-              href="/account/profiles"
+              href="/account/settings"
               onClick={() => setIsOpen(false)}
               className="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-gold-400 hover:bg-gray-800/60 transition-all duration-200"
             >

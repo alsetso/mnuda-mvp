@@ -1,9 +1,18 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Profile } from '../services/profileService';
-import { ProfileService } from '../services/profileService';
-import { useAuth } from '@/features/auth';
+import { createContext, useContext, ReactNode } from 'react';
+
+// Stub interface - profiles table has been removed
+export interface Profile {
+  id: string;
+  account_id: string;
+  username: string;
+  profile_image: string | null;
+  profile_type: string;
+  onboarded: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 interface ProfileContextType {
   selectedProfile: Profile | null;
@@ -15,72 +24,18 @@ interface ProfileContextType {
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
-const SELECTED_PROFILE_KEY = 'mnuda_selected_profile_id';
-
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const [selectedProfile, setSelectedProfileState] = useState<Profile | null>(null);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadProfiles = async () => {
-    if (!user) {
-      setProfiles([]);
-      setSelectedProfileState(null);
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const allProfiles = await ProfileService.getCurrentAccountProfiles();
-      setProfiles(allProfiles);
-
-      // Load selected profile from localStorage
-      const savedProfileId = localStorage.getItem(SELECTED_PROFILE_KEY);
-      if (savedProfileId) {
-        const savedProfile = allProfiles.find(p => p.id === savedProfileId);
-        if (savedProfile) {
-          setSelectedProfileState(savedProfile);
-          return;
-        }
-      }
-
-      // Default to first profile if no saved selection
-      const defaultProfile = allProfiles[0] || null;
-      setSelectedProfileState(defaultProfile);
-      if (defaultProfile) {
-        localStorage.setItem(SELECTED_PROFILE_KEY, defaultProfile.id);
-      }
-    } catch (error) {
-      console.error('Error loading profiles:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  // Stub implementation - profiles table removed
+  const value: ProfileContextType = {
+    selectedProfile: null,
+    profiles: [],
+    setSelectedProfile: () => {},
+    refreshProfiles: async () => {},
+    isLoading: false,
   };
-
-  const setSelectedProfile = (profile: Profile | null) => {
-    setSelectedProfileState(profile);
-    if (profile) {
-      localStorage.setItem(SELECTED_PROFILE_KEY, profile.id);
-    } else {
-      localStorage.removeItem(SELECTED_PROFILE_KEY);
-    }
-  };
-
-  useEffect(() => {
-    loadProfiles();
-  }, [user]);
 
   return (
-    <ProfileContext.Provider
-      value={{
-        selectedProfile,
-        profiles,
-        setSelectedProfile,
-        refreshProfiles: loadProfiles,
-        isLoading,
-      }}
-    >
+    <ProfileContext.Provider value={value}>
       {children}
     </ProfileContext.Provider>
   );

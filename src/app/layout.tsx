@@ -44,7 +44,7 @@ export const metadata: Metadata = {
         width: 1200,
         height: 630,
         type: 'image/png',
-        alt: 'MNUDA - Homes Bought. Projects Managed.',
+        alt: 'MNUDA - For the Love of Minnesota',
       },
     ],
     locale: 'en_US',

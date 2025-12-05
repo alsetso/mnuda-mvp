@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Logo from '@/features/ui/components/Logo';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import ProfileDropdown from './ProfileDropdown';
 import { SessionData } from '../services/sessionStorage';
@@ -132,7 +132,14 @@ export default function AppHeader({
               >
                 <div className="absolute inset-0 bg-gold-500/0 group-hover:bg-gold-500/10 rounded-lg transition-colors duration-300 blur-sm group-hover:blur-none" />
                 <div className="relative">
-                  <Logo size="md" variant="light" />
+                  <Image
+                    src="/mnuda_emblem.png"
+                    alt="MNUDA Emblem"
+                    width={40}
+                    height={40}
+                    className="h-auto w-auto"
+                    priority
+                  />
                 </div>
               </Link>
             </div>

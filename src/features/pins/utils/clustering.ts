@@ -59,6 +59,7 @@ function getPixelDistance(
 /**
  * Cluster points based on zoom level
  * Points closer than CLUSTER_RADIUS pixels will be grouped together
+ * Uses strict thresholds to ensure pins stay at exact coordinates until truly overlapping
  */
 export function clusterPins(
   points: ClusterPoint[],
@@ -67,8 +68,24 @@ export function clusterPins(
 ): Cluster[] {
   if (points.length === 0) return [];
 
-  // At very low zoom levels, use larger cluster radius (reduced multipliers for tighter clustering)
-  const adjustedRadius = zoom < 5 ? clusterRadius * 2 : zoom < 8 ? clusterRadius * 1.5 : clusterRadius;
+  // Only cluster at lower zoom levels (when zoomed out)
+  // At zoom 10+, show all pins individually at exact coordinates
+  // At zoom 8-10, use very strict clustering (only overlapping pins)
+  // At zoom < 8, use slightly more lenient clustering
+  let adjustedRadius: number;
+  if (zoom >= 10) {
+    // High zoom: no clustering, show all pins at exact coordinates
+    adjustedRadius = 0;
+  } else if (zoom >= 8) {
+    // Medium zoom: very strict clustering (only truly overlapping pins)
+    adjustedRadius = 15; // Very small - only pins that are almost on top of each other
+  } else if (zoom >= 5) {
+    // Medium-low zoom: strict clustering
+    adjustedRadius = clusterRadius * 0.5; // Half the base radius
+  } else {
+    // Low zoom: allow more clustering
+    adjustedRadius = clusterRadius;
+  }
 
   const clusters: Cluster[] = [];
   const processed = new Set<string>();
@@ -91,6 +108,7 @@ export function clusterPins(
         zoom
       );
 
+      // Only cluster if distance is strictly less than threshold
       if (distance < adjustedRadius) {
         nearbyPoints.push(otherPoint);
         processed.add(otherPoint.id);
@@ -99,7 +117,7 @@ export function clusterPins(
 
     // Create cluster or single point
     if (nearbyPoints.length > 1) {
-      // Calculate centroid
+      // Calculate centroid only for actual clusters
       const avgLat = nearbyPoints.reduce((sum, p) => sum + p.lat, 0) / nearbyPoints.length;
       const avgLng = nearbyPoints.reduce((sum, p) => sum + p.lng, 0) / nearbyPoints.length;
 
@@ -112,7 +130,7 @@ export function clusterPins(
         isCluster: true,
       });
     } else {
-      // Single point (not clustered)
+      // Single point (not clustered) - use exact coordinates
       clusters.push({
         id: point.id,
         lat: point.lat,

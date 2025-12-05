@@ -1,13 +1,27 @@
-import { createServerClientWithAuth } from '@/lib/supabaseServer';
+import { createServerClientWithAuth, createServiceClient } from '@/lib/supabaseServer';
 import { withAuthRetry } from '@/lib/authHelpers';
 
 /**
  * Base admin service with common CRUD operations
  * All admin services should extend this class
- * Uses authenticated client to ensure RLS policies can verify admin status
+ * 
+ * Uses service role client for write operations (create, update, delete) to bypass RLS
+ * since admin status is already verified in API routes.
+ * Uses authenticated client for read operations to respect RLS.
  */
 export abstract class BaseAdminService<T, CreateT, UpdateT> {
   protected abstract tableName: string;
+  
+  /**
+   * Get service role client for write operations (bypasses RLS)
+   * Admin status is verified in API routes, so we can safely use service role
+   */
+  protected getServiceClient() {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. Service role key is required for admin operations.');
+    }
+    return createServiceClient();
+  }
   
   /**
    * Get all records (admin only)
@@ -59,16 +73,11 @@ export abstract class BaseAdminService<T, CreateT, UpdateT> {
    */
   async create(data: CreateT): Promise<T> {
     return withAuthRetry(async () => {
-      const supabase = await createServerClientWithAuth();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
+      const supabase = this.getServiceClient();
       
       const { data: record, error } = await supabase
         .from(this.tableName)
-        .insert({ ...data, created_by: user.id } as any)
+        .insert(data as any)
         .select()
         .single();
       
@@ -89,26 +98,42 @@ export abstract class BaseAdminService<T, CreateT, UpdateT> {
    * Update record
    */
   async update(id: string, data: UpdateT): Promise<T> {
-    return withAuthRetry(async () => {
-      const supabase = await createServerClientWithAuth();
-      const { data: record, error } = await supabase
-        .from(this.tableName)
-        .update(data as any)
-        .eq('id', id)
-        .select()
-        .single();
+    const supabase = this.getServiceClient();
+    
+    // Log to verify service role is being used
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    console.log(`[BaseAdminService] Updating ${this.tableName} with service role client`);
+    console.log(`[BaseAdminService] Service key exists:`, !!serviceKey);
+    console.log(`[BaseAdminService] Service key prefix:`, serviceKey?.substring(0, 20));
+    
+    const { data: record, error } = await supabase
+      .from(this.tableName)
+      .update(data as any)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error(`[BaseAdminService] Error updating ${this.tableName}:`, error);
+      console.error(`[BaseAdminService] Error code:`, error.code);
+      console.error(`[BaseAdminService] Error message:`, error.message);
+      console.error(`[BaseAdminService] Error hint:`, error.hint);
+      console.error(`[BaseAdminService] Error details:`, JSON.stringify(error, null, 2));
       
-      if (error) {
-        console.error(`Error updating ${this.tableName}:`, error);
-        throw new Error(`Failed to update ${this.tableName}: ${error.message}`);
+      // If it's a permission error, the service role isn't working
+      if (error.message?.includes('permission denied') || error.code === '42501') {
+        console.error(`[BaseAdminService] PERMISSION DENIED - Service role client is NOT bypassing RLS!`);
+        console.error(`[BaseAdminService] This suggests the service role key may be invalid or not being used correctly.`);
       }
       
-      if (!record) {
-        throw new Error(`Failed to update ${this.tableName}: no data returned`);
-      }
-      
-      return record;
-    }, `Update ${this.tableName}`);
+      throw new Error(`Failed to update ${this.tableName}: ${error.message}`);
+    }
+    
+    if (!record) {
+      throw new Error(`Failed to update ${this.tableName}: no data returned`);
+    }
+    
+    return record;
   }
   
   /**
@@ -116,7 +141,8 @@ export abstract class BaseAdminService<T, CreateT, UpdateT> {
    */
   async delete(id: string): Promise<void> {
     return withAuthRetry(async () => {
-      const supabase = await createServerClientWithAuth();
+      const supabase = this.getServiceClient();
+      
       const { error } = await supabase
         .from(this.tableName)
         .delete()

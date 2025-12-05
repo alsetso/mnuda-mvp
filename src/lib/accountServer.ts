@@ -7,8 +7,8 @@ import type { Account, AccountType, AccountRole } from '@/features/auth/services
 /**
  * Get server-side Supabase client
  */
-function getServerSupabase() {
-  const cookieStore = cookies();
+async function getServerSupabase() {
+  const cookieStore = await cookies();
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -17,11 +17,8 @@ function getServerSupabase() {
         getAll() {
           return cookieStore.getAll();
         },
-        set() {
+        setAll() {
           // Server components can't set cookies
-        },
-        remove() {
-          // Server components can't remove cookies
         },
       },
     }
@@ -34,7 +31,7 @@ function getServerSupabase() {
  * Returns null if user is not authenticated or account doesn't exist
  */
 export const getServerAccount = cache(async (): Promise<Account | null> => {
-  const supabase = getServerSupabase();
+  const supabase = await getServerSupabase();
   
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   

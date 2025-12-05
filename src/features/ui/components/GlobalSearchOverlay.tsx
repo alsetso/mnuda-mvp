@@ -66,7 +66,7 @@ export default function GlobalSearchOverlay({ isOpen, onClose }: GlobalSearchOve
           icon: <ArrowRightOnRectangleIcon className="w-5 h-5" />
         },
         { 
-          href: '/terms-of-service', 
+          href: '/legal/terms-of-service', 
           label: 'Terms of Service', 
           description: 'View terms and conditions',
           icon: <DocumentTextIcon className="w-5 h-5" />

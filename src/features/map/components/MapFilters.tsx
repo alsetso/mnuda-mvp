@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { PinCategory, PinCategoryService } from '@/features/pins/services/pinService';
+import { TagService, Tag } from '@/features/tags/services/tagService';
 import { Pin } from '@/features/pins/services/pinService';
 import { useAuth } from '@/features/auth';
 import { EyeIcon, EyeSlashIcon, GlobeAltIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
@@ -30,43 +30,43 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
   const [allActiveCategories, setAllActiveCategories] = useState<PinCategory[]>([]);
   const [isAdditionalLayersOpen, setIsAdditionalLayersOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
-    selectedCategories: new Set(),
-    additionalCategories: new Set(),
+    selectedTags: new Set(),
+    additionalTags: new Set(),
     showMyPins: true,
     showOthersPins: true,
     showAreas: true,
   });
-  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
 
-  // Load public categories for map filters
+  // Load public tags for map filters
   useEffect(() => {
-    const loadCategories = async () => {
+    const loadTags = async () => {
       try {
-        const [publicCategories, allActive] = await Promise.all([
-          PinCategoryService.getPublicCategories(),
-          PinCategoryService.getCategories(), // Gets all active categories
+        const [publicTags, allActive] = await Promise.all([
+          TagService.getPublicTagsByEntityType('pin'),
+          TagService.getTagsByEntityType('pin'), // Gets all active tags
         ]);
-        setCategories(publicCategories);
-        setAllActiveCategories(allActive);
-        // Select all public categories by default
-        const defaultCategoryIds = publicCategories.map(c => c.id);
+        setTags(publicTags);
+        setAllActiveTags(allActive);
+        // Select all public tags by default
+        const defaultTagIds = publicTags.map(t => t.id);
         setFilters(prev => ({
           ...prev,
-          selectedCategories: new Set(defaultCategoryIds),
+          selectedTags: new Set(defaultTagIds),
         }));
-        // Immediately notify parent of default categories
-        if (onCategoryIdsChange && defaultCategoryIds.length > 0) {
-          onCategoryIdsChange(defaultCategoryIds);
+        // Immediately notify parent of default tags
+        if (onTagIdsChange && defaultTagIds.length > 0) {
+          onTagIdsChange(defaultTagIds);
         }
       } catch (err) {
-        console.error('Error loading categories:', err);
+        console.error('Error loading tags:', err);
       } finally {
-        setIsLoadingCategories(false);
+        setIsLoadingTags(false);
       }
     };
 
-    loadCategories();
-  }, [onCategoryIdsChange]);
+    loadTags();
+  }, [onTagIdsChange]);
 
   // Toggle layer visibility
   const toggleLayerVisibility = useCallback((layerId: string, visible: boolean) => {

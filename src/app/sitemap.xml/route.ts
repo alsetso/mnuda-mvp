@@ -14,11 +14,19 @@ export async function GET() {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
+    <loc>${baseUrl}/sitemap-cities.xml</loc>
+    <lastmod>${now}</lastmod>
+  </sitemap>
+  <sitemap>
     <loc>${baseUrl}/sitemap-for-sale-mn.xml</loc>
     <lastmod>${now}</lastmod>
   </sitemap>
   <sitemap>
     <loc>${baseUrl}/sitemap-for-rent-mn.xml</loc>
+    <lastmod>${now}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${baseUrl}/sitemap-feed.xml</loc>
     <lastmod>${now}</lastmod>
   </sitemap>
 </sitemapindex>`;

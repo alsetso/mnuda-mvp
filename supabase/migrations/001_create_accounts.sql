@@ -100,3 +100,5 @@ COMMENT ON COLUMN public.accounts.member_subtype IS 'Optional specialization wit
 COMMENT ON COLUMN public.accounts.market_radius IS 'Market radius in miles (1-99) around primary market area';
 COMMENT ON COLUMN public.accounts.stripe_customer_id IS 'Stripe customer ID for payment method and subscription management';
 
+
+
