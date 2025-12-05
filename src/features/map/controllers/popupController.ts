@@ -76,7 +76,7 @@ export function createPopupController(map: MapboxMap): PopupController {
   ): Popup => {
     // Note: This assumes mapbox is already loaded
     // In practice, this should be called after mapbox is loaded
-    const mapbox = require('mapbox-gl');
+    const mapbox = await import('mapbox-gl');
 
     const popupOptions: PopupOptions = {
       offset: 25,

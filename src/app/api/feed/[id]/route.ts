@@ -132,7 +132,7 @@ export async function PUT(
 
     // Transform map_data to structured columns if provided
     // The trigger will automatically populate PostGIS columns from map_geometry
-    let mapUpdateData: any = {};
+    const mapUpdateData: any = {};
     if (map_data !== undefined) {
       if (map_data === null) {
         // Clear all map data

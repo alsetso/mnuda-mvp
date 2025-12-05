@@ -251,7 +251,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
     if (popup) {
       popup.setHTML(popupContent);
     } else {
-      const mapbox = require('mapbox-gl');
+      const mapbox = await import('mapbox-gl');
       const newPopup = new mapbox.Popup({
         offset: 25,
         closeButton: false,

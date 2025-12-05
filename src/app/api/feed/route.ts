@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform map_data to structured columns if provided
-    let mapInsertData: any = {};
+    const mapInsertData: any = {};
     if (map_data) {
       mapInsertData.map_type = map_data.type;
       mapInsertData.map_geometry = map_data.geometry;

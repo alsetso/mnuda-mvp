@@ -73,7 +73,7 @@ export default function AnalyticsClient() {
         }
 
         // Sort entities
-        let sorted = [...(data.entities || [])];
+        const sorted = [...(data.entities || [])];
         if (sortBy === 'views') {
           sorted.sort((a, b) => b.total_views - a.total_views);
         } else if (sortBy === 'created') {

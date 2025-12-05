@@ -1560,7 +1560,7 @@ export default function PostMapModal({
     }
 
     // Capture screenshot before saving
-    let mapDataWithScreenshot: PostMapData = { ...state.mapData };
+    const mapDataWithScreenshot: PostMapData = { ...state.mapData };
     
     try {
       const screenshot = await captureMapScreenshot();

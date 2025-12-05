@@ -609,6 +609,31 @@ export default function CommunityPage() {
     }
   }, [map, mapLoaded]);
 
+  // Handle location select from search
+  // Must be called before early return to satisfy hooks rules
+  const handleLocationSelect = useCallback((coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: any) => {
+    handleFlyTo(coordinates, 15);
+    saveLocationSearch({
+      place_name: placeName,
+      coordinates,
+      mapbox_data: mapboxMetadata,
+      page_source: 'map',
+    });
+  }, [handleFlyTo]);
+
+  // Handle map style change
+  // Must be called before early return to satisfy hooks rules
+  const handleStyleChange = useCallback(async (style: string) => {
+    if (map && changeMapStyle) {
+      const styleKey = style as 'streets' | 'satellite' | 'light' | 'dark' | 'outdoors';
+      try {
+        await changeMapStyle(styleKey);
+        setCurrentMapStyle(styleKey);
+      } catch (error) {
+        console.error('Error changing map style:', error);
+      }
+    }
+  }, [map, changeMapStyle]);
 
   // Show loading state while checking auth
   if (authLoading) {
@@ -623,30 +648,6 @@ export default function CommunityPage() {
       </SimplePageLayout>
     );
   }
-
-  // Handle location select from search
-  const handleLocationSelect = useCallback((coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: any) => {
-    handleFlyTo(coordinates, 15);
-    saveLocationSearch({
-      place_name: placeName,
-      coordinates,
-      mapbox_data: mapboxMetadata,
-      page_source: 'map',
-    });
-  }, [handleFlyTo]);
-
-  // Handle map style change
-  const handleStyleChange = useCallback(async (style: string) => {
-    if (map && changeMapStyle) {
-      const styleKey = style as 'streets' | 'satellite' | 'light' | 'dark' | 'outdoors';
-      try {
-        await changeMapStyle(styleKey);
-        setCurrentMapStyle(styleKey);
-      } catch (error) {
-        console.error('Error changing map style:', error);
-      }
-    }
-  }, [map, changeMapStyle]);
 
   return (
     <SimplePageLayout 

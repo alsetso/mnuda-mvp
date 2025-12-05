@@ -91,7 +91,7 @@ export default async function BusinessDirectoryPage() {
   });
 
   // Fetch cities in one query
-  let citiesMap = new Map<string, { id: string; name: string }>();
+  const citiesMap = new Map<string, { id: string; name: string }>();
   if (cityIds.size > 0) {
     const { data: cities } = await supabase
       .from('cities')

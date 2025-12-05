@@ -14,6 +14,7 @@ export interface DrawController {
  * Stub implementation for future polygon drawing
  */
 export function createDrawController(map: MapboxMap): DrawController {
+  // Stub: drawInstance will be initialized when draw functionality is implemented
   let drawInstance: import('@mapbox/mapbox-gl-draw').default | null = null;
 
   const initializeDraw = async (): Promise<void> => {

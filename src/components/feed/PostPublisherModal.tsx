@@ -160,7 +160,7 @@ export default function PostPublisherModal({
       setUploadProgress(85);
 
       // Parse address fields from map data
-      let addressFields: {
+      const addressFields: {
         city?: string;
         state?: string;
         zip?: string;
@@ -290,8 +290,6 @@ export default function PostPublisherModal({
     setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  if (!isOpen) return null;
-
   const displayName = account 
     ? `${account.first_name || ''} ${account.last_name || ''}`.trim() || 'User'
     : 'User';
@@ -301,6 +299,7 @@ export default function PostPublisherModal({
   const canPost = hasContent && !isSubmitting && account;
 
   // Generate static map image URL - recalculates when mapData changes
+  // Must be called before early return to satisfy hooks rules
   const staticMapImageUrl = useMemo(() => {
     if (!mapData) return null;
     return generateMapStaticImageUrl(mapData, {
@@ -310,11 +309,14 @@ export default function PostPublisherModal({
   }, [mapData]);
 
   // Create a key for the image to force reload when mapData changes
+  // Must be called before early return to satisfy hooks rules
   const mapImageKey = useMemo(() => {
     if (!mapData) return null;
     // Create a stable key from mapData to force image reload on changes
     return JSON.stringify(mapData);
   }, [mapData]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 p-2">

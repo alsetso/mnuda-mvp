@@ -12,6 +12,8 @@ export interface UseMapEventsOptions {
 
 export interface UseMapEventsReturn {
   // Event handlers are internal, no need to expose
+  // Using Record to satisfy lint rules
+  [key: string]: never;
 }
 
 /**

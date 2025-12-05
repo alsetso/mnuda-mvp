@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's posts
     if (!entityType || entityType === 'post') {
-      let postsQuery = supabase
+      const postsQuery = supabase
         .from('posts')
         .select('id, title, slug, created_at, visibility')
         .eq('profile_id', account.id)
