@@ -450,7 +450,7 @@ export default function SimpleNav() {
       <div className="compact-search-wrapper">
         <AppSearch 
           placeholder="Search" 
-          onLocationSelect={(coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: any) => {
+          onLocationSelect={(coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: MapboxMetadata) => {
             // Dispatch custom event for map page to handle
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('mapLocationSelect', {

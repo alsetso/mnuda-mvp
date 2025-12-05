@@ -25,7 +25,7 @@ export default function AccountViewsCard({ account }: AccountViewsCardProps) {
   const displayName = AccountService.getDisplayName(account) || 'User';
   const profileImage = account?.image_url || null;
   const bio = account?.bio || null;
-  const coverImage = (account as any)?.cover_image_url || null;
+  const coverImage = (account as { cover_image_url?: string | null })?.cover_image_url || null;
 
   return (
     <div className="bg-white rounded-md border border-gray-200 overflow-hidden">

@@ -17,7 +17,7 @@ import { isAccountComplete } from '@/lib/accountCompleteness';
 interface AppTopClientProps {
   user: { id: string; email: string } | null;
   account: Account | null;
-  profiles: any[]; // Legacy prop, no longer used
+  profiles: Array<{ id: string; [key: string]: unknown }>; // Legacy prop, no longer used
   isAuthenticated: boolean;
 }
 

@@ -66,9 +66,9 @@ export interface FeedPostData {
   view_count?: number;
   // Map fields from posts table
   map_type?: 'pin' | 'area' | 'both' | null;
-  map_geometry?: any; // GeoJSON geometry
-  map_center?: any; // PostGIS POINT
-  map_bounds?: any; // PostGIS POLYGON
+  map_geometry?: unknown; // GeoJSON geometry
+  map_center?: unknown; // PostGIS POINT
+  map_bounds?: unknown; // PostGIS POLYGON
   map_hide_pin?: boolean;
   map_screenshot?: string | null;
   // Legacy map_data for backward compatibility
@@ -98,7 +98,7 @@ export default function FeedPost({ post, onUpdate, disableNavigation = false }: 
   const router = useRouter();
 
   // Memoize derived data for performance
-  const account = useMemo(() => (post as any).accounts, [(post as any).accounts]);
+  const account = useMemo(() => (post as { accounts?: { id: string; first_name: string | null; last_name: string | null; image_url: string | null } | null }).accounts, [(post as { accounts?: { id: string; first_name: string | null; last_name: string | null; image_url: string | null } | null }).accounts]);
   // Display name from account (first_name + last_name) or fallback to 'User'
   const displayName = useMemo(() => {
     if (account?.first_name || account?.last_name) {
@@ -121,12 +121,13 @@ export default function FeedPost({ post, onUpdate, disableNavigation = false }: 
   const postUrl = useMemo(() => getPostUrl({ id: post.id, slug: undefined }), [post.id]);
   // Profile URL - use account ID if no username available
   const profileUrl = useMemo(() => {
-    if ((post as any).profiles?.username) {
-      return getProfileUrl((post as any).profiles.username);
+    const profiles = (post as { profiles?: { username?: string } | null }).profiles;
+    if (profiles?.username) {
+      return getProfileUrl(profiles.username);
     }
     // Fallback to account ID if no profile username
     return account?.id ? `/accounts/${account.id}` : '#';
-  }, [(post as any).profiles?.username, account?.id]);
+  }, [(post as { profiles?: { username?: string } | null }).profiles?.username, account?.id]);
   const locationText = useMemo(() => {
     const parts: string[] = [];
     if (post.city) parts.push(post.city);
@@ -167,7 +168,7 @@ export default function FeedPost({ post, onUpdate, disableNavigation = false }: 
                   image_url: account.image_url,
                   first_name: account.first_name,
                   last_name: account.last_name,
-                } as any : null}
+                } : null}
                 size="sm"
               />
             </Link>

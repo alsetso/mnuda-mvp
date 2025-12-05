@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import type { Account } from '@/features/auth';
 
 interface PagesCardProps {
-  account?: any | null;
+  account?: Account | null;
 }
 
 export default function PagesCard({ account }: PagesCardProps) {

@@ -270,13 +270,13 @@ export default function CountyEditModal({
                 initialPolygon={
                   formData.polygon &&
                   typeof formData.polygon === 'object' &&
-                  (formData.polygon as any).type &&
-                  ((formData.polygon as any).type === 'Polygon' || (formData.polygon as any).type === 'MultiPolygon')
+                  (formData.polygon as { type?: string }).type &&
+                  ((formData.polygon as { type?: string }).type === 'Polygon' || (formData.polygon as { type?: string }).type === 'MultiPolygon')
                     ? (formData.polygon as GeoJSON.Polygon | GeoJSON.MultiPolygon)
                     : null
                 }
                 onPolygonChange={(polygon) => {
-                  setFormData({ ...formData, polygon: polygon as any });
+                  setFormData({ ...formData, polygon: polygon as GeoJSON.Polygon | GeoJSON.MultiPolygon | null });
                 }}
                 height="400px"
                 allowMultiPolygon={true}

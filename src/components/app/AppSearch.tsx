@@ -26,7 +26,7 @@ interface LocationSuggestion {
 interface AppSearchProps {
   placeholder?: string;
   onSearch?: (query: string) => void;
-  onLocationSelect?: (coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: any) => void;
+  onLocationSelect?: (coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: MapboxMetadata) => void;
 }
 
 export default function AppSearch({ 

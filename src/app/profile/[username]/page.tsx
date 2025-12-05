@@ -11,16 +11,16 @@ interface Post {
   id: string;
   title: string;
   content: string;
-  images: any;
+  images: unknown;
   visibility: string;
   view_count: number;
   created_at: string;
   // Map fields
   map_type?: 'pin' | 'area' | 'both' | null;
-  map_geometry?: any;
-  map_center?: any;
+  map_geometry?: unknown;
+  map_center?: unknown;
   map_screenshot?: string | null;
-  map_data?: any;
+  map_data?: unknown;
 }
 
 async function getAccountByUsername(username: string): Promise<Account | null> {
@@ -107,7 +107,7 @@ async function getAccountPosts(accountId: string, isOwnProfile: boolean): Promis
 
     if (error) {
       // Log full error details for debugging
-      const errorInfo: Record<string, any> = {
+      const errorInfo: Record<string, unknown> = {
         message: error.message,
         code: error.code,
         details: error.details,
@@ -120,7 +120,7 @@ async function getAccountPosts(accountId: string, isOwnProfile: boolean): Promis
       try {
         Object.getOwnPropertyNames(error).forEach(key => {
           if (!errorInfo[key]) {
-            errorInfo[key] = (error as any)[key];
+            errorInfo[key] = (error as Record<string, unknown>)[key];
           }
         });
       } catch (e) {

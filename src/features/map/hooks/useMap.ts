@@ -201,7 +201,7 @@ export function useMap({ mapContainer, onMapReady, onMapClick }: UseMapProps): U
       }
 
       // Create marker options
-      const markerOptions: any = { anchor: 'center' };
+      const markerOptions: { anchor: string; element?: HTMLElement; color?: string } = { anchor: 'center' };
       if (options.element) {
         markerOptions.element = options.element;
       } else if (options.color) {

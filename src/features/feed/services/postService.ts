@@ -15,7 +15,7 @@ export interface Post {
   account_id: string;
   title?: string | null;
   content: string;
-  images?: any[];
+  images?: Array<{ url: string; filename: string; type?: string; [key: string]: unknown }>;
   visibility: PostVisibility;
   type?: 'simple';
   city?: string | null;
@@ -24,9 +24,9 @@ export interface Post {
   county?: string | null;
   full_address?: string | null;
   map_type?: 'pin' | 'area' | 'both' | null;
-  map_geometry?: any;
-  map_center?: any;
-  map_bounds?: any;
+  map_geometry?: unknown;
+  map_center?: unknown;
+  map_bounds?: unknown;
   map_hide_pin?: boolean;
   map_screenshot?: string | null;
   created_at: string;

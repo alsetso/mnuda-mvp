@@ -42,7 +42,7 @@ export interface CreatePostData {
   zip?: string;
   county?: string;
   full_address?: string;
-  map_data?: any;
+  map_data?: unknown;
 }
 
 export interface UpdatePostData {

@@ -6,6 +6,7 @@ import { MAP_CONFIG } from '@/features/map/config';
 import { XMarkIcon, MapPinIcon, PencilIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { AddressParser } from '@/features/map/services/addressParser';
 import { calculateCenter } from '@/features/map/utils/mapHelpers';
+import type { MapboxMapInstance, MapboxMouseEvent, MapboxDrawEvent, MapboxSuggestion, MapboxFeature } from '@/types/mapbox-events';
 
 export interface PostMapData {
   type: 'pin' | 'area' | 'both';
@@ -264,7 +265,7 @@ export default function PostMapModal({
       const parsed = AddressParser.parseMapboxFeature(feature);
       
       // Extract county from context if available
-      const countyContext = feature.context?.find((c: any) => 
+      const countyContext = feature.context?.find((c: { id?: string | number }) => 
         String(c.id).startsWith('district') || String(c.id).startsWith('county')
       );
       const county = countyContext?.text || '';
@@ -335,9 +336,9 @@ export default function PostMapModal({
       if (!response.ok) throw new Error('Location search failed');
 
       const data = await response.json();
-      const filteredFeatures = (data.features || []).filter((feature: any) => {
+      const filteredFeatures = (data.features || []).filter((feature: MapboxFeature) => {
         const context = feature.context || [];
-        const stateContext = context.find((c: any) => c.id && c.id.startsWith('region.'));
+        const stateContext = context.find((c: { id?: string }) => c.id && c.id.startsWith('region.'));
         return stateContext && (
           stateContext.short_code === 'US-MN' || stateContext.text === 'Minnesota'
         );
@@ -448,7 +449,7 @@ export default function PostMapModal({
     onDragEnd: (lng: number, lat: number) => void | Promise<void>
   ) => {
     // Remove existing handlers if any
-    const existingHandler = (mapInstance as any)._pinDragHandler;
+    const existingHandler = (mapInstance as MapboxMapInstance)._pinDragHandler;
     if (existingHandler) {
       mapInstance.off('mousedown', sourceId, existingHandler.mousedown);
       mapInstance.off('mousemove', existingHandler.mousemove);
@@ -457,13 +458,13 @@ export default function PostMapModal({
       mapInstance.off('mouseleave', sourceId, existingHandler.mouseleave);
     }
 
-    const mousedownHandler = (e: any) => {
+    const mousedownHandler = (e: MapboxMouseEvent) => {
       e.preventDefault();
       isDraggingPinRef.current = true;
       mapInstance.getCanvas().style.cursor = 'grabbing';
     };
 
-    const mousemoveHandler = (e: any) => {
+    const mousemoveHandler = (e: MapboxMouseEvent) => {
       if (!isDraggingPinRef.current) return;
 
       const source = mapInstance.getSource(sourceId) as import('mapbox-gl').GeoJSONSource;
@@ -479,7 +480,7 @@ export default function PostMapModal({
       });
     };
 
-    const mouseupHandler = async (e: any) => {
+    const mouseupHandler = async (e: MapboxMouseEvent) => {
       if (!isDraggingPinRef.current) return;
       isDraggingPinRef.current = false;
       mapInstance.getCanvas().style.cursor = '';
@@ -505,7 +506,7 @@ export default function PostMapModal({
     mapInstance.on('mouseleave', sourceId, mouseleaveHandler);
 
     // Store handlers for cleanup
-    (mapInstance as any)._pinDragHandler = {
+    (mapInstance as MapboxMapInstance)._pinDragHandler = {
       mousedown: mousedownHandler,
       mousemove: mousemoveHandler,
       mouseup: mouseupHandler,
@@ -535,7 +536,7 @@ export default function PostMapModal({
     }
   }, []);
 
-  const handleSuggestionSelect = useCallback(async (suggestion: any) => {
+  const handleSuggestionSelect = useCallback(async (suggestion: MapboxSuggestion) => {
     const [lng, lat] = suggestion.center;
     setSearchQuery(suggestion.place_name);
     setShowSuggestions(false);
@@ -685,7 +686,7 @@ export default function PostMapModal({
           if (mapInitializedRef.current) return;
           
           setTimeout(() => {
-            if (mapInstance && !(mapInstance as any)._removed) {
+            if (mapInstance && !(mapInstance as MapboxMapInstance)._removed) {
               mapInstance.resize();
             }
           }, 100);
@@ -725,7 +726,7 @@ export default function PostMapModal({
           // Use MutationObserver to hide any draw controls that appear later
           const observer = new MutationObserver(hideDrawControls);
           observer.observe(mapInstance.getContainer(), { childList: true, subtree: true });
-          (mapInstance as any)._drawObserver = observer;
+          (mapInstance as MapboxMapInstance)._drawObserver = observer;
 
             draw.current = drawInstance;
 
@@ -1074,7 +1075,7 @@ export default function PostMapModal({
                   setTimeout(() => {
                     drawInstance.deleteAll();
                     if (completedAreaSourceRef.current && mapInstance.getSource(completedAreaSourceRef.current)) {
-                      const source = mapInstance.getSource(completedAreaSourceRef.current) as any;
+                      const source = mapInstance.getSource(completedAreaSourceRef.current);
                       if (source) {
                         source.setData({
                           type: 'Feature',
@@ -1114,7 +1115,7 @@ export default function PostMapModal({
               }
             });
 
-            mapInstance.on('draw.modechange', (e: any) => {
+            mapInstance.on('draw.modechange', (e: MapboxDrawEvent) => {
               // If not actively drawing, prevent entering draw mode
               if (!state.isDrawing && e.mode === 'draw_polygon') {
                 drawInstance.changeMode('simple_select');
@@ -1308,7 +1309,7 @@ export default function PostMapModal({
             };
 
             document.addEventListener('keydown', handleKeyDown);
-            (mapInstance as any)._keyboardHandler = handleKeyDown;
+            (mapInstance as MapboxMapInstance)._keyboardHandler = handleKeyDown;
         });
 
         map.current = mapInstance;
@@ -1324,11 +1325,11 @@ export default function PostMapModal({
 
     return () => {
       if (map.current) {
-        const handler = (map.current as any)._keyboardHandler;
+        const handler = (map.current as MapboxMapInstance)._keyboardHandler;
         if (handler) {
           document.removeEventListener('keydown', handler);
         }
-        const observer = (map.current as any)._drawObserver;
+        const observer = (map.current as MapboxMapInstance)._drawObserver;
         if (observer) {
           observer.disconnect();
         }
@@ -1752,8 +1753,8 @@ export default function PostMapModal({
                     {suggestion.context && (
                       <div className="text-xs text-gray-500">
                         {suggestion.context
-                          .filter((c: any) => c.id?.startsWith('place.') || c.id?.startsWith('region.'))
-                          .map((c: any) => c.text)
+                          .filter((c: { id?: string }) => c.id?.startsWith('place.') || c.id?.startsWith('region.'))
+                          .map((c: { text?: string }) => c.text)
                           .join(', ')}
                       </div>
                     )}

@@ -165,7 +165,7 @@ export class MapPinService {
     }
 
     // Transform data
-    const transformedPins = (data || []).map((pin: any) => {
+    const transformedPins = (data || []).map((pin: PinData) => {
       let tag = null;
       if (pin.tags) {
         if (Array.isArray(pin.tags)) {

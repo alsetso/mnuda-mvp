@@ -89,7 +89,7 @@ export default function FeedListClient({ cities, counties }: FeedListClientProps
           return;
         }
         
-        let errorData: any = {};
+        let errorData: Record<string, unknown> = {};
         try {
           const text = await response.text();
           console.error('Feed fetch error response text:', text);

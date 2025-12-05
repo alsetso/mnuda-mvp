@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { withAuthRetry } from '@/lib/authHelpers';
+import type { PinData } from '@/types/pin';
 import { Tag } from '@/features/tags/services/tagService';
 
 export interface PinCategory {
@@ -286,7 +287,7 @@ export class PinService {
     }
 
     // Transform the data to include tag object and backward compatibility
-    const transformedPins = (data || []).map((pin: any) => {
+    const transformedPins = (data || []).map((pin: PinData) => {
       // Handle tag join - Supabase may return as object or array
       let tag = null;
       if (pin.tags) {
@@ -464,7 +465,7 @@ export class PinService {
     }
 
     // Transform to include tag object and parse media
-    return (data || []).map((pin: any) => {
+    return (data || []).map((pin: PinData) => {
       // Parse media if it's a string (JSONB can come as string)
       let media = pin.media;
       if (typeof media === 'string') {

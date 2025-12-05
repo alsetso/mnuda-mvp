@@ -21,6 +21,7 @@ import DataLogModal from '@/components/map/DataLogModal';
 import { addDataLogEntry, getDataLogCount } from '@/features/map/utils/dataLogStorage';
 import { usePageView } from '@/hooks/usePageView';
 import MapStats from '@/components/map/MapStats';
+import type { MapboxMetadata } from '@/types/mapbox';
 
 export default function CommunityPage() {
   const router = useRouter();
@@ -173,7 +174,7 @@ export default function CommunityPage() {
   }, [selectedPin, isPinSidebarOpen]);
 
   // Tags removed - tags table deleted
-  const [pinTags, setPinTags] = useState<any[]>([]);
+  const [pinTags, setPinTags] = useState<Array<{ id: string; name: string; [key: string]: unknown }>>([]);
 
   // Memoize filters to prevent unnecessary re-renders
   // For Find Me demo, no profile filtering needed
@@ -537,7 +538,7 @@ export default function CommunityPage() {
       const customEvent = e as CustomEvent<{ 
         coordinates: { lat: number; lng: number }; 
         placeName: string;
-        mapboxMetadata?: any;
+        mapboxMetadata?: MapboxMetadata;
       }>;
       const { coordinates, placeName, mapboxMetadata } = customEvent.detail;
       
@@ -611,7 +612,7 @@ export default function CommunityPage() {
 
   // Handle location select from search
   // Must be called before early return to satisfy hooks rules
-  const handleLocationSelect = useCallback((coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: any) => {
+  const handleLocationSelect = useCallback((coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: MapboxMetadata) => {
     handleFlyTo(coordinates, 15);
     saveLocationSearch({
       place_name: placeName,

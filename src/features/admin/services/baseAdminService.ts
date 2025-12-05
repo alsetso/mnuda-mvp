@@ -77,7 +77,7 @@ export abstract class BaseAdminService<T, CreateT, UpdateT> {
       
       const { data: record, error } = await supabase
         .from(this.tableName)
-        .insert(data as any)
+        .insert(data as Record<string, unknown>)
         .select()
         .single();
       
@@ -108,7 +108,7 @@ export abstract class BaseAdminService<T, CreateT, UpdateT> {
     
     const { data: record, error } = await supabase
       .from(this.tableName)
-      .update(data as any)
+      .update(data as Record<string, unknown>)
       .eq('id', id)
       .select()
       .single();

@@ -372,7 +372,7 @@ export default async function FeedPostPage({ params }: Props) {
     }
 
     // Combine post with account data
-    const enrichedPost: any = {
+    const enrichedPost: Post = {
       ...feedPost,
       accounts: accountInfo,
     };

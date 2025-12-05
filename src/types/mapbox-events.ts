@@ -1,0 +1,56 @@
+/**
+ * Type definitions for Mapbox event handlers
+ */
+
+export interface MapboxMapInstance {
+  _pinDragHandler?: {
+    mousedown: (e: MapboxMouseEvent) => void;
+    mousemove: (e: MapboxMouseEvent) => void;
+    mouseup: (e: MapboxMouseEvent) => void;
+  };
+  _removed?: boolean;
+  _drawObserver?: MutationObserver;
+  _keyboardHandler?: (e: KeyboardEvent) => void;
+  getSource: (sourceId: string) => { setData: (data: unknown) => void } | null;
+  on: (event: string, handler: (e: unknown) => void) => void;
+  off: (event: string, handler?: unknown) => void;
+}
+
+export interface MapboxMouseEvent {
+  lngLat: { lng: number; lat: number };
+  point: { x: number; y: number };
+  originalEvent: MouseEvent;
+  target: unknown;
+  [key: string]: unknown;
+}
+
+export interface MapboxDrawEvent {
+  mode: string;
+  [key: string]: unknown;
+}
+
+export interface MapboxSuggestion {
+  center: [number, number];
+  place_name: string;
+  context?: Array<{
+    id: string;
+    text: string;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+}
+
+export interface MapboxFeature {
+  id?: string | number;
+  type: string;
+  properties: Record<string, unknown>;
+  geometry: {
+    type: string;
+    coordinates: number[] | number[][] | number[][][];
+  };
+  context?: Array<{
+    id: string;
+    text: string;
+    [key: string]: unknown;
+  }>;
+}

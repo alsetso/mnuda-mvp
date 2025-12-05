@@ -82,9 +82,9 @@ export default function LocationAutocomplete({
       const data = await response.json();
       
       // Filter to ensure results are in Minnesota
-      const filteredFeatures = (data.features || []).filter((feature: any) => {
+      const filteredFeatures = (data.features || []).filter((feature: MapboxFeature) => {
         const context = feature.context || [];
-        const stateContext = context.find((c: any) => c.id && c.id.startsWith('region.'));
+        const stateContext = context.find((c: { id?: string }) => c.id && c.id.startsWith('region.'));
         return stateContext && (
           stateContext.short_code === 'US-MN' || 
           stateContext.text === 'Minnesota'
@@ -92,12 +92,12 @@ export default function LocationAutocomplete({
       });
 
       // Transform to LocationSuggestion format
-      const locationSuggestions: LocationSuggestion[] = filteredFeatures.map((feature: any) => {
+      const locationSuggestions: LocationSuggestion[] = filteredFeatures.map((feature: MapboxFeature) => {
         const context = feature.context || [];
-        const place = context.find((c: any) => c.id && c.id.startsWith('place.'));
-        const postcode = context.find((c: any) => c.id && c.id.startsWith('postcode.'));
-        const district = context.find((c: any) => c.id && c.id.startsWith('district.'));
-        const region = context.find((c: any) => c.id && c.id.startsWith('region.'));
+        const place = context.find((c: { id?: string }) => c.id && c.id.startsWith('place.'));
+        const postcode = context.find((c: { id?: string }) => c.id && c.id.startsWith('postcode.'));
+        const district = context.find((c: { id?: string }) => c.id && c.id.startsWith('district.'));
+        const region = context.find((c: { id?: string }) => c.id && c.id.startsWith('region.'));
         
         return {
           id: feature.id || `location-${Math.random()}`,

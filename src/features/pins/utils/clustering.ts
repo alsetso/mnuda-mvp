@@ -7,7 +7,7 @@ export interface ClusterPoint {
   id: string;
   lat: number;
   lng: number;
-  pin?: any; // Original pin data
+  pin?: PinData; // Original pin data
 }
 
 export interface Cluster {

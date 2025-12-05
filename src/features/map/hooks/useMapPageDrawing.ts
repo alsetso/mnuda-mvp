@@ -6,6 +6,7 @@ import type { GeoJSON } from 'geojson';
 import { mapFeaturesReducer, initialMapFeaturesState } from '../reducers/mapFeaturesReducer';
 import type { MapFeature, MapFeatureCollection } from '../types/featureCollection';
 import { generateFeatureId } from '../utils/featureCollectionUtils';
+import type { MapboxMouseEvent, MapboxDrawEvent } from '@/types/mapbox-events';
 
 // Legacy interface for backward compatibility
 export interface MapPageDrawingData {
@@ -209,7 +210,7 @@ export function useMapPageDrawing({
     // Note: We'll identify which pin by querying features at the drag point
     if (pins.length > 0 && !pins.some(p => p.properties.hidePin)) {
       // Remove existing handlers
-      const existingHandler = (map as any)._mapPagePinDragHandler;
+      const existingHandler = (map as { _mapPagePinDragHandler?: { mousedown: (e: MapboxMouseEvent) => void; mousemove: (e: MapboxMouseEvent) => void; mouseup: (e: MapboxMouseEvent) => void; mouseenter: (e: MapboxMouseEvent) => void; mouseleave: (e: MapboxMouseEvent) => void } })._mapPagePinDragHandler;
       if (existingHandler) {
         map.off('mousedown', PIN_SOURCE_ID, existingHandler.mousedown);
         map.off('mousemove', existingHandler.mousemove);
@@ -218,7 +219,7 @@ export function useMapPageDrawing({
         map.off('mouseleave', PIN_SOURCE_ID, existingHandler.mouseleave);
       }
 
-      const mousedownHandler = (e: any) => {
+      const mousedownHandler = (e: MapboxMouseEvent) => {
         e.preventDefault();
         isDraggingPinRef.current = true;
         map.getCanvas().style.cursor = 'grabbing';
@@ -233,7 +234,7 @@ export function useMapPageDrawing({
         }
       };
 
-      const mousemoveHandler = (e: any) => {
+      const mousemoveHandler = (e: MapboxMouseEvent) => {
         if (!isDraggingPinRef.current || !draggingFeatureIdRef.current) return;
 
         const source = map.getSource(PIN_SOURCE_ID) as import('mapbox-gl').GeoJSONSource;
@@ -242,7 +243,7 @@ export function useMapPageDrawing({
         // Update the specific feature in the source
         const currentData = source._data as GeoJSON.FeatureCollection;
         const updatedFeatures = currentData.features.map(f => {
-          if ((f.properties as any)?.id === draggingFeatureIdRef.current) {
+          if ((f.properties as { id?: string })?.id === draggingFeatureIdRef.current) {
             return {
               ...f,
               geometry: {
@@ -260,7 +261,7 @@ export function useMapPageDrawing({
         });
       };
 
-      const mouseupHandler = (e: any) => {
+      const mouseupHandler = (e: MapboxMouseEvent) => {
         if (!isDraggingPinRef.current || !draggingFeatureIdRef.current) return;
         
         const featureId = draggingFeatureIdRef.current;
@@ -303,7 +304,7 @@ export function useMapPageDrawing({
       map.on('mouseleave', PIN_SOURCE_ID, mouseleaveHandler);
 
       // Store handlers for cleanup
-      (map as any)._mapPagePinDragHandler = {
+      (map as { _mapPagePinDragHandler?: { mousedown: (e: MapboxMouseEvent) => void; mousemove: (e: MapboxMouseEvent) => void; mouseup: (e: MapboxMouseEvent) => void; mouseenter: (e: MapboxMouseEvent) => void; mouseleave: (e: MapboxMouseEvent) => void } })._mapPagePinDragHandler = {
         mousedown: mousedownHandler,
         mousemove: mousemoveHandler,
         mouseup: mouseupHandler,
@@ -350,7 +351,7 @@ export function useMapPageDrawing({
 
         const observer = new MutationObserver(hideDrawControls);
         observer.observe(map.getContainer(), { childList: true, subtree: true });
-        (map as any)._mapPageDrawObserver = observer;
+        (map as { _mapPageDrawObserver?: MutationObserver })._mapPageDrawObserver = observer;
 
         draw.current = drawInstance;
         drawInitializedRef.current = true;
@@ -436,7 +437,7 @@ export function useMapPageDrawing({
           map.getCanvas().style.cursor = '';
         });
 
-        map.on('draw.modechange', (e: any) => {
+        map.on('draw.modechange', (e: MapboxDrawEvent) => {
           const drawing = e.mode === 'draw_polygon';
           isDrawingRef.current = drawing;
           dispatch({ type: 'SET_IS_DRAWING', payload: drawing });
@@ -451,8 +452,8 @@ export function useMapPageDrawing({
     return () => {
       // Cleanup
       if (map) {
-        if ((map as any)._mapPageDrawObserver) {
-          (map as any)._mapPageDrawObserver.disconnect();
+        if ((map as { _mapPageDrawObserver?: MutationObserver })._mapPageDrawObserver) {
+          (map as { _mapPageDrawObserver?: MutationObserver })._mapPageDrawObserver.disconnect();
         }
         // Remove event listeners
         map.off('draw.create');
@@ -467,7 +468,7 @@ export function useMapPageDrawing({
   useEffect(() => {
     if (!map || !state.mapLoaded || state.drawingMode !== 'pin') return;
 
-    const handleMapClick = (e: any) => {
+    const handleMapClick = (e: MapboxMouseEvent) => {
       // Only handle if we're in pin mode
       if (state.drawingMode !== 'pin' || !draw.current) return;
       

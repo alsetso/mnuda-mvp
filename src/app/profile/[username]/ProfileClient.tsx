@@ -22,7 +22,7 @@ interface Post {
   title: string;
   content: string;
   excerpt: string | null;
-  images: any;
+  images: unknown;
   media_type: string;
   visibility: string;
   view_count: number;
@@ -283,7 +283,7 @@ export default function ProfileClient({
                   </div>
                   {/* Traits */}
                   <div className="mt-2">
-                    <AccountTraits traits={currentAccount.traits as any} />
+                    <AccountTraits traits={currentAccount.traits} />
                   </div>
                 </div>
               </div>
