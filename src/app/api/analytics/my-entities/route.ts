@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
           setAll() {
             // Route handlers can set cookies, but this endpoint doesn't need to
           },
-        } as any,
+        },
       }
     );
 
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
         .eq('profile_id', account.id)
         .in('visibility', ['public', 'members_only']);
 
-      const { data: posts } = await postsQuery.order('created_at', { ascending: false }) as { data: Array<{ id: string; title: string; slug: string | null; created_at: string }> | null; error: any };
+      const { data: posts } = await postsQuery.order('created_at', { ascending: false });
 
       if (posts) {
         for (const post of posts) {
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
             .from('page_views')
             .select('viewed_at, account_id')
             .eq('entity_type', 'post')
-            .eq('entity_id', post.id) as { data: Array<{ viewed_at: string; account_id: string | null }> | null; error: any };
+            .eq('entity_id', post.id);
 
           const filteredViews = pageViews?.filter(pv => {
             const viewDate = new Date(pv.viewed_at);
@@ -116,18 +116,18 @@ export async function GET(request: NextRequest) {
 
     // Get user's account/profile
     if (!entityType || entityType === 'account') {
-      const { data: accountData } = await supabase
+        const { data: accountData } = await supabase
         .from('accounts')
         .select('id, username, first_name, last_name, created_at')
         .eq('id', account.id)
-        .single() as { data: { id: string; username: string | null; first_name: string | null; last_name: string | null; created_at: string } | null; error: any };
+        .single();
 
       if (accountData) {
         const { data: pageViews } = await supabase
           .from('page_views')
           .select('viewed_at, account_id')
           .eq('entity_type', 'account')
-          .or(`entity_id.eq.${account.id},entity_slug.eq.${accountData.username || account.id}`) as { data: Array<{ viewed_at: string; account_id: string | null }> | null; error: any };
+          .or(`entity_id.eq.${account.id},entity_slug.eq.${accountData.username || account.id}`);
 
         const filteredViews = pageViews?.filter(pv => {
           if (dateFrom && new Date(pv.viewed_at) < new Date(dateFrom)) return false;
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
         .from('pages')
         .select('id, name, created_at')
         .eq('account_id', account.id)
-        .order('created_at', { ascending: false }) as { data: Array<{ id: string; name: string; created_at: string }> | null; error: any };
+        .order('created_at', { ascending: false });
 
       if (pages) {
         for (const page of pages) {
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
             .from('page_views')
             .select('viewed_at, account_id')
             .eq('entity_type', 'page')
-            .eq('entity_id', page.id) as { data: Array<{ viewed_at: string; account_id: string | null }> | null; error: any };
+            .eq('entity_id', page.id);
 
           const filteredViews = pageViews?.filter(pv => {
             const viewDate = new Date(pv.viewed_at);

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     // Get all unique city IDs from service_areas arrays
     const cityIds = new Set<string>();
-    (pages || []).forEach((page: any) => {
+    (pages || []).forEach((page: Page) => {
       if (page.service_areas && Array.isArray(page.service_areas)) {
         page.service_areas.forEach((id: string) => cityIds.add(id));
       }
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to include cities and category
-    const pagesList = (pages || []).map((page: any) => {
+    const pagesList = (pages || []).map((page: Page) => {
       let citiesArray: Array<{ id: string; name: string }> | null = null;
       
       if (page.service_areas && Array.isArray(page.service_areas) && page.service_areas.length > 0) {
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
         hours: hours?.trim() || null,
         service_areas: service_areas && service_areas.length > 0 ? service_areas : null,
         logo_url: logo_url?.trim() || null,
-      } as any)
+      })
       .select('*')
       .single();
 

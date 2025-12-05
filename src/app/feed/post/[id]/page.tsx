@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Fetch post for metadata - try slug first, then ID
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     
-    let post: any = null;
+    let post: Post | null = null;
     if (isUUID) {
       const result = await supabase
         .from('posts')
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     // Fetch account data (simple schema uses account_id directly)
-    let account: any = null;
+    let account: AccountInfo | null = null;
     if (post.account_id) {
       const { data: accountData } = await supabase
         .from('accounts')
@@ -163,7 +163,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-function generateStructuredData(post: any, id: string) {
+function generateStructuredData(post: Post, id: string) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mnuda.com';
   const account = post.accounts;
   const authorName = account 
@@ -309,8 +309,8 @@ export default async function FeedPostPage({ params }: Props) {
     // Check if id is a UUID format (8-4-4-4-12 hex pattern)
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     
-    let feedPost: any = null;
-    let feedPostError: any = null;
+    let feedPost: Post | null = null;
+    let feedPostError: { message: string; code?: string } | null = null;
 
     if (isUUID) {
       // Fetch by ID (simple schema uses UUID only, no slugs)
@@ -338,7 +338,7 @@ export default async function FeedPostPage({ params }: Props) {
     }
 
     // Fetch account data (simple schema uses account_id directly)
-    let accountInfo: any = null;
+    let accountInfo: AccountInfo | null = null;
     if (feedPost.account_id) {
       const { data: account } = await supabase
         .from('accounts')

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { Database } from '@/types/supabase';
+import type { PageStats, SupabaseRPCResponse } from '@/types/analytics';
 
 /**
  * GET /api/analytics/feed-stats
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
           setAll() {
             // Route handlers can set cookies, but this endpoint doesn't need to
           },
-        } as any,
+        },
       }
     );
 
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     // This function uses SECURITY DEFINER so it bypasses RLS
     const { data: stats, error } = await supabase.rpc('get_feed_stats', {
       p_hours: hours,
-    } as any) as { data: Array<{ total_loads: number; unique_visitors: number; accounts_active: number }> | null; error: any };
+    }) as SupabaseRPCResponse<PageStats[]>;
 
     if (error) {
       console.error('Error fetching feed stats:', error);

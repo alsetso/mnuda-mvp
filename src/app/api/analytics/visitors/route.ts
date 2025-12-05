@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/supabase';
+import type { Visitor } from '@/types/analytics';
 
 type EntityType = 'post' | 'city' | 'county' | 'account' | 'business';
 
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
           setAll() {
             // Route handlers can set cookies, but this endpoint doesn't need to
           },
-        } as any,
+        },
       }
     );
 

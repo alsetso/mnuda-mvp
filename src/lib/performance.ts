@@ -105,12 +105,15 @@ class PerformanceMonitor {
   private sendToAnalytics(metric: PerformanceMetric): void {
     // Implement your analytics service here
     // Example: Google Analytics, Sentry, etc.
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'performance', {
-        metric_name: metric.name,
-        metric_value: metric.value,
-        ...metric.metadata,
-      });
+    if (typeof window !== 'undefined') {
+      const gtag = (window as { gtag?: (command: string, targetId: string, config: Record<string, unknown>) => void }).gtag;
+      if (gtag) {
+        gtag('event', 'performance', {
+          metric_name: metric.name,
+          metric_value: metric.value,
+          ...metric.metadata,
+        });
+      }
     }
   }
 }

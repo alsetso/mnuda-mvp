@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { Database } from '@/types/supabase';
+import type { PageStats, SupabaseRPCResponse } from '@/types/analytics';
 
 /**
  * GET /api/analytics/business-stats
@@ -67,12 +68,12 @@ export async function GET(request: NextRequest) {
           setAll() {
             // Route handlers can set cookies, but this endpoint doesn't need to
           },
-        } as any,
+        },
       }
     );
 
-    let stats;
-    let error;
+    let stats: PageStats[] | null = null;
+    let error: { code?: string; message: string; details?: string; hint?: string } | null = null;
 
     // Get page statistics using the appropriate database function
     if (pageSlug) {
@@ -80,8 +81,8 @@ export async function GET(request: NextRequest) {
       const result = await supabase.rpc('get_page_stats', {
         p_page_slug: pageSlug,
         p_hours: hours,
-      } as any);
-      stats = result.data as any;
+      }) as SupabaseRPCResponse<PageStats[]>;
+      stats = result.data;
       error = result.error;
     } else {
       // Use id-based stats (for individual pages)
@@ -89,8 +90,8 @@ export async function GET(request: NextRequest) {
       const result = await supabase.rpc('get_page_stats_by_id', {
         p_entity_id: pageId,
         p_hours: hours,
-      } as any);
-      stats = result.data as any;
+      }) as SupabaseRPCResponse<PageStats[]>;
+      stats = result.data;
       error = result.error;
       
       console.log('[business-stats] RPC result:', {

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
           setAll() {
             // Route handlers can set cookies, but this endpoint doesn't need to
           },
-        } as any,
+        },
       }
     );
 
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
           setAll() {
             // Route handlers can set cookies, but this endpoint doesn't need to
           },
-        } as any,
+        },
       }
     );
 

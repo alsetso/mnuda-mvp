@@ -132,7 +132,7 @@ export async function PUT(
 
     // Transform map_data to structured columns if provided
     // The trigger will automatically populate PostGIS columns from map_geometry
-    const mapUpdateData: any = {};
+    const mapUpdateData: MapUpdateData = {};
     if (map_data !== undefined) {
       if (map_data === null) {
         // Clear all map data
@@ -175,7 +175,7 @@ export async function PUT(
     }
 
     // Update post - RLS verifies ownership
-    const updateData: any = {
+    const updateData: PostUpdateData = {
       ...(finalTitle !== null && { title: finalTitle }),
       content: content.trim(),
       ...(visibility && { visibility }),

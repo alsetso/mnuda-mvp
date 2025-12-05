@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
           setAll() {
             // Route handlers can set cookies, but this endpoint doesn't need to
           },
-        } as any,
+        },
       }
     );
 
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Format response
-    const formattedViews = (pageViews || []).map((pv: any) => ({
+    const formattedViews = (pageViews || []).map((pv: PageView) => ({
       id: pv.id,
       viewed_at: pv.viewed_at,
       account_id: pv.account_id,

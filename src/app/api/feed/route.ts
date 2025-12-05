@@ -108,8 +108,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch accounts separately if needed (gracefully handle errors)
-    const accountIds = [...new Set((posts || []).map((p: any) => p.account_id).filter(Boolean))];
-    let accountsMap = new Map();
+    const accountIds = [...new Set((posts || []).map((p: FeedPost) => p.account_id).filter(Boolean))];
+    let accountsMap = new Map<string, Account>();
     
     if (accountIds.length > 0) {
       const { data: accounts, error: accountsError } = await supabase
@@ -123,14 +123,14 @@ export async function GET(request: NextRequest) {
         // Continue without account data rather than failing
       } else if (accounts) {
         console.log(`Fetched ${accounts.length} accounts for ${accountIds.length} account IDs`);
-        accountsMap = new Map(accounts.map((a: any) => [a.id, a]));
+        accountsMap = new Map(accounts.map((a: Account) => [a.id, a]));
       } else {
         console.warn('No accounts returned for account IDs:', accountIds);
       }
     }
 
     // Enrich posts with account data and format map data
-    const enrichedPosts = (posts || []).map((post: any) => {
+    const enrichedPosts = (posts || []).map((post: FeedPost) => {
       // Build map_data from structured columns for backward compatibility
       let map_data = null;
       if (post.map_geometry || post.map_type) {
@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform map_data to structured columns if provided
-    const mapInsertData: any = {};
+    const mapInsertData: MapInsertData = {};
     if (map_data) {
       mapInsertData.map_type = map_data.type;
       mapInsertData.map_geometry = map_data.geometry;
@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert post - RLS verifies account ownership
-    const insertData: any = {
+    const insertData: PostInsertData = {
       account_id: finalAccountId,
       ...(finalTitle && { title: finalTitle }),
       content: content.trim(),

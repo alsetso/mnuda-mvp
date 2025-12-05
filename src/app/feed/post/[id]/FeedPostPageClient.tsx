@@ -62,7 +62,7 @@ export default function FeedPostPageClient({
   const [showEditModal, setShowEditModal] = useState(false);
 
   // Check if current user owns this post
-  const canEdit = user && post && account?.id === (post as any).account_id;
+  const canEdit = user && post && account?.id === (post as { account_id?: string }).account_id;
 
   const handlePostUpdate = async () => {
     // Refresh the post data after update

@@ -120,7 +120,7 @@ export async function POST(
     }
 
     // Insert new view
-    const viewData: any = {
+    const viewData: ViewData = {
       post_id: id,
       ip_address: ipAddress,
     };

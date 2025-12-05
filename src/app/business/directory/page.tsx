@@ -4,6 +4,7 @@ import SimplePageLayout from '@/components/SimplePageLayout';
 import { createServerClient } from '@/lib/supabaseServer';
 import BusinessesListClient from '@/components/businesses/BusinessesListClient';
 import PageStatsCard from '@/components/business/BusinessStatsCard';
+import type { Page } from '@/types/pages';
 
 export const metadata: Metadata = {
   title: 'Minnesota Pages Directory | Official State Pages Registry | MNUDA',
@@ -84,7 +85,7 @@ export default async function BusinessDirectoryPage() {
 
   // Get all unique city IDs from service_areas arrays
   const cityIds = new Set<string>();
-  (pages || []).forEach((page: any) => {
+  (pages || []).forEach((page: Page) => {
     if (page.service_areas && Array.isArray(page.service_areas)) {
       page.service_areas.forEach((id: string) => cityIds.add(id));
     }
@@ -104,7 +105,7 @@ export default async function BusinessDirectoryPage() {
   }
 
   // Transform the data to include cities and category
-  const businessesList: BusinessWithCities[] = (pages || []).map((page: any) => {
+  const businessesList: BusinessWithCities[] = (pages || []).map((page: Page) => {
     let citiesArray: Array<{ id: string; name: string }> | null = null;
     
     if (page.service_areas && Array.isArray(page.service_areas) && page.service_areas.length > 0) {

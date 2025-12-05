@@ -197,7 +197,7 @@ export async function PUT(
     }
 
     // Build update object (only include provided fields)
-    const updateData: any = {};
+    const updateData: PageUpdateData = {};
     if (name !== undefined) updateData.name = name.trim();
     if (category_id !== undefined) updateData.category_id = category_id || null;
     if (address !== undefined) updateData.address = address?.trim() || null;
