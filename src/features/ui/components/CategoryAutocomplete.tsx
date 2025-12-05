@@ -293,7 +293,7 @@ export default function CategoryAutocomplete({
               }`}
             >
               <PlusIcon className="w-4 h-4" />
-              <span>Create "{query.trim()}"</span>
+              <span>Create &quot;{query.trim()}&quot;</span>
             </button>
           )}
         </div>

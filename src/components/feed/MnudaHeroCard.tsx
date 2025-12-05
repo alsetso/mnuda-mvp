@@ -30,7 +30,7 @@ export default function MnudaHeroCard() {
             For the Love of Minnesota
           </p>
           <h3 className="text-xs font-semibold text-gray-900 mb-1">
-            The Platform for What's Under Development & Acquisition
+            The Platform for What&apos;s Under Development & Acquisition
           </h3>
         </div>
 
@@ -38,7 +38,7 @@ export default function MnudaHeroCard() {
         <div>
           <h4 className="text-[10px] font-semibold text-gray-900 mb-1 uppercase tracking-wide">About</h4>
           <p className="text-xs text-gray-600 leading-relaxed">
-            MNUDA is Minnesota's Real Estate Feed, connecting residents, investors, wholesalers, contractors, and businesses in one statewide network.
+            MNUDA is Minnesota&apos;s Real Estate Feed, connecting residents, investors, wholesalers, contractors, and businesses in one statewide network.
           </p>
         </div>
 

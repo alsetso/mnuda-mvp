@@ -278,7 +278,7 @@ export default async function CountiesListPage() {
                 This comprehensive directory provides access to detailed information about each county, including population data, area measurements, and links to individual county profiles.
               </p>
               <p className="text-xs text-gray-600 leading-relaxed">
-                Whether you're researching demographics, planning a visit, or looking for information about a specific Minnesota county, this directory serves as your complete guide to all counties in the Land of 10,000 Lakes.
+                Whether you&apos;re researching demographics, planning a visit, or looking for information about a specific Minnesota county, this directory serves as your complete guide to all counties in the Land of 10,000 Lakes.
               </p>
             </div>
             <div>

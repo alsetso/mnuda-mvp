@@ -35,7 +35,7 @@ export default function AboutMnUDAModal({ isOpen, onClose }: AboutMnUDAModalProp
                 <strong className="text-gray-900">off-market real estate development and acquisition opportunities</strong> across Minnesota.
               </p>
               <p className="text-gray-600 leading-relaxed">
-                We connect developers, investors, and real estate professionals with exclusive opportunities that aren't available through traditional channels.
+                We connect developers, investors, and real estate professionals with exclusive opportunities that aren&apos;t available through traditional channels.
               </p>
             </div>
 

@@ -163,7 +163,7 @@ export default function BusinessSetupGuide() {
                   </li>
                   <li className="flex items-start gap-1.5">
                     <CheckCircleIcon className="w-3.5 h-3.5 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <span>Register a "Doing Business As" (DBA) name if operating under a different name</span>
+                    <span>Register a &quot;Doing Business As&quot; (DBA) name if operating under a different name</span>
                   </li>
                 </ul>
                 <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded">
@@ -430,7 +430,7 @@ export default function BusinessSetupGuide() {
                   </li>
                   <li className="flex items-start gap-1.5">
                     <CheckCircleIcon className="w-3.5 h-3.5 text-gray-500 mt-0.5 flex-shrink-0" />
-                    <span><strong>Workers' Compensation:</strong> Required in Minnesota if you have employees</span>
+                    <span><strong>Workers&apos; Compensation:</strong> Required in Minnesota if you have employees</span>
                   </li>
                   <li className="flex items-start gap-1.5">
                     <CheckCircleIcon className="w-3.5 h-3.5 text-gray-500 mt-0.5 flex-shrink-0" />
@@ -559,7 +559,7 @@ export default function BusinessSetupGuide() {
                 <ShieldCheckIcon className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="text-xs font-semibold text-gray-900 mb-0.5">Minnesota Department of Employment</h4>
-                  <p className="text-xs text-gray-600 mb-1">Workers' compensation and unemployment</p>
+                  <p className="text-xs text-gray-600 mb-1">Workers&apos; compensation and unemployment</p>
                   <a 
                     href="https://www.deed.state.mn.us" 
                     target="_blank" 

@@ -310,7 +310,7 @@ export default function DrawPolygonMap({
         {/* Instructions Overlay */}
         {!currentPolygon && !isDrawing && (
           <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm text-sm text-gray-600">
-            Click "Start Drawing" to begin drawing a polygon
+            Click &quot;Start Drawing&quot; to begin drawing a polygon
           </div>
         )}
 

@@ -91,7 +91,7 @@ export function DrawCoordinatesDisplay({
       {drawMode === 'pan' && (
         <div className="mb-2.5 p-2 bg-white/10 rounded-lg border border-white/20">
           <p className="text-white/80 text-[11px]">
-            Pan mode: Click and drag to move the map. Switch to "Draw" to add points.
+            Pan mode: Click and drag to move the map. Switch to &quot;Draw&quot; to add points.
           </p>
         </div>
       )}

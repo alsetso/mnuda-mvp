@@ -115,7 +115,7 @@ export default function NotificationsClient() {
           {notifications.length === 0 ? (
             <div className="text-center py-6">
               <p className="text-xs font-medium text-gray-600 mb-1">No notifications yet</p>
-              <p className="text-xs text-gray-500">You'll see notifications here when they arrive</p>
+              <p className="text-xs text-gray-500">You&apos;ll see notifications here when they arrive</p>
             </div>
           ) : (
             <div className="space-y-2">

@@ -38,7 +38,7 @@ export default function ComingSoonModal({ isOpen, onClose }: ComingSoonModalProp
               </button>
             </div>
             <p className="text-xs text-gray-600 leading-relaxed">
-              This feature is currently under development. You'll be able to save your pins and areas soon!
+              This feature is currently under development. You&apos;ll be able to save your pins and areas soon!
             </p>
             <div className="mt-4 flex justify-end">
               <button

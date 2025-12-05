@@ -235,7 +235,7 @@ export default function OnboardingClient({ initialAccount, redirectTo }: Onboard
           </div>
           <h1 className="text-sm font-semibold text-gray-900">Complete Your Account</h1>
         </div>
-        <p className="text-xs text-gray-600">Let's get to know you better</p>
+        <p className="text-xs text-gray-600">Let&apos;s get to know you better</p>
       </div>
 
       {/* Form Card */}

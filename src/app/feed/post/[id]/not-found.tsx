@@ -6,7 +6,7 @@ export default function NotFound() {
       <div className="text-center max-w-md">
         <h1 className="text-4xl font-bold text-black mb-4">Post Not Found</h1>
         <p className="text-gray-600 mb-8">
-          The post you're looking for doesn't exist, has been removed, or is not publicly available.
+          The post you&apos;re looking for doesn&apos;t exist, has been removed, or is not publicly available.
         </p>
         <Link
           href="/"

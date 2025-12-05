@@ -264,7 +264,7 @@ export default async function CitiesListPage() {
                 This comprehensive directory provides access to detailed information about each city, including population data, county location, and links to individual city profiles.
               </p>
               <p className="text-xs text-gray-600 leading-relaxed">
-                Whether you're researching demographics, planning a visit, or looking for information about a specific Minnesota city, this directory serves as your complete guide to all cities in the Land of 10,000 Lakes.
+                Whether you&apos;re researching demographics, planning a visit, or looking for information about a specific Minnesota city, this directory serves as your complete guide to all cities in the Land of 10,000 Lakes.
               </p>
             </div>
             <div>

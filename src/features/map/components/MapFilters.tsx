@@ -272,7 +272,7 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
                 onChange={(e) => setFilters(prev => ({ ...prev, showOthersPins: e.target.checked }))}
                 className="w-3.5 h-3.5 rounded border-white/30 bg-white/10 text-gold-500 focus:ring-gold-500 focus:ring-1.5 transition-all"
               />
-              <span className="text-white/90 text-xs">Others' Pins</span>
+              <span className="text-white/90 text-xs">Others&apos; Pins</span>
             </label>
           </div>
         </div>

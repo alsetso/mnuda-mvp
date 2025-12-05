@@ -171,7 +171,7 @@ export default function FeedPostPageClient({
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-sm font-semibold text-gray-900 mb-3">Post Not Found</h1>
-          <p className="text-xs text-gray-600 mb-3">The post you're looking for doesn't exist or has been removed.</p>
+          <p className="text-xs text-gray-600 mb-3">The post you&apos;re looking for doesn&apos;t exist or has been removed.</p>
           <Link
             href="/"
             className="inline-block px-[10px] py-[10px] bg-gray-900 text-white font-medium rounded-md hover:bg-gray-700 transition-colors"

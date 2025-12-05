@@ -30,7 +30,7 @@ export default function LegalPage() {
             >
               <h2 className="text-2xl font-bold text-black mb-2">Terms of Service</h2>
               <p className="text-gray-700 leading-relaxed">
-                The terms and conditions governing your use of MNUDA's services, including our platform, tools, and features.
+                The terms and conditions governing your use of MNUDA&apos;s services, including our platform, tools, and features.
               </p>
             </Link>
 
@@ -50,7 +50,7 @@ export default function LegalPage() {
             >
               <h2 className="text-2xl font-bold text-black mb-2">Privacy Policy</h2>
               <p className="text-gray-700 leading-relaxed">
-                How we collect, use, protect, and share your personal information when you use MNUDA's services.
+                How we collect, use, protect, and share your personal information when you use MNUDA&apos;s services.
               </p>
             </Link>
 

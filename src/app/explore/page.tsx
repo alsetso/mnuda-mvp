@@ -239,7 +239,7 @@ export default async function ExplorePage() {
               Explore population data, geographic information, demographics, and unique characteristics of each location.
             </p>
             <p className="text-xs text-gray-500 max-w-3xl">
-              Whether you're researching demographics, planning a visit, or looking for detailed information about Minnesota locations, 
+              Whether you&apos;re researching demographics, planning a visit, or looking for detailed information about Minnesota locations, 
               our directories provide access to comprehensive data about all cities and counties in the Land of 10,000 Lakes.
             </p>
           </div>
@@ -458,7 +458,7 @@ export default async function ExplorePage() {
                 to smaller communities throughout Greater Minnesota.
               </p>
               <p className="text-xs text-gray-600 leading-relaxed mb-2">
-                Whether you're researching population trends, planning a relocation, studying demographics, or simply exploring the 
+                Whether you&apos;re researching population trends, planning a relocation, studying demographics, or simply exploring the 
                 diverse communities that make up Minnesota, our directories serve as your complete resource for location-based information. 
                 Explore <Link href="/explore/county/hennepin" className="text-gray-700 underline hover:text-gray-900 transition-colors">Hennepin County</Link> (home to Minneapolis), 
                 <Link href="/explore/county/ramsey" className="text-gray-700 underline hover:text-gray-900 transition-colors"> Ramsey County</Link> (home to St. Paul), 

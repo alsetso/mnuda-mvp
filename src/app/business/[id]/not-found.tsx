@@ -9,7 +9,7 @@ export default function BusinessNotFound() {
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">Page Not Found</h1>
             <p className="text-lg text-gray-600 mb-8">
-              The business you're looking for is not in the directory or may have been removed.
+              The business you&apos;re looking for is not in the directory or may have been removed.
             </p>
             <Link
               href="/business/directory"

@@ -109,7 +109,7 @@ export default function DataLogModal({ isOpen, onClose }: DataLogModalProps) {
               <div className="text-center py-8">
                 <p className="text-xs text-gray-500">No entries in data log</p>
                 <p className="text-[10px] text-gray-400 mt-1">
-                  Create pins or areas and click "Save & Complete" to add them here
+                  Create pins or areas and click &quot;Save & Complete&quot; to add them here
                 </p>
               </div>
             ) : (

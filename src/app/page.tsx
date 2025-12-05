@@ -44,7 +44,7 @@ export default async function Home() {
 
                 {/* Legal Text */}
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  By continuing, you agree to MNUDA's{' '}
+                  By continuing, you agree to MNUDA&apos;s{' '}
                   <Link href="/legal/user-agreement" className="text-gray-600 hover:text-gray-900 underline">User Agreement</Link>,{' '}
                   <Link href="/legal/privacy-policy" className="text-gray-600 hover:text-gray-900 underline">Privacy Policy</Link>, and{' '}
                   <Link href="/legal/community-guidelines" className="text-gray-600 hover:text-gray-900 underline">Community Guidelines</Link>.
