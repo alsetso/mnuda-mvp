@@ -16,6 +16,10 @@ export default async function SettingsPage() {
   // Redirect to onboarding if not onboarded (middleware also handles this, but this is a fallback)
   redirectToOnboardingIfNeeded(account);
 
+  if (!account) {
+    redirect('/account/onboarding');
+  }
+
   const userEmail = auth.email;
 
   return <SettingsClient initialAccount={account} userEmail={userEmail} />;

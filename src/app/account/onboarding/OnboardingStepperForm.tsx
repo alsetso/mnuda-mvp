@@ -7,21 +7,23 @@ import AccountTraits from '@/components/profile/AccountTraits';
 import { CheckCircleIcon, ArrowRightIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { validateEmail, validatePhone } from './utils/validation';
 
+type FormData = {
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  bio: string;
+  traits: AccountTrait[];
+  image_url: string | null;
+  cover_image_url: string | null;
+};
+
 interface OnboardingStepperFormProps {
-  formData: {
-    username: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string;
-    bio: string;
-    traits: AccountTrait[];
-    image_url: string | null;
-    cover_image_url: string | null;
-  };
+  formData: FormData;
   usernameAvailable: boolean | null;
   checkingUsername: boolean;
-  onFormChange: (field: keyof typeof formData, value: string | string[] | null) => void;
+  onFormChange: (field: keyof FormData, value: string | string[] | null) => void;
   onTraitToggle: (trait: AccountTrait) => void;
   checkUsername: (username: string) => void;
   saving: boolean;

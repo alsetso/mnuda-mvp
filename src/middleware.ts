@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import type { Database } from '@/types/supabase';
-import type { AccountRole, MemberRole } from '@/features/auth/services/memberService';
+import type { AccountRole } from '@/features/auth/services/memberService';
 
 // Route protection configuration
 const ROUTE_PROTECTION: Record<string, { 
@@ -152,9 +152,17 @@ export async function middleware(req: NextRequest) {
 
   // Create Supabase client to refresh session
   // Use getAll() pattern like other server-side code to ensure cookies are read correctly
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('[middleware] Missing Supabase environment variables');
+    return response;
+  }
+  
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {

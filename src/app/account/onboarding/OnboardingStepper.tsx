@@ -18,7 +18,13 @@ interface OnboardingStepperProps {
   usernameAvailable: boolean | null;
 }
 
-const STEPS = [
+type Step = {
+  readonly key: string;
+  readonly label: string;
+  readonly optional?: boolean;
+};
+
+const STEPS: readonly Step[] = [
   { key: 'cover_image_url', label: 'Cover Photo', optional: true },
   { key: 'image_url', label: 'Photo' },
   { key: 'name', label: 'Name' },
@@ -26,7 +32,7 @@ const STEPS = [
   { key: 'contact', label: 'Contact' },
   { key: 'traits', label: 'Traits', optional: true },
   { key: 'bio', label: 'Bio', optional: true },
-] as const;
+];
 
 export default function OnboardingStepper({ formData, usernameAvailable }: OnboardingStepperProps) {
   const isStepComplete = (stepKey: string): boolean => {
@@ -54,9 +60,9 @@ export default function OnboardingStepper({ formData, usernameAvailable }: Onboa
     <div className="bg-white rounded-md p-[10px] border border-gray-200">
       <h3 className="text-xs font-semibold text-gray-900 mb-3">Progress</h3>
       <div className="space-y-2">
-        {STEPS.map((step, index) => {
+        {STEPS.map((step) => {
           const isComplete = isStepComplete(step.key);
-          const isOptional = step.optional;
+          const isOptional = step.optional ?? false;
           
           return (
             <div key={step.key} className="flex items-center gap-2">
