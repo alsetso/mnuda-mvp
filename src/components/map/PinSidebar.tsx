@@ -131,7 +131,7 @@ export function PinSidebar({
             <div>
               <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Media</h3>
               <div className="grid grid-cols-2 gap-2">
-                {media.map((item: any, index: number) => {
+                {media.map((item: { url?: string; type?: string; [key: string]: unknown }, index: number) => {
                   const isBlobUrl = item.url?.startsWith('blob:');
                   return (
                   <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">

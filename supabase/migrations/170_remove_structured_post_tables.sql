@@ -103,3 +103,5 @@ COMMENT ON COLUMN public.posts.type IS
 
 -- Drop any remaining comments on structured tables (if they exist)
 -- These will fail silently if tables don't exist, which is fine
+
+

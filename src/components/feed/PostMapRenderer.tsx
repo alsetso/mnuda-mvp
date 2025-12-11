@@ -81,7 +81,7 @@ export default function PostMapRenderer({
         src={imageUrl}
         alt={`Map ${mapTypeLabel.toLowerCase()}`}
         fill
-        className="object-cover"
+        className={height === '100%' ? 'object-contain' : 'object-cover'}
         sizes="(max-width: 768px) 100vw, 600px"
         onError={() => setImageError(true)}
         unoptimized={mapData.screenshot?.startsWith('data:')} // Only unoptimized for base64 screenshots

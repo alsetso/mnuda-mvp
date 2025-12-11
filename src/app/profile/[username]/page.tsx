@@ -48,7 +48,7 @@ async function getAccountByUsername(username: string): Promise<Account | null> {
 
   const { data, error } = await supabase
     .from('accounts')
-    .select('id, username, first_name, last_name, image_url, cover_image_url, gender, age, bio, city_id, view_count, traits')
+    .select('id, username, first_name, last_name, image_url, cover_image_url, gender, bio, city_id, view_count, traits, plan')
     .eq('username', username)
     .single();
 
@@ -142,9 +142,10 @@ async function getAccountPosts(accountId: string, isOwnProfile: boolean): Promis
 export default async function ProfilePage({
   params,
 }: {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 }) {
-  const account = await getAccountByUsername(params.username);
+  const { username } = await params;
+  const account = await getAccountByUsername(username);
   
   if (!account) {
     notFound();

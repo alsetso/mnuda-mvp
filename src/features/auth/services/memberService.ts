@@ -14,7 +14,9 @@ export type AccountTrait =
   | 'realtor'
   | 'wholesaler'
   | 'lender'
-  | 'title';
+  | 'title'
+  | 'renter'
+  | 'businessowner';
 
 export type Plan = 'hobby' | 'pro';
 export type BillingMode = 'standard' | 'trial';
@@ -25,8 +27,8 @@ export interface Account {
   username: string | null;
   first_name: string | null;
   last_name: string | null;
-  gender: string | null;
-  age: number | null;
+  email: string | null;
+  phone: string | null;
   image_url: string | null;
   cover_image_url: string | null;
   bio: string | null;
@@ -49,8 +51,8 @@ export interface UpdateAccountData {
   username?: string | null;
   first_name?: string | null;
   last_name?: string | null;
-  gender?: string | null;
-  age?: number | null;
+  email?: string | null;
+  phone?: string | null;
   image_url?: string | null;
   cover_image_url?: string | null;
   bio?: string | null;
@@ -152,6 +154,25 @@ export class AccountService {
   }
 
   /**
+   * Validate email format
+   */
+  private static validateEmail(email: string | null | undefined): boolean {
+    if (!email || !email.trim()) return true; // Optional field
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  }
+
+  /**
+   * Validate phone format
+   */
+  private static validatePhone(phone: string | null | undefined): boolean {
+    if (!phone || !phone.trim()) return true; // Optional field
+    // E.164 format or US format: +1XXXXXXXXXX, (XXX) XXX-XXXX, XXX-XXX-XXXX, etc.
+    const phoneRegex = /^\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/;
+    return phoneRegex.test(phone.trim());
+  }
+
+  /**
    * Update the current user's account record
    */
   static async updateCurrentAccount(data: UpdateAccountData): Promise<Account> {
@@ -159,6 +180,16 @@ export class AccountService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
+      }
+
+      // Validate email format if provided
+      if (data.email !== undefined && !this.validateEmail(data.email)) {
+        throw new Error('Invalid email format');
+      }
+
+      // Validate phone format if provided
+      if (data.phone !== undefined && !this.validatePhone(data.phone)) {
+        throw new Error('Invalid phone format');
       }
 
       // Ensure account exists

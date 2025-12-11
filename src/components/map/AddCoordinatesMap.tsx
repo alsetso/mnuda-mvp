@@ -36,7 +36,7 @@ export default function AddCoordinatesMap({
   const marker = useRef<import('mapbox-gl').Marker | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [currentCoordinates, setCurrentCoordinates] = useState<Coordinates | null>(initialCoordinates || null);
@@ -313,9 +313,9 @@ export default function AddCoordinatesMap({
                 return response.json();
               })
               .then(data => {
-                const filteredFeatures = (data.features || []).filter((feature: any) => {
+                const filteredFeatures = (data.features || []).filter((feature: MapboxFeature) => {
                   const context = feature.context || [];
-                  const stateContext = context.find((c: any) => c.id && c.id.startsWith('region.'));
+                  const stateContext = context.find((c: { id?: string }) => c.id && c.id.startsWith('region.'));
                   return stateContext && (
                     stateContext.short_code === 'US-MN' ||
                     stateContext.text === 'Minnesota'
@@ -389,9 +389,9 @@ export default function AddCoordinatesMap({
       }
 
       const data = await response.json();
-      const filteredFeatures = (data.features || []).filter((feature: any) => {
+      const filteredFeatures = (data.features || []).filter((feature: MapboxFeature) => {
         const context = feature.context || [];
-        const stateContext = context.find((c: any) => c.id && c.id.startsWith('region.'));
+        const stateContext = context.find((c: { id?: string }) => c.id && c.id.startsWith('region.'));
         return stateContext && (
           stateContext.short_code === 'US-MN' ||
           stateContext.text === 'Minnesota'
@@ -417,7 +417,7 @@ export default function AddCoordinatesMap({
   };
 
   // Handle suggestion select - immediately add marker and fly to location
-  const handleSuggestionSelect = async (feature: any) => {
+  const handleSuggestionSelect = async (feature: MapboxFeature) => {
     const coordinates = {
       lng: feature.center[0],
       lat: feature.center[1],

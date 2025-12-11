@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
           first_viewed_at: filteredViews.length > 0 ? filteredViews[filteredViews.length - 1]?.viewed_at : null,
           last_viewed_at: filteredViews.length > 0 ? filteredViews[0]?.viewed_at : null,
           created_at: accountData.created_at,
-          url: accountData.username ? `/profile/${accountData.username}` : `/accounts/${accountData.id}`,
+          url: accountData.username ? `/profile/${accountData.username}` : null,
         });
       }
     }

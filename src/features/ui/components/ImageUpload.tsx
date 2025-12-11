@@ -9,6 +9,7 @@ import { useAuth } from '@/features/auth';
 export interface ImageUploadProps {
   value: string | string[] | null;
   onChange: (url: string | string[] | null) => void;
+  onError?: (error: string | null) => void;
   bucket: 'logos' | 'cover-photos' | 'members_business_logo' | 'profile-images';
   table: string;
   column: string;
@@ -22,6 +23,7 @@ export interface ImageUploadProps {
 export function ImageUpload({
   value,
   onChange,
+  onError,
   bucket,
   table,
   column,
@@ -31,7 +33,7 @@ export function ImageUpload({
   disabled = false,
   className = '',
 }: ImageUploadProps) {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,8 +46,18 @@ export function ImageUpload({
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    // Wait for auth to finish loading before checking user
+    if (authLoading) {
+      const errorMsg = 'Please wait for authentication to load';
+      setUploadError(errorMsg);
+      onError?.(errorMsg);
+      return;
+    }
+
     if (!user) {
-      setUploadError('You must be logged in to upload images');
+      const errorMsg = 'You must be logged in to upload images';
+      setUploadError(errorMsg);
+      onError?.(errorMsg);
       return;
     }
 
@@ -55,7 +67,9 @@ export function ImageUpload({
     if (multiple && maxImages) {
       const currentCount = Array.isArray(currentUrls) ? currentUrls.length : (currentUrls ? 1 : 0);
       if (currentCount + filesToUpload.length > maxImages) {
-        setUploadError(`Maximum ${maxImages} image${maxImages > 1 ? 's' : ''} allowed`);
+        const errorMsg = `Maximum ${maxImages} image${maxImages > 1 ? 's' : ''} allowed`;
+        setUploadError(errorMsg);
+        onError?.(errorMsg);
         return;
       }
     }
@@ -72,14 +86,18 @@ export function ImageUpload({
       for (const file of filesToProcess) {
         // Validate file type
         if (!file.type.startsWith('image/')) {
-          setUploadError('Please select valid image files');
+          const errorMsg = 'Please select valid image files';
+          setUploadError(errorMsg);
+          onError?.(errorMsg);
           setIsUploading(false);
           return;
         }
 
         // Validate file size (5MB)
         if (file.size > 5 * 1024 * 1024) {
-          setUploadError('Images must be smaller than 5MB');
+          const errorMsg = 'Images must be smaller than 5MB';
+          setUploadError(errorMsg);
+          onError?.(errorMsg);
           setIsUploading(false);
           return;
         }
@@ -98,7 +116,9 @@ export function ImageUpload({
 
         if (uploadError) {
           console.error('Upload error:', uploadError);
-          setUploadError(`Failed to upload ${file.name}: ${uploadError.message}`);
+          const errorMsg = `Failed to upload ${file.name}: ${uploadError.message}`;
+          setUploadError(errorMsg);
+          onError?.(errorMsg);
           setIsUploading(false);
           return;
         }
@@ -122,9 +142,12 @@ export function ImageUpload({
       }
 
       setUploadError(null);
+      onError?.(null);
     } catch (error) {
       console.error('Error uploading image:', error);
-      setUploadError('Failed to upload image. Please try again.');
+      const errorMsg = 'Failed to upload image. Please try again.';
+      setUploadError(errorMsg);
+      onError?.(errorMsg);
     } finally {
       setIsUploading(false);
       // Reset file input
@@ -238,7 +261,7 @@ export function ImageUpload({
         <button
           type="button"
           onClick={handleClick}
-          disabled={isUploading || (multiple && maxImages && Array.isArray(currentUrls) && currentUrls.length >= maxImages)}
+          disabled={isUploading || authLoading || (multiple && maxImages && Array.isArray(currentUrls) && currentUrls.length >= maxImages)}
           className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-gold-500 hover:bg-gold-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isUploading ? (

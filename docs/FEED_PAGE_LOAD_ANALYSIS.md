@@ -259,3 +259,5 @@ Complete breakdown of everything that loads when `/feed` page is accessed.
 4. Optimize posts query with proper joins
 5. Implement pagination cursor instead of offset
 6. Add loading skeletons for better perceived performance
+
+

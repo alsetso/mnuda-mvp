@@ -8,12 +8,29 @@ export interface MapboxMapInstance {
     mousemove: (e: MapboxMouseEvent) => void;
     mouseup: (e: MapboxMouseEvent) => void;
   };
+  removed?: boolean;
   _removed?: boolean;
   _drawObserver?: MutationObserver;
   _keyboardHandler?: (e: KeyboardEvent) => void;
   getSource: (sourceId: string) => { setData: (data: unknown) => void } | null;
   on: (event: string, handler: (e: unknown) => void) => void;
+  once: (event: string, handler: (e: unknown) => void) => void;
   off: (event: string, handler?: unknown) => void;
+  getCenter: () => { lng: number; lat: number };
+  getZoom: () => number;
+  setStyle: (style: string) => void;
+  setCenter: (center: [number, number] | { lng: number; lat: number }) => void;
+  setZoom: (zoom: number) => void;
+  flyTo: (options: {
+    center: [number, number];
+    zoom: number;
+    duration?: number;
+  }) => void;
+  easeTo: (options: {
+    pitch: number;
+    duration?: number;
+  }) => void;
+  remove: () => void;
 }
 
 export interface MapboxMouseEvent {
@@ -54,3 +71,5 @@ export interface MapboxFeature {
     [key: string]: unknown;
   }>;
 }
+
+

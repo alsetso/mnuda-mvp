@@ -66,3 +66,5 @@ COMMENT ON COLUMN public.cities.meta_description IS 'Custom SEO meta description
 COMMENT ON COLUMN public.cities.website_url IS 'Official city website URL (must start with http:// or https://)';
 COMMENT ON COLUMN public.cities.favorite IS 'Whether this city is marked as a favorite for special display';
 
+
+

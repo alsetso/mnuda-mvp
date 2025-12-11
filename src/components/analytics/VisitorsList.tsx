@@ -96,10 +96,15 @@ export default function VisitorsList({ entityType, entityId, entitySlug }: Visit
             ? `${visitor.account_first_name} ${visitor.account_last_name}`
             : visitor.account_username || visitor.account_first_name || 'Anonymous';
 
+          const Wrapper = visitor.account_username ? Link : 'div';
+          const wrapperProps = visitor.account_username 
+            ? { href: `/profile/${visitor.account_username}` }
+            : {};
+
           return (
-            <Link
+            <Wrapper
               key={visitor.account_id}
-              href={visitor.account_username ? `/profile/${visitor.account_username}` : `/accounts/${visitor.account_id}`}
+              {...wrapperProps}
               className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 transition-colors group"
             >
               {visitor.account_image_url ? (
@@ -129,7 +134,7 @@ export default function VisitorsList({ entityType, entityId, entitySlug }: Visit
                   {visitor.view_count > 1 && ` · ${visitor.view_count}`}
                 </p>
               </div>
-            </Link>
+            </Wrapper>
           );
         })}
       </div>

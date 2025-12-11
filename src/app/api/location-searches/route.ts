@@ -42,23 +42,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user's account and active profile (optional)
+    // Get user's account (optional)
     const { data: account } = await supabase
       .from('accounts')
       .select('id')
       .eq('user_id', user.id)
       .single();
-
-    let profileId: string | null = null;
-    if (account) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('account_id', account.id)
-        .limit(1)
-        .maybeSingle();
-      profileId = profile?.id || null;
-    }
 
     // Insert search record
     // Use location_searches table (simplified structure)
@@ -66,7 +55,7 @@ export async function POST(request: NextRequest) {
       .from('location_searches')
       .insert({
         user_id: user.id,
-        profile_id: profileId,
+        account_id: account?.id || null,
         place_name,
         lat: coordinates.lat,
         lng: coordinates.lng,

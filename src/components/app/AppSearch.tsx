@@ -267,53 +267,7 @@ export default function AppSearch({
           <MagnifyingGlassIcon className="w-5 h-5 text-white/70" />
         </div>
         
-        {/* Search Type Tags - Positioned to work with input */}
-        {activeSearchTypes.length > 0 && (
-          <div 
-            ref={tagsContainerRef}
-            className="absolute left-10 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-20 pointer-events-none"
-          >
-            {activeSearchTypes.map((type) => {
-              const config = searchTypeConfigs[type];
-              if (!config.enabled) return null;
-              
-              // Color mapping - Gold/beige for locations (matching MNUDA gold)
-              const colorMap: Record<SearchType, { bg: string; text: string }> = {
-                locations: { bg: 'rgba(194, 178, 137, 0.2)', text: '#C2B289' }, // MNUDA Gold/Beige
-                pins: { bg: 'rgba(168, 85, 247, 0.15)', text: 'rgb(147, 51, 234)' },
-                areas: { bg: 'rgba(34, 197, 94, 0.15)', text: 'rgb(22, 163, 74)' },
-                general: { bg: 'rgba(107, 114, 128, 0.15)', text: 'rgb(75, 85, 99)' },
-              };
-              
-              const colors = colorMap[type];
-              
-              return (
-                <div
-                  key={type}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium pointer-events-auto transition-all duration-200"
-                  style={{
-                    backgroundColor: colors.bg,
-                    color: colors.text,
-                    border: `1px solid ${colors.text}20`,
-                  }}
-                >
-                  <span>{config.label}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeSearchType(type);
-                    }}
-                    className="hover:opacity-60 transition-opacity duration-150"
-                    style={{ color: colors.text }}
-                  >
-                    <XMarkIcon className="w-3 h-3" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* Search Type Tags - UI removed, logic preserved */}
         
         <input
           ref={inputRef}
@@ -332,7 +286,7 @@ export default function AppSearch({
           }}
           onClick={handleInputClick}
           onFocus={handleInputFocus}
-          placeholder={activeSearchTypes.length > 0 ? '' : placeholder}
+          placeholder={placeholder}
           className="
             w-full py-2 relative z-10
             bg-transparent rounded-lg
@@ -343,9 +297,7 @@ export default function AppSearch({
           style={{
             borderWidth: '2px',
             borderColor: 'rgba(255, 255, 255, 0.1)',
-            paddingLeft: activeSearchTypes.length > 0 && tagContainerWidth > 0
-              ? `${tagContainerWidth + 16 + (isMapPage ? 35 : 0)}px` // Tag width + gap + extra for map page
-              : '2.5rem',
+            paddingLeft: '2.5rem',
           }}
         />
 
@@ -358,7 +310,7 @@ export default function AppSearch({
               onClick={() => setIsOpen(false)}
             />
             <div 
-              className="absolute top-full left-0 right-0 bg-black/95 backdrop-blur-md rounded-lg shadow-xl border border-header-focus z-[110] overflow-hidden"
+              className="absolute top-full left-0 right-0 bg-white rounded-lg shadow-xl border border-gray-200 z-[110] overflow-hidden"
               style={{
                 marginTop: '10px',
                 width: 'calc(100% + 20px)',
@@ -367,11 +319,11 @@ export default function AppSearch({
               }}
             >
               <div className="p-2.5 max-h-[60vh] overflow-y-auto">
-              {/* Location Suggestions - Dark mode design */}
+              {/* Location Suggestions */}
               {isMapPage && activeSearchTypes.includes('locations') && (
                 <div className="mb-2">
                   {isLoadingSuggestions ? (
-                    <div className="px-3 py-2 text-xs text-gray-400">Searching...</div>
+                    <div className="px-3 py-2 text-xs text-gray-500">Searching...</div>
                   ) : locationSuggestions.length > 0 ? (
                     <div className="space-y-0.5">
                       {locationSuggestions.map((suggestion, index) => (
@@ -381,8 +333,8 @@ export default function AppSearch({
                           onClick={() => handleLocationSelect(suggestion)}
                           className={`w-full text-left px-3 py-2 text-xs rounded transition-all duration-150 ${
                             index === selectedSuggestionIndex
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                              : 'text-gray-300 hover:bg-gray-800 border border-transparent'
+                              ? 'bg-gold-100 text-gold-700 border border-gold-300'
+                              : 'text-gray-700 hover:bg-gray-50 border border-transparent'
                           }`}
                         >
                           <div className="font-medium truncate">{suggestion.place_name}</div>
@@ -398,7 +350,7 @@ export default function AppSearch({
                       ))}
                     </div>
                   ) : query.length >= 2 && !isLoadingSuggestions ? (
-                    <div className="px-3 py-2 text-xs text-gray-400">No locations found</div>
+                    <div className="px-3 py-2 text-xs text-gray-500">No locations found</div>
                   ) : null}
                 </div>
               )}
@@ -406,22 +358,22 @@ export default function AppSearch({
               {/* Other Search Types - Future extensibility */}
               {activeSearchTypes.some(type => type !== 'locations') && (
                 <div className="mb-3">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Search other types...</p>
+                  <p className="text-xs font-medium text-gray-600 mb-2">Search other types...</p>
                   {/* Placeholder for future search types */}
                 </div>
               )}
 
-              {/* Recent Searches - Dark mode */}
+              {/* Recent Searches */}
               {recentSearches.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-2 px-1">
-                    <p className="text-xs font-medium text-gray-400">Recent searches</p>
+                    <p className="text-xs font-medium text-gray-600">Recent searches</p>
                     <button
                       type="button"
                       onClick={() => {
                         // Clear recent searches logic here
                       }}
-                      className="text-xs text-amber-400 hover:text-amber-300"
+                      className="text-xs text-gold-600 hover:text-gold-700"
                     >
                       Clear history
                     </button>
@@ -436,7 +388,7 @@ export default function AppSearch({
                           setIsOpen(false);
                           inputRef.current?.focus();
                         }}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-300 hover:bg-gray-800 rounded transition-colors"
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50 rounded transition-colors"
                       >
                         <ClockIcon className="w-4 h-4 text-gray-500" />
                         <span className="flex-1 text-left">{search.query}</span>

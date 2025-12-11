@@ -22,7 +22,7 @@ export default function PagesCard({ account }: PagesCardProps) {
             <span>Premium</span>
           </Link>
           <Link 
-            href="/account/advertise"
+            href="/ads"
             className="flex items-center gap-1.5 text-xs text-gray-700 hover:text-gray-900 transition-colors"
           >
             <div className="w-4 h-4 bg-gray-100 rounded-md flex items-center justify-center">

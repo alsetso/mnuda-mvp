@@ -17,6 +17,7 @@ export interface FeedPost {
     first_name: string | null;
     last_name: string | null;
     image_url: string | null;
+    plan?: 'hobby' | 'pro';
   };
 }
 
@@ -77,3 +78,4 @@ export interface ViewData {
   post_id: string;
   ip_address: string;
 }
+

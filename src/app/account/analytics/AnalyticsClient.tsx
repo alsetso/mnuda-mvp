@@ -114,7 +114,7 @@ export default function AnalyticsClient() {
         {/* Header */}
         <div className="mb-3">
           <div className="flex items-center gap-2 mb-1.5">
-            <div className="p-[10px] bg-gray-100 rounded-md">
+            <div className="p-[10px] bg-white border border-gray-200 rounded-md">
               <ChartBarIcon className="w-4 h-4 text-gray-700" />
             </div>
             <h1 className="text-sm font-semibold text-gray-900">Analytics</h1>

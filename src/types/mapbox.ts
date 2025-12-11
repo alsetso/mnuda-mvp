@@ -20,3 +20,5 @@ export interface MapboxFeature {
     [key: string]: unknown;
   }>;
 }
+
+

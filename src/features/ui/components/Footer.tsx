@@ -128,6 +128,14 @@ export default function Footer({ fixed = false, variant = 'light' }: FooterProps
                     Community Guidelines
                   </Link>
                 </li>
+                <li>
+                  <Link 
+                    href="/contact" 
+                    className={`text-xs transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    Contact
+                  </Link>
+                </li>
               </ul>
             </nav>
           </div>

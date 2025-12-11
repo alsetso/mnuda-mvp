@@ -73,3 +73,5 @@ COMMENT ON COLUMN public.counties.website_url IS 'Official county website URL (m
 COMMENT ON COLUMN public.counties.other_urls IS 'Additional URLs as JSON array. Format: ["url1", "url2", ...]';
 COMMENT ON COLUMN public.counties.favorite IS 'Whether this county is marked as a favorite for special display';
 
+
+

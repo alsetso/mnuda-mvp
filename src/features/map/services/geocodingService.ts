@@ -1,6 +1,7 @@
 // Consolidated geocoding service for all address coordinate lookups
 import { Address, AddressWithCoordinates, GeocodingResult, Coordinates } from '../types';
 import { MAP_CONFIG } from '../config';
+import type { MapboxFeature } from '@/types/mapbox';
 
 // Address suggestion interface for autocomplete
 export interface AddressSuggestion {
@@ -427,7 +428,7 @@ export class GeocodingService {
   }
 
   // Transform Mapbox features to AddressSuggestion format
-  private static transformMapboxFeatures(features: any[]): AddressSuggestion[] {
+  private static transformMapboxFeatures(features: MapboxFeature[]): AddressSuggestion[] {
     return features.map((feature, index) => {
       const [lng, lat] = feature.center;
       const addressComponents = this.parseAddressComponents(feature);
@@ -442,7 +443,7 @@ export class GeocodingService {
   }
 
   // Parse address components from Mapbox feature
-  private static parseAddressComponents(feature: any): Pick<AddressSuggestion, 'street' | 'city' | 'state' | 'zip'> {
+  private static parseAddressComponents(feature: MapboxFeature): Pick<AddressSuggestion, 'street' | 'city' | 'state' | 'zip'> {
     const context = feature.context || [];
     const contextMap = this.createContextMap(context);
     
@@ -453,7 +454,7 @@ export class GeocodingService {
     const zip = contextMap.postcode || '';
 
     // Normalize state
-    const regionContext = context.find((c: any) => c.id?.startsWith('region.'));
+    const regionContext = context.find((c: { id?: string }) => c.id?.startsWith('region.'));
     if (regionContext?.short_code) {
       const stateCode = regionContext.short_code.split('-')[1];
       if (stateCode) {

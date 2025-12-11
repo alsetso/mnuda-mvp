@@ -29,10 +29,10 @@ export default function IntroductionEditorModal({
     first_name: initialAccount.first_name || '',
     last_name: initialAccount.last_name || '',
     gender: initialAccount.gender || '',
-    age: initialAccount.age?.toString() || '',
     bio: initialAccount.bio || '',
     city_id: initialAccount.city_id || null,
     image_url: initialAccount.image_url || null,
+    cover_image_url: initialAccount.cover_image_url || null,
     traits: initialAccount.traits || [],
   });
   const [cities, setCities] = useState<City[]>([]);
@@ -41,6 +41,7 @@ export default function IntroductionEditorModal({
   const [isLoadingCities, setIsLoadingCities] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingCoverImage, setIsUploadingCoverImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCityName, setSelectedCityName] = useState<string | null>(null);
 
@@ -51,10 +52,10 @@ export default function IntroductionEditorModal({
         first_name: initialAccount.first_name || '',
         last_name: initialAccount.last_name || '',
         gender: initialAccount.gender || '',
-        age: initialAccount.age?.toString() || '',
         bio: initialAccount.bio || '',
         city_id: initialAccount.city_id || null,
         image_url: initialAccount.image_url || null,
+        cover_image_url: initialAccount.cover_image_url || null,
         traits: initialAccount.traits || [],
       });
       setCitySearchQuery('');
@@ -168,6 +169,58 @@ export default function IntroductionEditorModal({
     }
   };
 
+  const handleCoverImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be smaller than 5MB');
+      return;
+    }
+
+    setIsUploadingCoverImage(true);
+    setError(null);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(7);
+      const fileName = `${user.id}/accounts/cover/${timestamp}-${random}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('cover-photos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('cover-photos')
+        .getPublicUrl(fileName);
+
+      if (!urlData?.publicUrl) {
+        throw new Error('Failed to get image URL');
+      }
+
+      setFormData(prev => ({ ...prev, cover_image_url: urlData.publicUrl }));
+    } catch (err) {
+      console.error('Error uploading cover image:', err);
+      setError(err instanceof Error ? err.message : 'Failed to upload cover image');
+    } finally {
+      setIsUploadingCoverImage(false);
+    }
+  };
+
   const handleSave = async () => {
     setError(null);
     setIsSaving(true);
@@ -177,10 +230,10 @@ export default function IntroductionEditorModal({
         first_name: formData.first_name.trim() || null,
         last_name: formData.last_name.trim() || null,
         gender: formData.gender || null,
-        age: formData.age ? parseInt(formData.age) : null,
         bio: formData.bio.trim() || null,
         city_id: formData.city_id,
         image_url: formData.image_url,
+        cover_image_url: formData.cover_image_url,
         traits: formData.traits.length > 0 ? formData.traits : null,
       });
 
@@ -199,10 +252,10 @@ export default function IntroductionEditorModal({
       first_name: initialAccount.first_name || '',
       last_name: initialAccount.last_name || '',
       gender: initialAccount.gender || '',
-      age: initialAccount.age?.toString() || '',
       bio: initialAccount.bio || '',
       city_id: initialAccount.city_id || null,
       image_url: initialAccount.image_url || null,
+      cover_image_url: initialAccount.cover_image_url || null,
       traits: initialAccount.traits || [],
     });
     setCitySearchQuery('');
@@ -235,6 +288,51 @@ export default function IntroductionEditorModal({
               {error}
             </div>
           )}
+
+          {/* Cover Image */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              Cover Photo
+            </label>
+            <div className="relative w-full h-32 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+              {formData.cover_image_url ? (
+                <Image
+                  src={formData.cover_image_url}
+                  alt="Cover"
+                  fill
+                  className="object-cover"
+                  unoptimized={formData.cover_image_url.includes('supabase.co')}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <UserIcon className="w-8 h-8 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="mt-1.5 flex items-center gap-2">
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverImageUpload}
+                  className="hidden"
+                  disabled={isUploadingCoverImage || isSaving}
+                />
+                <span className="px-3 py-1.5 bg-gray-100 hover:bg-gray-50 rounded-md text-xs font-medium text-gray-700 transition-colors inline-block">
+                  {isUploadingCoverImage ? 'Uploading...' : formData.cover_image_url ? 'Change Cover' : 'Upload Cover'}
+                </span>
+              </label>
+              {formData.cover_image_url && (
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, cover_image_url: null }))}
+                  className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                  disabled={isSaving}
+                >
+                  Remove cover
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* Profile Photo */}
           <div>
@@ -312,41 +410,24 @@ export default function IntroductionEditorModal({
             </div>
           </div>
 
-          {/* Gender and Age */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label htmlFor="gender" className="block text-xs font-medium text-gray-700 mb-1.5">
-                Gender
-              </label>
-              <select
-                id="gender"
-                value={formData.gender}
-                onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                className="w-full px-[10px] py-1.5 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none text-xs"
-                disabled={isSaving}
-              >
-                <option value="">Select gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-                <option value="prefer_not_to_say">Prefer not to say</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="age" className="block text-xs font-medium text-gray-700 mb-1.5">
-                Age
-              </label>
-              <input
-                id="age"
-                type="number"
-                min="18"
-                value={formData.age}
-                onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
-                className="w-full px-[10px] py-1.5 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none text-xs"
-                placeholder="18+"
-                disabled={isSaving}
-              />
-            </div>
+          {/* Gender */}
+          <div>
+            <label htmlFor="gender" className="block text-xs font-medium text-gray-700 mb-1.5">
+              Gender
+            </label>
+            <select
+              id="gender"
+              value={formData.gender}
+              onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
+              className="w-full px-[10px] py-1.5 border border-gray-200 rounded-md focus:border-gray-500 focus:outline-none text-xs"
+              disabled={isSaving}
+            >
+              <option value="">Select gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
           </div>
 
           {/* Bio */}
@@ -433,22 +514,44 @@ export default function IntroductionEditorModal({
           </div>
 
           {/* Traits */}
-          <AccountTraits
-            traits={formData.traits}
-            editable={true}
-            onTraitToggle={(trait) => {
-              setFormData(prev => {
-                const currentTraits = prev.traits || [];
-                const isSelected = currentTraits.includes(trait);
-                return {
-                  ...prev,
-                  traits: isSelected
-                    ? currentTraits.filter(t => t !== trait)
-                    : [...currentTraits, trait],
-                };
-              });
-            }}
-          />
+          <div>
+            <AccountTraits
+              traits={formData.traits}
+              editable={true}
+              maxTraits={3}
+              onTraitToggle={(trait) => {
+                setFormData(prev => {
+                  const currentTraits = prev.traits || [];
+                  const isSelected = currentTraits.includes(trait);
+                  
+                  // If deselecting, remove it
+                  if (isSelected) {
+                    return {
+                      ...prev,
+                      traits: currentTraits.filter(t => t !== trait),
+                    };
+                  }
+                  
+                  // If selecting and at limit, don't add
+                  if (currentTraits.length >= 3) {
+                    return prev;
+                  }
+                  
+                  // Add trait
+                  return {
+                    ...prev,
+                    traits: [...currentTraits, trait],
+                  };
+                });
+              }}
+            />
+            <p className="text-xs text-gray-500 mt-1.5">
+              {formData.traits.length}/3 traits selected
+              {formData.traits.length >= 3 && (
+                <span className="text-gray-400 ml-1">(maximum reached)</span>
+              )}
+            </p>
+          </div>
         </div>
 
         {/* Actions */}
@@ -456,7 +559,7 @@ export default function IntroductionEditorModal({
           <div className="flex items-center gap-2">
             <button
               onClick={handleSave}
-              disabled={isSaving || isUploadingImage}
+              disabled={isSaving || isUploadingImage || isUploadingCoverImage}
               className="flex-1 px-3 py-1.5 bg-gray-900 text-white rounded-md hover:bg-gray-700 transition-colors text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? 'Saving...' : 'Save Changes'}

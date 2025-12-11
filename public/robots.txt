@@ -7,6 +7,7 @@ Sitemap: https://mnuda.com/sitemap.xml
 Sitemap: https://mnuda.com/sitemap-for-sale-mn.xml
 Sitemap: https://mnuda.com/sitemap-for-rent-mn.xml
 Sitemap: https://mnuda.com/sitemap-feed.xml
+Sitemap: https://mnuda.com/sitemap-pages.xml
 
 # Disallow admin and API routes
 Disallow: /api/

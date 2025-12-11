@@ -300,10 +300,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+/**
+ * useAuth - Hook to access authentication context
+ * 
+ * Returns auth context if available, or a safe default if used outside provider.
+ * This prevents crashes during SSR or when component tree is still mounting.
+ */
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
+  
+  // If context is undefined, return safe defaults instead of throwing
+  // This can happen during SSR, initial mount, or if component is outside provider
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    if (typeof window !== 'undefined') {
+      // Only warn in browser (not during SSR)
+      console.warn('useAuth called outside AuthProvider - returning default values');
+    }
+    
+    // Return safe defaults that won't crash the app
+    return {
+      user: null,
+      isLoading: true,
+      signIn: async () => {
+        throw new Error('AuthProvider not available');
+      },
+      signUp: async () => {
+        throw new Error('AuthProvider not available');
+      },
+      signInWithOtp: async () => {
+        throw new Error('AuthProvider not available');
+      },
+      signUpWithOtp: async () => {
+        throw new Error('AuthProvider not available');
+      },
+      signInWithMagicLink: async () => {
+        throw new Error('AuthProvider not available');
+      },
+      signUpWithMagicLink: async () => {
+        throw new Error('AuthProvider not available');
+      },
+      verifyOtp: async () => {
+        throw new Error('AuthProvider not available');
+      },
+      signOut: async () => {
+        throw new Error('AuthProvider not available');
+      },
+    };
   }
+  
   return context;
 }

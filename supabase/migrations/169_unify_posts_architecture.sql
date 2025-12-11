@@ -278,3 +278,5 @@ COMMENT ON COLUMN public.posts.full_address IS
 -- ============================================================================
 -- STEP 12: Grant permissions (structured tables removed - only simple posts)
 -- ============================================================================
+
+

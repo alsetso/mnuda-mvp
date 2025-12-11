@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getServerAuth } from '@/lib/authServer';
 import { getServerAccount } from '@/lib/accountServer';
+import { redirectToOnboardingIfNeeded } from '@/lib/onboardingRedirect';
 import SettingsClient from './SettingsClient';
 
 export default async function SettingsPage() {
@@ -11,11 +12,11 @@ export default async function SettingsPage() {
   }
 
   const account = await getServerAccount();
-  const userEmail = auth.email;
+  
+  // Redirect to onboarding if not onboarded (middleware also handles this, but this is a fallback)
+  redirectToOnboardingIfNeeded(account);
 
-  if (!account) {
-    redirect('/account/onboarding?message=Please complete your profile to access settings');
-  }
+  const userEmail = auth.email;
 
   return <SettingsClient initialAccount={account} userEmail={userEmail} />;
 }

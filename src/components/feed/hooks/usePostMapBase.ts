@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { loadMapboxGL } from '@/features/map/utils/mapboxLoader';
 import { MAP_CONFIG } from '@/features/map/config';
+import type { MapboxFeature, MapboxSuggestion } from '@/types/mapbox-events';
 
 export interface UsePostMapBaseReturn {
   mapContainer: React.RefObject<HTMLDivElement>;
@@ -8,12 +9,12 @@ export interface UsePostMapBaseReturn {
   mapLoaded: boolean;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  suggestions: any[];
+  suggestions: MapboxFeature[];
   showSuggestions: boolean;
   setShowSuggestions: (show: boolean) => void;
   isSearching: boolean;
   searchLocations: (query: string) => Promise<void>;
-  handleSuggestionSelect: (suggestion: any) => void;
+  handleSuggestionSelect: (suggestion: MapboxSuggestion) => void;
 }
 
 export function usePostMapBase(isOpen: boolean): UsePostMapBaseReturn {
@@ -21,7 +22,7 @@ export function usePostMapBase(isOpen: boolean): UsePostMapBaseReturn {
   const map = useRef<import('mapbox-gl').Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<MapboxFeature[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -62,7 +63,7 @@ export function usePostMapBase(isOpen: boolean): UsePostMapBaseReturn {
   }, []);
 
   // Handle suggestion select
-  const handleSuggestionSelect = useCallback((suggestion: any) => {
+  const handleSuggestionSelect = useCallback((suggestion: MapboxSuggestion) => {
     const [lng, lat] = suggestion.center;
     setSearchQuery(suggestion.place_name);
     setShowSuggestions(false);

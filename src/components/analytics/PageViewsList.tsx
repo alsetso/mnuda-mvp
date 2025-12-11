@@ -125,21 +125,36 @@ export default function PageViewsList({
               className="flex items-center gap-2 p-[10px] rounded-md hover:bg-gray-50 transition-colors"
             >
               {account?.image_url ? (
-                <Link
-                  href={account.username ? `/profile/${account.username}` : `/accounts/${account.id}`}
-                  className="flex-shrink-0"
-                >
-                  <div className="w-7 h-7 rounded-full bg-gray-100 overflow-hidden">
-                    <Image
-                      src={account.image_url}
-                      alt={displayName}
-                      width={28}
-                      height={28}
-                      className="w-full h-full object-cover rounded-full"
-                      unoptimized={account.image_url.includes('supabase.co')}
-                    />
+                account.username ? (
+                  <Link
+                    href={`/profile/${account.username}`}
+                    className="flex-shrink-0"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-gray-100 overflow-hidden">
+                      <Image
+                        src={account.image_url}
+                        alt={displayName}
+                        width={28}
+                        height={28}
+                        className="w-full h-full object-cover rounded-full"
+                        unoptimized={account.image_url.includes('supabase.co')}
+                      />
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="flex-shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-gray-100 overflow-hidden">
+                      <Image
+                        src={account.image_url}
+                        alt={displayName}
+                        width={28}
+                        height={28}
+                        className="w-full h-full object-cover rounded-full"
+                        unoptimized={account.image_url.includes('supabase.co')}
+                      />
+                    </div>
                   </div>
-                </Link>
+                )
               ) : (
                 <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                   {account ? (
@@ -153,12 +168,16 @@ export default function PageViewsList({
               )}
               <div className="flex-1 min-w-0">
                 {account ? (
-                  <Link
-                    href={account.username ? `/profile/${account.username}` : `/accounts/${account.id}`}
-                    className="text-xs font-medium text-gray-900 hover:text-gray-700 transition-colors block truncate"
-                  >
-                    {displayName}
-                  </Link>
+                  account.username ? (
+                    <Link
+                      href={`/profile/${account.username}`}
+                      className="text-xs font-medium text-gray-900 hover:text-gray-700 transition-colors block truncate"
+                    >
+                      {displayName}
+                    </Link>
+                  ) : (
+                    <p className="text-xs font-medium text-gray-900 truncate">{displayName}</p>
+                  )
                 ) : (
                   <p className="text-xs font-medium text-gray-900 truncate">{displayName}</p>
                 )}

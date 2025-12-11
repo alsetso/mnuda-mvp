@@ -21,3 +21,5 @@ export interface MarkNotificationReadParams {
   notification_id?: string;
   mark_all_read?: boolean;
 }
+
+

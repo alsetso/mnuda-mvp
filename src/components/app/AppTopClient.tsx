@@ -335,7 +335,7 @@ export default function AppTopClient({
                     : 'text-gray-300 hover:text-gold-400 hover:bg-header-focus/60 border-transparent hover:border-header-focus'
                 }`}>
                   <Link
-                    href="/account"
+                    href="/account/settings"
                     className="flex items-center space-x-2 flex-1 min-w-0"
                     onClick={() => setIsAccountMenuOpen(false)}
                   >

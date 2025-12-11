@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import AppSearch from '@/components/app/AppSearch';
+import type { MapboxMetadata } from '@/types/mapbox';
 import {
   MapIcon,
   Squares2X2Icon,
@@ -24,7 +25,7 @@ interface MapToolbarProps {
   className?: string;
   mapStyle?: string;
   onStyleChange?: (style: string) => void;
-  onLocationSelect?: (coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: any) => void;
+  onLocationSelect?: (coordinates: { lat: number; lng: number }, placeName: string, mapboxMetadata?: MapboxMetadata) => void;
   is3DMode?: boolean;
   on3DToggle?: (is3D: boolean) => void;
   onFindMe?: () => void;

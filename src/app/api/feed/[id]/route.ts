@@ -39,7 +39,7 @@ export async function GET(
     // Fetch account data
     const { data: account } = await supabase
       .from('accounts')
-      .select('id, first_name, last_name, image_url')
+      .select('id, first_name, last_name, image_url, plan')
       .eq('id', post.account_id)
       .single();
 
@@ -200,7 +200,7 @@ export async function PUT(
     // Fetch account data
     const { data: account } = await supabase
       .from('accounts')
-      .select('id, first_name, last_name, image_url')
+      .select('id, first_name, last_name, image_url, plan')
       .eq('id', post.account_id)
       .single();
 
@@ -236,6 +236,58 @@ export async function PUT(
     return NextResponse.json({ post: enrichedPost });
   } catch (error) {
     console.error('Error in feed PUT:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/feed/[id]
+ * Delete a post - RLS verifies ownership
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const cookieStore = await cookies();
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll: () => cookieStore.getAll(),
+          set: () => {},
+          remove: () => {},
+        },
+      }
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Verify ownership via RLS - attempt to delete
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Delete error:', error);
+      return NextResponse.json(
+        { error: 'Failed to delete post', details: error.message },
+        { status: error.code === 'PGRST116' ? 404 : 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error in feed DELETE:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

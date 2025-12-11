@@ -79,6 +79,14 @@ export default function CompactFooter() {
               Community Guidelines
             </Link>
           </li>
+          <li>
+            <Link 
+              href="/contact" 
+              className="text-[10px] text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Contact
+            </Link>
+          </li>
         </ul>
       </div>
 

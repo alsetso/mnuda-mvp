@@ -73,9 +73,10 @@ export interface FeedPostData {
   map_screenshot?: string | null;
   // Legacy map_data for backward compatibility
   map_data?: { 
-    type: 'pin' | 'area'; 
+    type: 'pin' | 'area' | 'both'; 
     geometry: GeoJSON.Point | GeoJSON.Polygon | GeoJSON.MultiPolygon;
     center?: [number, number];
+    polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon; // For 'both' type
     screenshot?: string;
   } | null;
   created_at: string;
@@ -85,6 +86,8 @@ export interface FeedPostData {
     first_name?: string | null;
     last_name?: string | null;
     image_url?: string | null;
+    username?: string | null;
+    plan?: 'hobby' | 'pro';
   } | null;
 }
 
@@ -98,7 +101,7 @@ export default function FeedPost({ post, onUpdate, disableNavigation = false }: 
   const router = useRouter();
 
   // Memoize derived data for performance
-  const account = useMemo(() => (post as { accounts?: { id: string; first_name: string | null; last_name: string | null; image_url: string | null } | null }).accounts, [(post as { accounts?: { id: string; first_name: string | null; last_name: string | null; image_url: string | null } | null }).accounts]);
+  const account = useMemo(() => (post as { accounts?: { id: string; first_name: string | null; last_name: string | null; image_url: string | null; username: string | null; plan?: 'hobby' | 'pro' } | null }).accounts, [(post as { accounts?: { id: string; first_name: string | null; last_name: string | null; image_url: string | null; username: string | null; plan?: 'hobby' | 'pro' } | null }).accounts]);
   // Display name from account (first_name + last_name) or fallback to 'User'
   const displayName = useMemo(() => {
     if (account?.first_name || account?.last_name) {
@@ -119,22 +122,32 @@ export default function FeedPost({ post, onUpdate, disableNavigation = false }: 
   const hasMap = useMemo(() => !!(post.map_geometry || post.map_data || post.map_screenshot), [post.map_geometry, post.map_data, post.map_screenshot]);
   const showMediaLink = useMemo(() => validMedia.length > 0 && hasMap, [validMedia.length, hasMap]);
   const postUrl = useMemo(() => getPostUrl({ id: post.id, slug: undefined }), [post.id]);
-  // Profile URL - use account ID if no username available
+  // Profile URL - use profile username or account username if available
   const profileUrl = useMemo(() => {
     const profiles = (post as { profiles?: { username?: string } | null }).profiles;
     if (profiles?.username) {
       return getProfileUrl(profiles.username);
     }
-    // Fallback to account ID if no profile username
-    return account?.id ? `/accounts/${account.id}` : '#';
-  }, [(post as { profiles?: { username?: string } | null }).profiles?.username, account?.id]);
+    // Check if account has username (accounts should have usernames after onboarding)
+    const accountWithUsername = account as { username?: string | null } | null;
+    if (accountWithUsername?.username) {
+      return getProfileUrl(accountWithUsername.username);
+    }
+    // No username available - return non-clickable fallback
+    return '#';
+  }, [(post as { profiles?: { username?: string } | null }).profiles?.username, (account as { username?: string | null } | null)?.username]);
   const locationText = useMemo(() => {
+    // If hidePin is true, only show city
+    if (post.map_hide_pin) {
+      return post.city || '';
+    }
+    // Otherwise show city, county, state as normal
     const parts: string[] = [];
     if (post.city) parts.push(post.city);
     if (post.county) parts.push(post.county);
     if (post.state) parts.push(post.state);
     return parts.length > 0 ? parts.join(', ') : '';
-  }, [post.city, post.county, post.state]);
+  }, [post.city, post.county, post.state, post.map_hide_pin]);
   // Profile type label removed - using account data only
 
   const handlePostClick = useCallback(() => {
@@ -181,9 +194,16 @@ export default function FeedPost({ post, onUpdate, disableNavigation = false }: 
                   className="block"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <h3 className="font-medium text-gray-900 hover:text-gray-700 hover:underline inline text-xs">
-                    {displayName}
-                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-medium text-gray-900 hover:text-gray-700 hover:underline inline text-xs">
+                      {displayName}
+                    </h3>
+                    {account?.plan === 'pro' && (
+                      <span className="px-1.5 py-0.5 bg-[#D4AF37] text-white text-[10px] font-semibold rounded uppercase tracking-wide" title="Pro Member">
+                        Pro
+                      </span>
+                    )}
+                  </div>
                 </Link>
               </div>
 
@@ -217,9 +237,9 @@ export default function FeedPost({ post, onUpdate, disableNavigation = false }: 
                 {locationText && (
                   <>
                     <span aria-hidden="true">·</span>
-                    <div className="flex items-center gap-1 flex-wrap" aria-label="Location">
+                    <div className="flex items-center gap-1 min-w-0 max-w-[200px]" aria-label="Location">
                       <MapPinIcon className="w-3 h-3 flex-shrink-0 text-gray-400" aria-hidden="true" />
-                      <span className="text-xs text-gray-600 font-medium">
+                      <span className="text-xs text-gray-600 font-medium truncate">
                         {locationText}
                       </span>
                     </div>
@@ -330,10 +350,43 @@ export default function FeedPost({ post, onUpdate, disableNavigation = false }: 
         <div className="px-[10px] pb-2">
           <PostMapRenderer 
             mapData={{
-              type: post.map_type || post.map_data?.type || 'pin',
+              type: (() => {
+                // map_data is the source of truth - use its type directly
+                if (post.map_data?.type) {
+                  return post.map_data.type;
+                }
+                // Fallback to explicit map_type from database columns
+                if (post.map_type) {
+                  return post.map_type;
+                }
+                // Infer from geometry if no type specified
+                if (post.map_data?.geometry) {
+                  const geometry = post.map_data.geometry;
+                  if (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon') {
+                    // If there's also a center, it's 'both', otherwise 'area'
+                    return post.map_data.center ? 'both' : 'area';
+                  }
+                  if (geometry.type === 'Point') {
+                    return 'pin';
+                  }
+                }
+                // Check new format columns
+                if (post.map_geometry) {
+                  if (post.map_geometry.type === 'Polygon' || post.map_geometry.type === 'MultiPolygon') {
+                    return post.map_center ? 'both' : 'area';
+                  }
+                  if (post.map_geometry.type === 'Point') {
+                    return 'pin';
+                  }
+                }
+                // Default fallback
+                return 'pin';
+              })(),
               geometry: post.map_geometry || post.map_data?.geometry,
               center: post.map_data?.center || undefined,
               screenshot: post.map_screenshot || post.map_data?.screenshot,
+              hidePin: post.map_hide_pin || post.map_data?.hidePin || false,
+              polygon: post.map_data?.polygon,
             }}
             height="300px"
             onClick={() => !disableNavigation && router.push(postUrl)}

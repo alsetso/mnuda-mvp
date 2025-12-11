@@ -22,7 +22,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/features/auth';
 import { AccountService, Account } from '@/features/auth';
-import { supabase } from '@/lib/supabase';
 import { usePageView } from '@/hooks/usePageView';
 import BusinessSetupGuide from '@/components/business/BusinessSetupGuide';
 import PlatformServices from '@/components/business/PlatformServices';
@@ -38,21 +37,6 @@ interface Page {
   logo_url: string | null;
 }
 
-async function fetchUserPages(accountId: string): Promise<Page[]> {
-  try {
-    const { data, error } = await supabase
-      .from('pages')
-      .select('id, name, type, industry, account_id, created_at, logo_url')
-      .eq('account_id', accountId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching pages:', error);
-    return [];
-  }
-}
 
 export default function BusinessPageClient() {
   const { user } = useAuth();
@@ -77,11 +61,7 @@ export default function BusinessPageClient() {
       try {
         const accountData = await AccountService.getCurrentAccount();
         setAccount(accountData);
-        
-        if (accountData) {
-          const pagesData = await fetchUserPages(accountData.id);
-          setPages(pagesData || []);
-        }
+        setPages([]);
       } catch (error) {
         console.error('Error loading data:', error);
         setPages([]);

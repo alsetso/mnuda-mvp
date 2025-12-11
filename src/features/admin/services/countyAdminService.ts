@@ -1,6 +1,7 @@
 import { BaseAdminService } from './baseAdminService';
 import { createServerClientWithAuth } from '@/lib/supabaseServer';
 import { withAuthRetry } from '@/lib/authHelpers';
+import type { GeoJSON } from 'geojson';
 
 export interface County {
   id: string;
@@ -21,7 +22,7 @@ export interface CreateCountyData {
   name: string;
   population: number;
   area_sq_mi: number;
-  polygon?: Record<string, any> | null;
+  polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   meta_title?: string | null;
   meta_description?: string | null;
   website_url?: string | null;
@@ -33,7 +34,7 @@ export interface UpdateCountyData {
   name?: string;
   population?: number;
   area_sq_mi?: number;
-  polygon?: Record<string, any> | null;
+  polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   meta_title?: string | null;
   meta_description?: string | null;
   website_url?: string | null;

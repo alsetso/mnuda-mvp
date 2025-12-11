@@ -149,49 +149,67 @@ export default function OnboardingClient({ initialAccount, redirectTo }: Onboard
     }
 
     try {
-      // Update account with username and other fields
+      // Update account using AccountService (handles auth, validation, error handling)
+      await AccountService.updateCurrentAccount({
+        username: formData.username.trim(),
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        gender: formData.gender,
+        age: ageNum,
+        image_url: formData.image_url,
+      });
+
+      // Set onboarded flag (use existing account.id if available, otherwise fetch)
       const supabase = (await import('@/lib/supabase')).supabase;
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        throw new Error('Not authenticated');
+      const accountId = account?.id;
+      
+      if (!accountId) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) {
+          throw new Error('Not authenticated');
+        }
+        const { data: accountRecord } = await supabase
+          .from('accounts')
+          .select('id')
+          .eq('user_id', authUser.id)
+          .limit(1)
+          .single();
+        if (!accountRecord) {
+          throw new Error('Account not found');
+        }
+        const { error: onboardError } = await supabase
+          .from('accounts')
+          .update({ onboarded: true })
+          .eq('id', accountRecord.id);
+        if (onboardError) throw onboardError;
+      } else {
+        const { error: onboardError } = await supabase
+          .from('accounts')
+          .update({ onboarded: true })
+          .eq('id', accountId);
+        if (onboardError) throw onboardError;
       }
 
-      const { data: accountRecord } = await supabase
-        .from('accounts')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .limit(1)
-        .single();
-
-      if (!accountRecord) {
-        throw new Error('Account not found');
-      }
-
-      // Update account with all fields including username
-      const { error: updateError } = await supabase
-        .from('accounts')
-        .update({
-          username: formData.username.trim(),
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim(),
-          gender: formData.gender,
-          age: ageNum,
-          image_url: formData.image_url,
-          onboarded: true,
-        })
-        .eq('id', accountRecord.id);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      // Use hard redirect (window.location) to bypass React Router and ensure clean state
-      // This prevents any potential race conditions or cached state issues
+      // Use Next.js router with revalidation for clean state
       const redirectPath = redirectTo || '/map';
-      window.location.href = redirectPath;
+      router.push(redirectPath);
+      router.refresh();
     } catch (error) {
       console.error('Error saving account:', error);
-      setError(`Failed to save account: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Handle specific error cases
+      let errorMessage = 'Failed to save account';
+      if (error instanceof Error) {
+        if (error.message.includes('username') || error.message.includes('unique')) {
+          errorMessage = 'Username is already taken. Please choose another.';
+        } else if (error.message.includes('constraint')) {
+          errorMessage = 'Invalid data provided. Please check your inputs.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
       setSaving(false);
     }
   };
@@ -228,7 +246,7 @@ export default function OnboardingClient({ initialAccount, redirectTo }: Onboard
       {/* Header */}
       <div className="mb-3">
         <div className="flex items-center gap-2 mb-1.5">
-          <div className="p-[10px] bg-gray-100 rounded-md">
+          <div className="p-[10px] bg-white border border-gray-200 rounded-md">
             <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M6.343 6.343l-.707.707m12.728 0l-.707-.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>

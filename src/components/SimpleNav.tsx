@@ -30,7 +30,6 @@ export default function SimpleNav() {
   const { selectedProfile } = useProfile();
   const [account, setAccount] = useState<Account | null>(null);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-  const [isNotificationMenuOpen, setIsNotificationMenuOpen] = useState(false);
   const {
     notifications,
     loading: notificationsLoading,
@@ -42,7 +41,6 @@ export default function SimpleNav() {
     autoLoad: !!user && !!account,
   });
   const accountContainerRef = useRef<HTMLDivElement>(null);
-  const notificationContainerRef = useRef<HTMLDivElement>(null);
 
   // Load account data
   useEffect(() => {
@@ -70,18 +68,15 @@ export default function SimpleNav() {
       if (accountContainerRef.current && !accountContainerRef.current.contains(event.target as Node)) {
         setIsAccountMenuOpen(false);
       }
-      if (notificationContainerRef.current && !notificationContainerRef.current.contains(event.target as Node)) {
-        setIsNotificationMenuOpen(false);
-      }
     };
 
-    if (isAccountMenuOpen || isNotificationMenuOpen) {
+    if (isAccountMenuOpen) {
       // Use click event (bubble phase) so link onClick handlers fire first
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
     return undefined;
-  }, [isAccountMenuOpen, isNotificationMenuOpen]);
+  }, [isAccountMenuOpen]);
 
 
   const markAsRead = async (notificationId: string) => {
@@ -120,13 +115,6 @@ export default function SimpleNav() {
     { href: '/', label: 'Home', icon: HomeIcon },
     { href: '/map', label: 'Map', icon: MapIcon },
     { href: '/explore', label: 'Explore', icon: GlobeAltIcon },
-    { 
-      href: '#', 
-      label: 'Notifications', 
-      icon: BellIcon,
-      isNotification: true,
-      unreadCount: unreadCount 
-    },
   ] : [
     { href: '/', label: 'Home', icon: HomeIcon },
     { href: '/map', label: 'Map', icon: MapIcon },
@@ -198,6 +186,21 @@ export default function SimpleNav() {
               </svg>
               Billing
             </Link>
+            {/* Notifications */}
+            <Link
+              href="/account/notifications"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAccountMenuOpen(false);
+              }}
+              className="flex items-center gap-1.5 p-[10px] text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors relative"
+            >
+              <BellIcon className="w-3 h-3 text-gray-500" />
+              <span>Notifications</span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
+              )}
+            </Link>
             {/* Sign Out */}
             <div className="border-t border-gray-200 mt-0.5">
               <button
@@ -263,109 +266,6 @@ export default function SimpleNav() {
     </Link>
   );
 
-  // Notification dropdown component (reusable) - matches account dropdown compact style
-  const NotificationDropdown = () => (
-    <div ref={notificationContainerRef} className="relative">
-      {isNotificationMenuOpen && (
-        <div 
-          className="absolute left-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] sm:max-w-none bg-white z-50 overflow-hidden rounded-md border border-gray-200"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="space-y-0.5">
-            {/* Header */}
-            <div className="p-[10px] border-b border-gray-200">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs font-medium text-gray-900">Notifications</p>
-                {unreadCount > 0 && (
-                  <span className="text-[10px] text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded-full font-medium">
-                    {unreadCount} new
-                  </span>
-                )}
-              </div>
-              {/* Onboarding Status */}
-              {account && (!account.onboarded || !isAccountComplete(account)) && (
-                <Link
-                  href="/account/onboarding"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsNotificationMenuOpen(false);
-                  }}
-                  className="flex items-center gap-1.5 px-2 py-1 bg-yellow-50 border border-yellow-200 rounded text-[10px] text-yellow-700 hover:bg-yellow-100 transition-colors mt-1"
-                >
-                  <div className="w-1 h-1 rounded-full bg-yellow-500 animate-pulse" />
-                  <span className="flex-1">
-                    {!account.onboarded ? 'Complete onboarding' : 'Complete profile'}
-                  </span>
-                </Link>
-              )}
-            </div>
-
-            {/* Notification List */}
-            <div className="max-h-80 overflow-y-auto">
-              {notificationsLoading ? (
-                <div className="p-[10px] text-center">
-                  <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                </div>
-              ) : notifications.length === 0 ? (
-                <div className="p-[10px] text-center text-xs text-gray-500">
-                  No notifications
-                </div>
-              ) : (
-                notifications.map((notification) => (
-                  <button
-                    key={notification.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!notification.read) {
-                        markAsRead(notification.id);
-                      }
-                      setIsNotificationMenuOpen(false);
-                    }}
-                    className={`w-full text-left p-[10px] text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
-                      notification.read ? '' : 'bg-gray-50/50'
-                    }`}
-                  >
-                    <div className="flex items-start gap-1.5">
-                      <div className={`flex-shrink-0 w-1 h-1 rounded-full mt-1.5 ${
-                        notification.read ? 'bg-transparent' : 'bg-gray-900'
-                      }`} />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-medium mb-0.5 line-clamp-1 ${
-                          notification.read ? 'text-gray-500' : 'text-gray-900'
-                        }`}>
-                          {notification.title}
-                        </p>
-                        <p className="text-[10px] text-gray-600 line-clamp-2 mb-0.5">
-                          {notification.message}
-                        </p>
-                        <p className="text-[10px] text-gray-400">
-                          {formatTime(notification.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-gray-200 mt-0.5">
-              <Link
-                href="/account/notifications"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsNotificationMenuOpen(false);
-                }}
-                className="flex items-center gap-1.5 w-full p-[10px] text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-              >
-                View all notifications
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 
 
   const mobileMenuContent = (
@@ -373,8 +273,6 @@ export default function SimpleNav() {
       <div className="space-y-2">
         {navLinks.map((link) => {
           const Icon = link.icon;
-          // Skip notification link in mobile menu - it's handled separately
-          if (link.isNotification) return null;
           return (
             <Link
               key={link.href}
@@ -399,7 +297,7 @@ export default function SimpleNav() {
           {user && account ? (
             <>
               <Link
-                href="/account"
+                href="/account/settings"
                 className="block px-3 py-2.5 text-base font-medium transition-colors text-gray-600 hover:text-black hover:bg-gray-100 flex items-center gap-3"
               >
                 <ProfilePhoto account={account} size="sm" />
@@ -510,8 +408,6 @@ export default function SimpleNav() {
         showScrollEffect={true}
         mobileMenuContent={mobileMenuContent}
         searchSection={searchSection}
-        onNotificationClick={() => setIsNotificationMenuOpen(!isNotificationMenuOpen)}
-        notificationDropdown={<NotificationDropdown />}
       />
     </>
   );

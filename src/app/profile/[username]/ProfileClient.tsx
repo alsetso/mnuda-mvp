@@ -34,6 +34,7 @@ interface ProfileClientProps {
     username: string | null;
     cover_image_url: string | null;
     view_count: number;
+    plan: 'hobby' | 'pro';
   };
   posts: Post[];
   isOwnProfile: boolean;
@@ -243,7 +244,14 @@ export default function ProfileClient({
                 {/* Name & Info */}
                 <div className="mb-3">
                   <div className="flex items-start justify-between gap-2 mb-0.5">
-                    <h1 className="text-sm font-semibold text-gray-900">{displayName}</h1>
+                    <div className="flex items-center gap-1.5">
+                      <h1 className="text-sm font-semibold text-gray-900">{displayName}</h1>
+                      {currentAccount.plan === 'pro' && (
+                        <span className="px-1.5 py-0.5 bg-[#D4AF37] text-white text-[10px] font-semibold rounded uppercase tracking-wide" title="Pro Member">
+                          Pro
+                        </span>
+                      )}
+                    </div>
                     {isOwnProfile && (
                       <button
                         onClick={() => setShowIntroductionEditor(true)}
@@ -274,10 +282,7 @@ export default function ProfileClient({
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                    {currentAccount.age && (
-                      <span>{currentAccount.age} years old</span>
-                    )}
-                    {currentAccount.gender && (
+                    {currentAccount.gender && currentAccount.gender !== 'prefer_not_to_say' && (
                       <span className="capitalize">{currentAccount.gender}</span>
                     )}
                   </div>

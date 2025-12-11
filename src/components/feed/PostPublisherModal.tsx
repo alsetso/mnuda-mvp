@@ -503,7 +503,11 @@ export default function PostPublisherModal({
             <div className="flex items-center justify-between">
               {/* Left side - Action icons with labels */}
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1.5 px-[10px] py-[10px] text-gray-600 hover:bg-gray-50 rounded-md cursor-pointer transition-colors">
+                <label className={`flex items-center gap-1.5 px-[10px] py-[10px] rounded-md cursor-pointer transition-colors ${
+                  images.length > 0
+                    ? 'text-green-600 hover:bg-green-50'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}>
                   <PhotoIcon className="w-3 h-3" />
                   <span className="text-xs font-medium">Media</span>
                   <input

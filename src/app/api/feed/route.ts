@@ -2,12 +2,33 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { Database } from '@/types/supabase';
+import type { FeedPost, Account } from '@/types/feed';
+import { checkRateLimit, RateLimitPresets, createRateLimitHeaders } from '@/lib/rateLimit';
 
 /**
  * GET /api/feed
  * Fetch feed posts - RLS handles visibility filtering
  */
 export async function GET(request: NextRequest) {
+  // Rate limiting: 200 requests per minute for feed reads
+  const rateLimit = checkRateLimit(request, RateLimitPresets.generous);
+  
+  if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Too many requests',
+          message: 'Rate limit exceeded. Please try again later.',
+        },
+        { 
+          status: 429,
+          headers: createRateLimitHeaders(
+            rateLimit.remaining, 
+            rateLimit.resetTime,
+            RateLimitPresets.generous.maxRequests
+          ),
+        }
+      );
+  }
   try {
     const response = new NextResponse();
     const cookieStore = await cookies();
@@ -29,13 +50,19 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    // Check auth status for debugging
+    // Performance monitoring
+    const startTime = performance.now();
+    const timings: Record<string, number> = {};
+
+    // Check auth status
+    const authStart = performance.now();
     const { data: { user } } = await supabase.auth.getUser();
-    console.log('Feed GET - User authenticated:', !!user, 'User ID:', user?.id);
+    timings.auth = performance.now() - authStart;
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const cursor = searchParams.get('cursor'); // For keyset pagination
     const visibility = searchParams.get('visibility');
     const city = searchParams.get('city');
     const county = searchParams.get('county');
@@ -51,7 +78,6 @@ export async function GET(request: NextRequest) {
         .single();
       
       if (!account) {
-        // If no account found, return empty results
         return NextResponse.json({
           posts: [],
           hasMore: false,
@@ -60,77 +86,124 @@ export async function GET(request: NextRequest) {
       accountIdForOnlyMe = account.id;
     }
 
+    // Explicit column list - only what we need
+    const postsColumns = [
+      'id',
+      'account_id',
+      'title',
+      'content',
+      'visibility',
+      'images',
+      'map_type',
+      'map_geometry',
+      'map_center',
+      'map_screenshot',
+      'map_hide_pin',
+      'city',
+      'county',
+      'state',
+      'created_at',
+      'updated_at'
+    ].join(', ');
+
+    // Build query with accounts join
+    const queryStart = performance.now();
     let query = supabase
       .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .select(`${postsColumns}, accounts(id, first_name, last_name, image_url, username, plan)`)
+      .order('created_at', { ascending: false });
 
-    // Filter by city if provided
+    // CRITICAL: Filter by visibility for anonymous users to reduce RLS evaluation
+    if (!user) {
+      query = query.eq('visibility', 'public');
+    }
+
+    // Apply location filters
     if (city) {
       query = query.eq('city', city);
     }
-
-    // Filter by county if provided
     if (county) {
       query = query.eq('county', county);
     }
-
-    // Filter by state if provided
     if (state) {
       query = query.eq('state', state);
     }
 
-    // Optional visibility filter (RLS already enforces access)
+    // Apply visibility filter if specified
     if (visibility && ['public', 'draft', 'members_only'].includes(visibility)) {
       query = query.eq('visibility', visibility);
     } else if (visibility === 'only_me' && accountIdForOnlyMe) {
       query = query.eq('account_id', accountIdForOnlyMe).eq('visibility', 'only_me');
     }
 
+    // Keyset pagination (cursor-based) - more efficient than OFFSET
+    if (cursor) {
+      query = query.lt('created_at', cursor);
+      query = query.limit(limit + 1); // Fetch one extra to check hasMore
+    } else {
+      // Fallback to OFFSET for backward compatibility
+      query = query.range(offset, offset + limit - 1);
+    }
+
     const { data: posts, error } = await query;
+    timings.postsQuery = performance.now() - queryStart;
 
     if (error) {
-      console.error('Feed query error:', error);
+      const totalTime = performance.now() - startTime;
+      // Log basic error info (safe for production)
+      console.error('[Feed API] Error after', `${totalTime.toFixed(2)}ms:`, error.message || 'Unknown error');
       console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      console.error('Error details:', error.details);
-      console.error('Error hint:', error.hint);
+      // Only log detailed error info in development (could expose internal structure)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        console.error('Full error object:', error);
+      }
       return NextResponse.json(
         { 
-          error: 'Failed to fetch feed', 
-          details: error.message || 'Unknown error',
-          code: error.code,
-          hint: error.hint
+          error: 'Failed to fetch feed',
+          // Never expose internal error details to clients in production
+          ...(process.env.NODE_ENV === 'development' && {
+            details: error.message || 'Unknown error',
+            code: error.code,
+            hint: error.hint,
+          }),
         },
         { status: 500 }
       );
     }
 
-    // Fetch accounts separately if needed (gracefully handle errors)
-    const accountIds = [...new Set((posts || []).map((p: FeedPost) => p.account_id).filter(Boolean))];
-    let accountsMap = new Map<string, Account>();
-    
-    if (accountIds.length > 0) {
-      const { data: accounts, error: accountsError } = await supabase
-        .from('accounts')
-        .select('id, first_name, last_name, image_url')
-        .in('id', accountIds);
-      
-      if (accountsError) {
-        console.error('Accounts query error:', accountsError);
-        console.error('Account IDs requested:', accountIds);
-        // Continue without account data rather than failing
-      } else if (accounts) {
-        console.log(`Fetched ${accounts.length} accounts for ${accountIds.length} account IDs`);
-        accountsMap = new Map(accounts.map((a: Account) => [a.id, a]));
-      } else {
-        console.warn('No accounts returned for account IDs:', accountIds);
+    // Handle keyset pagination: check if we have more posts
+    let postsToReturn = posts || [];
+    let hasMore = false;
+    let nextCursor: string | null = null;
+
+    if (cursor && posts && posts.length > limit) {
+      // We fetched one extra, so we have more
+      hasMore = true;
+      postsToReturn = posts.slice(0, limit);
+      nextCursor = postsToReturn[postsToReturn.length - 1]?.created_at || null;
+    } else if (cursor) {
+      // No cursor means this is the first page or we're using OFFSET
+      hasMore = (posts?.length || 0) === limit;
+      if (posts && posts.length > 0) {
+        nextCursor = posts[posts.length - 1]?.created_at || null;
       }
+    } else {
+      // OFFSET pagination fallback
+      hasMore = (posts?.length || 0) === limit;
     }
 
+    // Accounts are now included in the join, extract them
+    const accountsMap = new Map<string, Account>();
+    (postsToReturn || []).forEach((post: FeedPost & { accounts?: Account }) => {
+      if (post.accounts && post.account_id) {
+        accountsMap.set(post.account_id, post.accounts);
+      }
+    });
+
     // Enrich posts with account data and format map data
-    const enrichedPosts = (posts || []).map((post: FeedPost) => {
+    const enrichedPosts = (postsToReturn || []).map((post: FeedPost) => {
       // Build map_data from structured columns for backward compatibility
       let map_data = null;
       if (post.map_geometry || post.map_type) {
@@ -154,17 +227,52 @@ export async function GET(request: NextRequest) {
         };
       }
       
+      // Extract accounts from join result
+      const accountData = post.accounts || accountsMap.get(post.account_id) || null;
+      
+      // Remove accounts from post object (it's nested from join)
+      const { accounts: _, ...postWithoutAccounts } = post;
+      
       return {
-        ...post,
-        accounts: accountsMap.get(post.account_id) || null,
+        ...postWithoutAccounts,
+        accounts: accountData,
         map_data, // Include for backward compatibility
       };
     });
 
+    const totalTime = performance.now() - startTime;
+    timings.total = totalTime;
+
+    // Log performance in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Feed API] Performance:', {
+        ...timings,
+        postsCount: enrichedPosts.length,
+        accountsCount: accountsMap.size,
+        hasMore,
+        pagination: cursor ? 'keyset' : 'offset',
+      });
+    }
+
     const jsonResponse = NextResponse.json({
       posts: enrichedPosts,
-      hasMore: (posts?.length || 0) === limit,
+      hasMore,
+      ...(nextCursor && { nextCursor }), // Include cursor for keyset pagination
     }, { headers: response.headers });
+
+    // Add performance headers
+    jsonResponse.headers.set('X-Response-Time', `${totalTime.toFixed(2)}ms`);
+    jsonResponse.headers.set('X-Timing-Auth', `${timings.auth.toFixed(2)}ms`);
+    jsonResponse.headers.set('X-Timing-Posts', `${timings.postsQuery.toFixed(2)}ms`);
+    
+    // Add rate limit headers
+    Object.entries(createRateLimitHeaders(
+      rateLimit.remaining, 
+      rateLimit.resetTime,
+      RateLimitPresets.generous.maxRequests
+    )).forEach(([key, value]) => {
+      jsonResponse.headers.set(key, value);
+    });
     
     // Copy cookies from response
     response.cookies.getAll().forEach((cookie) => {
@@ -179,14 +287,18 @@ export async function GET(request: NextRequest) {
     
     return jsonResponse;
   } catch (error) {
-    console.error('Error in feed GET:', error);
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    console.error('Error stack:', errorStack);
+    // Log error without exposing sensitive details
+    console.error('[Feed API] Error:', errorMessage);
+    // Only log stack traces in development (could expose internal structure)
+    if (process.env.NODE_ENV === 'development' && error instanceof Error) {
+      console.error('[Feed API] Stack:', error.stack);
+    }
     return NextResponse.json(
       { 
         error: 'Internal server error',
-        details: errorMessage
+        // Only expose error details to clients in development
+        ...(process.env.NODE_ENV === 'development' && { details: errorMessage })
       },
       { status: 500 }
     );
@@ -222,6 +334,29 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting: 60 requests per minute for authenticated post creation
+    const rateLimit = checkRateLimit(request, RateLimitPresets.moderate, user.id);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Too many requests',
+          message: 'Rate limit exceeded. Please try again later.',
+        },
+        { 
+          status: 429,
+          headers: {
+            ...createRateLimitHeaders(
+              rateLimit.remaining, 
+              rateLimit.resetTime,
+              RateLimitPresets.moderate.maxRequests
+            ),
+            ...Object.fromEntries(response.headers.entries()),
+          },
+        }
+      );
     }
 
     const body = await request.json();
@@ -330,9 +465,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Insert error:', error);
+      // Log error without exposing sensitive details
+      console.error('Insert error:', error.message || 'Unknown error');
+      // Only log full error object in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Full error object:', error);
+      }
       return NextResponse.json(
-        { error: 'Failed to create post', details: error.message },
+        { 
+          error: 'Failed to create post',
+          // Only expose error details to clients in development
+          ...(process.env.NODE_ENV === 'development' && { details: error.message })
+        },
         { status: 500 }
       );
     }
@@ -354,6 +498,15 @@ export async function POST(request: NextRequest) {
       headers: response.headers 
     });
     
+    // Add rate limit headers
+    Object.entries(createRateLimitHeaders(
+      rateLimit.remaining, 
+      rateLimit.resetTime,
+      RateLimitPresets.moderate.maxRequests
+    )).forEach(([key, value]) => {
+      jsonResponse.headers.set(key, value);
+    });
+    
     // Copy cookies from response
     response.cookies.getAll().forEach((cookie) => {
       jsonResponse.cookies.set(cookie.name, cookie.value, {
@@ -367,9 +520,20 @@ export async function POST(request: NextRequest) {
     
     return jsonResponse;
   } catch (error) {
-    console.error('Error in feed POST:', error);
+    // Log error without exposing sensitive details
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    console.error('Error in feed POST:', errorMessage);
+    // Only log full error details in development
+    if (process.env.NODE_ENV === 'development' && error instanceof Error) {
+      console.error('Error stack:', error.stack);
+      console.error('Full error object:', error);
+    }
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        // Only expose error details to clients in development
+        ...(process.env.NODE_ENV === 'development' && { details: errorMessage })
+      },
       { status: 500 }
     );
   }

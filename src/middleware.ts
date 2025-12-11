@@ -9,7 +9,6 @@ const ROUTE_PROTECTION: Record<string, {
   auth: boolean; 
   roles?: AccountRole[];
 }> = {
-  '/account': { auth: true },
   '/account/settings': { auth: true },
   '/account/billing': { auth: true },
   '/map-test': { auth: true },
@@ -21,8 +20,6 @@ const ROUTE_PROTECTION: Record<string, {
 function isAccountComplete(account: {
   first_name: string | null;
   last_name: string | null;
-  gender: string | null;
-  age: number | null;
   image_url: string | null;
   username: string | null;
 } | null): boolean {
@@ -32,8 +29,6 @@ function isAccountComplete(account: {
     account.username &&
     account.first_name &&
     account.last_name &&
-    account.gender &&
-    account.age &&
     account.image_url
   );
 }
@@ -52,7 +47,7 @@ async function getUserAccountData(
   // Try to get account role, onboarded status, and completeness fields
   const { data: account, error: accountError } = await supabase
     .from('accounts')
-    .select('role, onboarded, username, first_name, last_name, gender, age, image_url')
+    .select('role, onboarded, username, first_name, last_name, image_url')
     .eq('user_id', userId)
     .limit(1)
     .maybeSingle();
@@ -124,6 +119,30 @@ export async function middleware(req: NextRequest) {
     },
   });
 
+  // Add security headers
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // HSTS - only in production with HTTPS
+  if (process.env.NODE_ENV === 'production' && req.nextUrl.protocol === 'https:') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  
+  // Content Security Policy - basic policy (can be customized per route)
+  // Note: This is a basic CSP. You may need to adjust based on your specific needs
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // 'unsafe-inline' needed for Next.js
+    "style-src 'self' 'unsafe-inline'", // 'unsafe-inline' needed for Tailwind
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co https://*.mapbox.com https://api.mapbox.com",
+    "frame-ancestors 'none'",
+  ].join('; ');
+  response.headers.set('Content-Security-Policy', csp);
+
   const pathname = req.nextUrl.pathname;
   const protection = matchesProtectedRoute(pathname);
 
@@ -184,7 +203,8 @@ export async function middleware(req: NextRequest) {
                             errorMessage.includes('Session') ||
                             errorMessage.includes('Auth session missing');
       
-      if (!isSessionError) {
+      // Only log non-session auth errors in development to avoid exposing auth issues
+      if (!isSessionError && process.env.NODE_ENV === 'development') {
         console.warn('[middleware] Auth error:', authError.message);
       }
     }
@@ -195,11 +215,19 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Get account data if we need role check
+  // Get account data if we need role check or onboarding check
   let accountData: { role: AccountRole | null; onboarded: boolean | null; isComplete: boolean } | null = null;
   
   if (user && protection?.auth) {
     accountData = await getUserAccountData(supabase, user.id);
+    
+    // Check onboarding status for protected routes (except onboarding page itself)
+    // Redirect to onboarding if not onboarded
+    if (pathname !== '/account/onboarding' && accountData && accountData.onboarded === false) {
+      const redirectUrl = new URL('/account/onboarding', req.url);
+      redirectUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   // Check role requirement

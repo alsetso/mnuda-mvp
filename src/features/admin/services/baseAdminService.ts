@@ -100,11 +100,10 @@ export abstract class BaseAdminService<T, CreateT, UpdateT> {
   async update(id: string, data: UpdateT): Promise<T> {
     const supabase = this.getServiceClient();
     
-    // Log to verify service role is being used
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    console.log(`[BaseAdminService] Updating ${this.tableName} with service role client`);
-    console.log(`[BaseAdminService] Service key exists:`, !!serviceKey);
-    console.log(`[BaseAdminService] Service key prefix:`, serviceKey?.substring(0, 20));
+    // Only log service role usage in development (never log key details)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[BaseAdminService] Updating ${this.tableName} with service role client`);
+    }
     
     const { data: record, error } = await supabase
       .from(this.tableName)
@@ -114,16 +113,23 @@ export abstract class BaseAdminService<T, CreateT, UpdateT> {
       .single();
     
     if (error) {
-      console.error(`[BaseAdminService] Error updating ${this.tableName}:`, error);
+      // Log basic error info (safe for production)
+      console.error(`[BaseAdminService] Error updating ${this.tableName}:`, error.message);
       console.error(`[BaseAdminService] Error code:`, error.code);
-      console.error(`[BaseAdminService] Error message:`, error.message);
-      console.error(`[BaseAdminService] Error hint:`, error.hint);
-      console.error(`[BaseAdminService] Error details:`, JSON.stringify(error, null, 2));
+      
+      // Only log detailed error info in development (could expose internal structure)
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`[BaseAdminService] Error hint:`, error.hint);
+        console.error(`[BaseAdminService] Error details:`, JSON.stringify(error, null, 2));
+      }
       
       // If it's a permission error, the service role isn't working
       if (error.message?.includes('permission denied') || error.code === '42501') {
         console.error(`[BaseAdminService] PERMISSION DENIED - Service role client is NOT bypassing RLS!`);
-        console.error(`[BaseAdminService] This suggests the service role key may be invalid or not being used correctly.`);
+        // Only log detailed diagnostic in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`[BaseAdminService] This suggests the service role key may be invalid or not being used correctly.`);
+        }
       }
       
       throw new Error(`Failed to update ${this.tableName}: ${error.message}`);

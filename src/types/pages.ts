@@ -21,3 +21,5 @@ export interface PageUpdateData {
   lng?: number | null;
   [key: string]: unknown;
 }
+
+

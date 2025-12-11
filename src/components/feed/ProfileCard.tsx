@@ -111,9 +111,16 @@ export default function ProfileCard({ account }: ProfileCardProps) {
       {/* Profile Content */}
       <div className="pt-10 pb-4 px-4 text-center">
         <Link href="/profile" className="block hover:opacity-90 transition-opacity">
-          <h3 className="text-lg font-bold text-gray-900 mb-1">
-            {displayName}
-          </h3>
+          <div className="flex items-center justify-center gap-1.5 mb-1">
+            <h3 className="text-lg font-bold text-gray-900">
+              {displayName}
+            </h3>
+            {account?.plan === 'pro' && (
+              <span className="px-1.5 py-0.5 bg-[#D4AF37] text-white text-[10px] font-semibold rounded uppercase tracking-wide" title="Pro Member">
+                Pro
+              </span>
+            )}
+          </div>
         </Link>
         <p className="text-sm text-gray-600 mb-1">
           {title}

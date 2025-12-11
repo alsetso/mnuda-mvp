@@ -21,7 +21,10 @@ export function usePageView({ entity_type, entity_id, entity_slug, enabled = tru
   useEffect(() => {
     if (!enabled || hasTracked.current) return;
     if (!entity_id && !entity_slug) {
-      console.warn('[usePageView] Skipping - no entity_id or entity_slug provided', { entity_type, entity_id, entity_slug });
+      // Only log in development to avoid exposing tracking data in production
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[usePageView] Skipping - no entity_id or entity_slug provided', { entity_type, entity_id, entity_slug });
+      }
       return;
     }
 
@@ -34,7 +37,10 @@ export function usePageView({ entity_type, entity_id, entity_slug, enabled = tru
       entity_slug: entity_slug || null,
     };
     
-    console.log('[usePageView] Tracking page view:', payload);
+    // Only log in development to avoid exposing tracking data in production
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[usePageView] Tracking page view:', payload);
+    }
     
     fetch('/api/analytics/view', {
       method: 'POST',
@@ -53,17 +59,23 @@ export function usePageView({ entity_type, entity_id, entity_slug, enabled = tru
           throw new Error(errorMessage);
         }
         const data = await response.json();
-        console.log('[usePageView] Tracked successfully:', { 
-          entity_type, 
-          entity_id: entity_id || 'none',
-          entity_slug: entity_slug || 'none',
-          response: data 
-        });
+        // Only log in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[usePageView] Tracked successfully:', { 
+            entity_type, 
+            entity_id: entity_id || 'none',
+            entity_slug: entity_slug || 'none',
+            response: data 
+          });
+        }
         return data;
       })
       .catch((error) => {
         // Silently fail - don't break the page
-        console.error('[usePageView] Failed to track:', error.message || error, payload);
+        // Only log in development to avoid exposing tracking data
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[usePageView] Failed to track:', error.message || error, payload);
+        }
       });
   }, [entity_type, entity_id, entity_slug, enabled]);
 }

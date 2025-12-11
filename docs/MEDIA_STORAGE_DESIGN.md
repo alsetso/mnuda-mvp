@@ -298,3 +298,5 @@ If you want to keep JSONB but make it better:
 3. Supports rich metadata
 4. Allows gradual migration
 5. Better for analytics and reporting
+
+

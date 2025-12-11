@@ -67,9 +67,16 @@ export default function AccountViewsCard({ account }: AccountViewsCardProps) {
         {/* Profile Info - Left Aligned, Vertical Stack */}
         <div className="space-y-0.5">
           <Link href="/profile" className="block hover:opacity-90 transition-opacity">
-            <h3 className="text-xs font-semibold text-gray-900">
-              {displayName}
-            </h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-gray-900">
+                {displayName}
+              </h3>
+              {account?.plan === 'pro' && (
+                <span className="px-1.5 py-0.5 bg-[#D4AF37] text-white text-[10px] font-semibold rounded uppercase tracking-wide" title="Pro Member">
+                  Pro
+                </span>
+              )}
+            </div>
           </Link>
           {bio && (
             <p className="text-xs text-gray-600 line-clamp-2">

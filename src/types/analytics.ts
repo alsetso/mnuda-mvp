@@ -45,3 +45,5 @@ export interface SupabaseRPCResponse<T> {
     hint?: string;
   } | null;
 }
+
+

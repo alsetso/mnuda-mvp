@@ -3,11 +3,32 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/supabase';
 import { extractClientIP } from '@/lib/utils/ipAddress';
+import { checkRateLimit, RateLimitPresets, createRateLimitHeaders } from '@/lib/rateLimit';
 
 type EntityType = 'post' | 'city' | 'county' | 'account' | 'business' | 'page' | 'feed' | 'map';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 100 requests per minute for analytics tracking
+    const rateLimit = checkRateLimit(request, RateLimitPresets.analytics);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { 
+          error: 'Too many requests',
+          message: 'Rate limit exceeded. Please try again later.',
+        },
+        { 
+          status: 429,
+          headers: createRateLimitHeaders(
+            rateLimit.remaining, 
+            rateLimit.resetTime,
+            RateLimitPresets.analytics.maxRequests
+          ),
+        }
+      );
+    }
+
     const cookieStore = await cookies();
     const body = await request.json();
     const { entity_type, entity_id, entity_slug } = body;
@@ -54,19 +75,6 @@ export async function POST(request: NextRequest) {
     // Use improved IP extraction that handles proxies/CDNs
     const ipAddress = extractClientIP(request);
     
-    // Log IP extraction for debugging (only in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[IP Extraction]', {
-        extracted: ipAddress,
-        headers: {
-          'x-forwarded-for': request.headers.get('x-forwarded-for'),
-          'x-real-ip': request.headers.get('x-real-ip'),
-          'cf-connecting-ip': request.headers.get('cf-connecting-ip'),
-          'x-client-ip': request.headers.get('x-client-ip'),
-        },
-      });
-    }
-
     // Record page view with account_id
     const rpcParams = {
       p_entity_type: entity_type,
@@ -76,31 +84,36 @@ export async function POST(request: NextRequest) {
       p_ip_address: ipAddress || null,
     };
     
-    console.log('[view] Recording page view:', {
-      entity_type,
-      entity_id,
-      entity_slug,
-      accountId: accountId ? accountId.substring(0, 8) + '...' : 'null',
-      ipAddress: ipAddress ? 'present' : 'null',
-      rpcParams,
-    });
+    // Only log in development, and never log IP addresses or account IDs
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[view] Recording page view:', {
+        entity_type,
+        entity_id,
+        entity_slug,
+        // Never log account IDs or IP addresses, even in dev
+        accountIdPresent: !!accountId,
+        ipAddressPresent: !!ipAddress,
+      });
+    }
     
     const { data: viewCount, error } = await supabase.rpc('record_page_view', rpcParams);
 
     if (error) {
+      // Log error without sensitive data (account IDs, IP addresses)
       console.error('[view] Error recording page view:', {
         error: {
           code: error.code,
           message: error.message,
-          details: error.details,
-          hint: error.hint,
+          // Don't log details/hint in production (could expose internal structure)
+          ...(process.env.NODE_ENV === 'development' && {
+            details: error.details,
+            hint: error.hint,
+          }),
         },
         entity_type,
-        entity_id,
-        entity_slug,
-        accountId: accountId ? 'present' : 'null',
-        ipAddress: ipAddress ? 'present' : 'null',
-        rpcParams,
+        entity_id: entity_id ? 'present' : 'null',
+        entity_slug: entity_slug ? 'present' : 'null',
+        // Never log account IDs or IP addresses
       });
       // Don't return error - silently fail to not break page rendering
       // Log for debugging but allow page to continue
@@ -116,15 +129,35 @@ export async function POST(request: NextRequest) {
       view_count: viewCount || 0,
     };
     
-    console.log('[view] Page view recorded successfully:', {
-      entity_type,
-      entity_id,
-      view_count: viewCount,
+    // Only log in development, without sensitive data
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[view] Page view recorded successfully:', {
+        entity_type,
+        entity_id: entity_id ? 'present' : 'null',
+        view_count: viewCount,
+      });
+    }
+    
+    const jsonResponse = NextResponse.json(response);
+    
+    // Add rate limit headers
+    Object.entries(createRateLimitHeaders(
+      rateLimit.remaining, 
+      rateLimit.resetTime,
+      RateLimitPresets.analytics.maxRequests
+    )).forEach(([key, value]) => {
+      jsonResponse.headers.set(key, value);
     });
     
-    return NextResponse.json(response);
+    return jsonResponse;
   } catch (error) {
-    console.error('Error in POST /api/analytics/view:', error);
+    // Log error without exposing sensitive data
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error in POST /api/analytics/view:', errorMessage);
+    // Only log full error details in development
+    if (process.env.NODE_ENV === 'development' && error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -224,9 +257,18 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error getting view count:', error);
+      // Log error without exposing sensitive data
+      console.error('Error getting view count:', error.message || 'Unknown error');
+      // Only log detailed error info in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error details:', error);
+      }
       return NextResponse.json(
-        { error: 'Failed to get view count', details: error.message },
+        { 
+          error: 'Failed to get view count',
+          // Only include error details in development
+          ...(process.env.NODE_ENV === 'development' && { details: error.message })
+        },
         { status: 500 }
       );
     }
@@ -235,7 +277,13 @@ export async function GET(request: NextRequest) {
       view_count: data?.view_count || 0,
     });
   } catch (error) {
-    console.error('Error in GET /api/analytics/view:', error);
+    // Log error without exposing sensitive data
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error in GET /api/analytics/view:', errorMessage);
+    // Only log full error details in development
+    if (process.env.NODE_ENV === 'development' && error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

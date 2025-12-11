@@ -12,6 +12,7 @@ export default function LegalFooter() {
     { href: '/legal/user-agreement', label: 'User Agreement' },
     { href: '/legal/privacy-policy', label: 'Privacy Policy' },
     { href: '/legal/community-guidelines', label: 'Community Guidelines' },
+    { href: '/contact', label: 'Contact' },
   ];
 
   return (

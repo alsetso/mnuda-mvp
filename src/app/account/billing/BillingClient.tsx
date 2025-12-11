@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
-  CheckIcon,
   ExclamationCircleIcon,
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
@@ -18,32 +18,6 @@ export default function BillingClient({ initialBillingData }: BillingClientProps
   const [billingData, setBillingData] = useState<BillingData>(initialBillingData);
   const [error, setError] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [creatingCheckout, setCreatingCheckout] = useState(false);
-
-
-  // Create checkout session and redirect to Stripe Checkout
-  const handleCheckout = async () => {
-    try {
-      setCreatingCheckout(true);
-      setError(null);
-      const response = await fetch('/api/billing/checkout', {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to create checkout session');
-      }
-
-      const { url } = await response.json();
-      // Redirect to Stripe Checkout
-      window.location.href = url;
-    } catch (err) {
-      console.error('Error creating checkout session:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create checkout session');
-      setCreatingCheckout(false);
-    }
-  };
 
   // Handle checkout session completion
   useEffect(() => {
@@ -101,7 +75,7 @@ export default function BillingClient({ initialBillingData }: BillingClientProps
       {/* Header */}
       <div className="mb-3">
         <div className="flex items-center gap-2 mb-1.5">
-          <div className="p-[10px] bg-gray-100 rounded-md">
+          <div className="p-[10px] bg-white border border-gray-200 rounded-md">
             <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
@@ -159,118 +133,22 @@ export default function BillingClient({ initialBillingData }: BillingClientProps
               Subscription ID: {billingData.stripe_subscription_id.substring(0, 20)}...
             </p>
           )}
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <Link
+              href="/account/change-plan"
+              className="text-xs text-gold-600 hover:text-gold-700 transition-colors"
+            >
+              Change Plan
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Plans Comparison Table */}
-      <div className="bg-white border border-gray-200 rounded-md overflow-hidden">
-        <div className="px-[10px] py-[10px] border-b border-gray-200 bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-900">Plans & Features</h2>
-          <p className="text-xs text-gray-600 mt-0.5">Compare Free and Pro plans</p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="px-[10px] py-[10px] text-left text-xs font-semibold text-gray-900">Feature</th>
-                <th className="px-[10px] py-[10px] text-center text-xs font-semibold text-gray-900">Free</th>
-                <th className="px-[10px] py-[10px] text-center text-xs font-semibold text-gray-900 bg-gray-900 text-white">Pro</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Price</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">Free</td>
-                <td className="px-[10px] py-[10px] text-center text-xs font-medium text-gray-900 bg-gray-50">$20/month</td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Pins</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">10 pins</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Unlimited</td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Areas</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">3 areas</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Unlimited</td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Visibility</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">Public only</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Private + accounts_only</td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Profiles</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">1 profile</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Multiple profiles</td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">My Homes</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">1 home</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Unlimited</td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Notifications</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">—</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">
-                  <CheckIcon className="w-3 h-3 mx-auto text-gray-900" />
-                </td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Area Alerts</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">—</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">
-                  <CheckIcon className="w-3 h-3 mx-auto text-gray-900" />
-                </td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Pin Analytics</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">—</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">
-                  <CheckIcon className="w-3 h-3 mx-auto text-gray-900" />
-                </td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Data Export</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">—</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">
-                  <CheckIcon className="w-3 h-3 mx-auto text-gray-900" />
-                </td>
-              </tr>
-              <tr>
-                <td className="px-[10px] py-[10px] text-xs font-medium text-gray-900">Support</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-600">Community</td>
-                <td className="px-[10px] py-[10px] text-center text-xs text-gray-900 bg-gray-50">Priority support</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="px-[10px] py-[10px] border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-end gap-2">
-            {billingData.plan === 'hobby' ? (
-              <button
-                onClick={handleCheckout}
-                disabled={creatingCheckout}
-                className="flex items-center gap-1.5 px-[10px] py-[10px] bg-gray-900 text-white rounded-md text-xs font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {creatingCheckout ? (
-                  <>
-                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    Subscribe to Pro
-                    <ArrowRightIcon className="w-3 h-3" />
-                  </>
-                )}
-              </button>
-            ) : (
-              <p className="text-xs text-gray-600">
-                You&apos;re on the Pro plan
-              </p>
-            )}
-          </div>
-        </div>
+      {/* Help Section */}
+      <div className="bg-white border border-gray-200 rounded-md p-[10px]">
+        <p className="text-xs text-gray-600">
+          Need help with billing? <Link href="/contact" className="text-gray-900 font-medium hover:underline">Contact our team</Link> for assistance.
+        </p>
       </div>
 
       {/* Subscriptions & Billing Section */}

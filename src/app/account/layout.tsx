@@ -1,5 +1,6 @@
 import SimplePageLayout from '@/components/SimplePageLayout';
 import AccountPageLayout from '@/components/AccountPageLayout';
+import AccountLayoutWrapper from './AccountLayoutWrapper';
 
 interface AccountLayoutProps {
   children: React.ReactNode;
@@ -11,11 +12,9 @@ interface AccountLayoutProps {
  */
 export default function AccountLayout({ children }: AccountLayoutProps) {
   return (
-    <SimplePageLayout contentPadding="px-0" footerVariant="light" hideFooter={true}>
-      <AccountPageLayout>
-        {children}
-      </AccountPageLayout>
-    </SimplePageLayout>
+    <AccountLayoutWrapper>
+      {children}
+    </AccountLayoutWrapper>
   );
 }
 

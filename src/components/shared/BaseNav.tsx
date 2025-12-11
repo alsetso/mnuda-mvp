@@ -13,7 +13,7 @@ export interface NavLink {
   isNotification?: boolean;
   isAccount?: boolean;
   unreadCount?: number;
-  account?: any;
+  account?: { id: string; username: string | null; [key: string]: unknown } | null;
 }
 
 interface BaseNavProps {

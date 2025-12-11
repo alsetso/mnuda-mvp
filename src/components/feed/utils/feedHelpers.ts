@@ -78,7 +78,7 @@ export function getProfileUrl(username?: string | null): string {
  * @param post - Post data to validate
  * @returns Boolean indicating if post is valid
  */
-export function isValidPost(post: any): post is FeedPostData {
+export function isValidPost(post: unknown): post is FeedPostData {
   return (
     post &&
     typeof post.id === 'string' &&

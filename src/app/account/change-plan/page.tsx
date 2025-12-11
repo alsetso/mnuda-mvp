@@ -1,16 +1,16 @@
-import { redirect } from 'next/navigation';
-import { getServerAuth } from '@/lib/authServer';
+import { getServerAccount } from '@/lib/accountServer';
 import { getServerBillingData } from '@/lib/billingServer';
+import { redirectToOnboardingIfNeeded } from '@/lib/onboardingRedirect';
 import ChangePlanClient from './ChangePlanClient';
 
 export default async function ChangePlanPage() {
-  const auth = await getServerAuth();
+  const account = await getServerAccount();
   
-  if (!auth) {
-    redirect('/login?redirect=/account/change-plan&message=Please sign in to change your plan');
-  }
+  // Redirect to onboarding if not onboarded
+  redirectToOnboardingIfNeeded(account);
 
   const billingData = await getServerBillingData();
 
   return <ChangePlanClient initialBillingData={billingData} />;
 }
+
