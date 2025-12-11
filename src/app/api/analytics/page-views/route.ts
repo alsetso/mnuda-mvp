@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/supabase';
 
-type EntityType = 'post' | 'city' | 'county' | 'account' | 'business';
+type EntityType = 'post' | 'city' | 'county' | 'account';
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,9 +22,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
     const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
           getAll() {
@@ -84,7 +94,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Format response
-    const formattedViews = (pageViews || []).map((pv: PageView) => ({
+    const formattedViews = (pageViews || []).map((pv: {
+      id: string;
+      viewed_at: string;
+      account_id: string | null;
+      accounts?: {
+        id: string;
+        username: string | null;
+        first_name: string | null;
+        last_name: string | null;
+        image_url: string | null;
+      } | null;
+    }) => ({
       id: pv.id,
       viewed_at: pv.viewed_at,
       account_id: pv.account_id,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import { Database } from '@/types/supabase';
-import type { PageStats, SupabaseRPCResponse } from '@/types/analytics';
+import type { PageStats } from '@/types/analytics';
 
 /**
  * GET /api/analytics/feed-stats

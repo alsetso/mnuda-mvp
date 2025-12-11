@@ -5,7 +5,7 @@ import type { Database } from '@/types/supabase';
 import { extractClientIP } from '@/lib/utils/ipAddress';
 import { checkRateLimit, RateLimitPresets, createRateLimitHeaders } from '@/lib/rateLimit';
 
-type EntityType = 'post' | 'city' | 'county' | 'account' | 'business' | 'page' | 'feed' | 'map';
+type EntityType = 'post' | 'city' | 'county' | 'account' | 'feed' | 'map';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,17 +34,27 @@ export async function POST(request: NextRequest) {
     const { entity_type, entity_id, entity_slug } = body;
 
     // Validate entity_type
-    const validTypes: EntityType[] = ['post', 'city', 'county', 'account', 'business', 'page', 'feed', 'map'];
+    const validTypes: EntityType[] = ['post', 'city', 'county', 'account', 'feed', 'map'];
     if (!entity_type || !validTypes.includes(entity_type)) {
       return NextResponse.json(
-        { error: 'Invalid entity_type. Must be one of: post, city, county, account, business, page, feed, map' },
+        { error: 'Invalid entity_type. Must be one of: post, city, county, account, feed, map' },
         { status: 400 }
       );
     }
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
     const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
           getAll() {
@@ -68,7 +78,7 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id)
         .single();
       
-      accountId = account?.id || null;
+      accountId = (account as { id: string } | null)?.id || null;
     }
 
     // Get IP address for anonymous tracking
@@ -96,6 +106,7 @@ export async function POST(request: NextRequest) {
       });
     }
     
+    // @ts-expect-error - RPC function types not fully defined in Database type
     const { data: viewCount, error } = await supabase.rpc('record_page_view', rpcParams);
 
     if (error) {
@@ -180,9 +191,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
     const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
           getAll() {
@@ -201,12 +222,10 @@ export async function GET(request: NextRequest) {
       city: 'cities',
       county: 'counties',
       account: 'accounts',
-      business: 'pages',
-      page: 'pages',
     };
 
-    // For map, feed, and page page-level tracking, return 0 (no view_count column)
-    if (entity_type === 'map' || entity_type === 'feed' || ((entity_type === 'business' || entity_type === 'page') && !entity_id)) {
+    // For map and feed page-level tracking, return 0 (no view_count column)
+    if (entity_type === 'map' || entity_type === 'feed') {
       return NextResponse.json({
         view_count: 0,
       });
@@ -216,7 +235,7 @@ export async function GET(request: NextRequest) {
     let query;
     if (entity_id) {
       query = supabase
-        .from(tableMap[entity_type]!)
+        .from(tableMap[entity_type] as string)
         .select('view_count')
         .eq('id', entity_id)
         .single();
@@ -230,14 +249,14 @@ export async function GET(request: NextRequest) {
           .single();
       } else if (entity_type === 'post') {
         query = supabase
-          .from(tableMap[entity_type]!)
+          .from(tableMap[entity_type] as string)
           .select('view_count')
           .eq('slug', entity_slug)
           .single();
       } else if (entity_type === 'city' || entity_type === 'county') {
         // Try slug first, fallback to name
         query = supabase
-          .from(tableMap[entity_type]!)
+          .from(tableMap[entity_type] as string)
           .select('view_count')
           .or(`slug.eq.${entity_slug},name.eq.${entity_slug}`)
           .single();
