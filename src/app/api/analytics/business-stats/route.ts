@@ -56,10 +56,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
     const cookieStore = await cookies();
     const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
           getAll() {
@@ -78,21 +88,23 @@ export async function GET(request: NextRequest) {
     // Get page statistics using the appropriate database function
     if (pageSlug) {
       // Use slug-based stats (for landing pages)
-      const result = await supabase.rpc('get_page_stats', {
+      const result = await (supabase.rpc('get_page_stats', {
         p_page_slug: pageSlug,
         p_hours: hours,
-      }) as SupabaseRPCResponse<PageStats[]>;
-      stats = result.data;
-      error = result.error;
-    } else {
+      }) as unknown) as Promise<{ data: PageStats[] | null; error: { code?: string; message: string; details?: string; hint?: string } | null }>;
+      const rpcResult = await result;
+      stats = rpcResult.data;
+      error = rpcResult.error;
+    } else if (pageId) {
       // Use id-based stats (for individual pages)
       console.log('[business-stats] Fetching stats by ID:', { pageId, hours });
-      const result = await supabase.rpc('get_page_stats_by_id', {
+      const result = await (supabase.rpc('get_page_stats_by_id', {
         p_entity_id: pageId,
         p_hours: hours,
-      }) as SupabaseRPCResponse<PageStats[]>;
-      stats = result.data;
-      error = result.error;
+      }) as unknown) as Promise<{ data: PageStats[] | null; error: { code?: string; message: string; details?: string; hint?: string } | null }>;
+      const rpcResult = await result;
+      stats = rpcResult.data;
+      error = rpcResult.error;
       
       console.log('[business-stats] RPC result:', {
         hasData: !!result.data,
