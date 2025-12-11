@@ -63,10 +63,15 @@ export default function PageStatsCard({ pageSlug, pageId }: PageStatsCardProps) 
           params.set('id', pageId);
         }
 
-        const url = `/api/analytics/business-stats?${params.toString()}`;
-        console.log('[PageStatsCard] Fetching stats:', url);
-        
-        const response = await fetch(url);
+        // Business stats API removed - not prioritizing business/pages
+        setError('Business stats not available');
+        setLoading(false);
+        setStats({
+          total_loads: 0,
+          unique_visitors: 0,
+          accounts_active: 0,
+        });
+        return;
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: 'Failed to fetch stats' }));
@@ -129,27 +134,9 @@ export default function PageStatsCard({ pageSlug, pageId }: PageStatsCardProps) 
       params.set('id', pageId);
     }
 
-    fetch(`/api/analytics/business-stats?${params.toString()}`)
-      .then(async (response) => {
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Failed to fetch stats' }));
-          throw new Error(errorData.error || 'Failed to fetch stats');
-        }
-        const data = await response.json();
-        if (typeof data.total_loads === 'number' && typeof data.unique_visitors === 'number' && typeof data.accounts_active === 'number') {
-          setStats(data);
-          setError(null);
-        } else {
-          throw new Error('Invalid stats data format');
-        }
-      })
-      .catch((error) => {
-        console.error('Error refreshing stats:', error);
-        setError(error instanceof Error ? error.message : 'Failed to refresh');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    // Business stats API removed - not prioritizing business/pages
+    setError('Business stats not available');
+    setLoading(false);
   };
 
   if (loading) {

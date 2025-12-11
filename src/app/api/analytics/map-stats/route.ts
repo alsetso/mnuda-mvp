@@ -15,10 +15,20 @@ export async function GET(request: NextRequest) {
     const hoursParam = searchParams.get('hours');
     const hours = hoursParam === '168' ? 168 : 24; // Default to 24 hours
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
     const cookieStore = await cookies();
     const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
           getAll() {
@@ -33,9 +43,10 @@ export async function GET(request: NextRequest) {
 
     // Get map statistics using the database function
     // This function uses SECURITY DEFINER so it bypasses RLS
+    // @ts-expect-error - RPC function types not fully defined in Database type
     const { data: stats, error } = await supabase.rpc('get_map_page_stats', {
       p_hours: hours,
-    }) as SupabaseRPCResponse<PageStats[]>;
+    });
 
     if (error) {
       console.error('Error fetching map stats:', error);
@@ -46,10 +57,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Return stats with default values if null
+    const statsArray = stats as PageStats[] | null;
     return NextResponse.json({
-      total_loads: stats?.[0]?.total_loads || 0,
-      unique_visitors: stats?.[0]?.unique_visitors || 0,
-      accounts_active: stats?.[0]?.accounts_active || 0,
+      total_loads: statsArray?.[0]?.total_loads || 0,
+      unique_visitors: statsArray?.[0]?.unique_visitors || 0,
+      accounts_active: statsArray?.[0]?.accounts_active || 0,
     });
   } catch (error) {
     console.error('Error in map-stats route:', error);
