@@ -86,7 +86,6 @@ export class MediaUploadService {
       throw new Error(validation.error);
     }
 
-    const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
 
     // Generate unique filename

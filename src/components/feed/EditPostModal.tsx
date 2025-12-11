@@ -49,7 +49,7 @@ export default function EditPostModal({ isOpen, post, onClose, onUpdate }: EditP
         
         setMapData({
           type: (post.map_type as 'pin' | 'area' | 'both') || 'pin',
-          geometry: post.map_geometry as any,
+          geometry: post.map_geometry as GeoJSON.Point | GeoJSON.Polygon | GeoJSON.MultiPolygon,
           center,
           screenshot: post.map_screenshot || undefined,
           hidePin: post.map_hide_pin || false,

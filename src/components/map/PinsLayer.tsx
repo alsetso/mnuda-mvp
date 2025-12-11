@@ -3,9 +3,10 @@
 import { useEffect, useRef } from 'react';
 import { PublicMapPinService } from '@/features/map-pins/services/publicMapPinService';
 import type { MapPin } from '@/types/map-pin';
+import type { MapboxMapInstance } from '@/types/mapbox-events';
 
 interface PinsLayerProps {
-  map: any; // Mapbox Map instance
+  map: MapboxMapInstance;
   mapLoaded: boolean;
 }
 
@@ -47,7 +48,7 @@ export default function PinsLayer({ map, mapLoaded }: PinsLayerProps) {
         const existingSource = map.getSource(sourceId);
         if (existingSource && existingSource.type === 'geojson') {
           // Update existing source data (no flash)
-          (existingSource as any).setData(geoJSON);
+          existingSource.setData(geoJSON);
           isAddingLayersRef.current = false;
           return;
         }

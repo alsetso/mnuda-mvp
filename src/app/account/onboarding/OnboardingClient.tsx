@@ -24,8 +24,6 @@ export default function OnboardingClient({ initialAccount, redirectTo }: Onboard
     username: '',
     first_name: '',
     last_name: '',
-    gender: '',
-    age: '',
     image_url: null as string | null,
   });
 
@@ -39,8 +37,6 @@ export default function OnboardingClient({ initialAccount, redirectTo }: Onboard
         username: initialAccount.username || '',
         first_name: initialAccount.first_name || '',
         last_name: initialAccount.last_name || '',
-        gender: initialAccount.gender || '',
-        age: initialAccount.age?.toString() || '',
         image_url: initialAccount.image_url,
       });
       setLoading(false);
@@ -57,8 +53,6 @@ export default function OnboardingClient({ initialAccount, redirectTo }: Onboard
             username: accountData.username || '',
             first_name: accountData.first_name || '',
             last_name: accountData.last_name || '',
-            gender: accountData.gender || '',
-            age: accountData.age?.toString() || '',
             image_url: accountData.image_url,
           });
         }
@@ -116,7 +110,7 @@ export default function OnboardingClient({ initialAccount, redirectTo }: Onboard
     setError('');
 
     // Validate required fields
-    if (!formData.username.trim() || !formData.first_name.trim() || !formData.last_name.trim() || !formData.gender || !formData.age || !formData.image_url) {
+    if (!formData.username.trim() || !formData.first_name.trim() || !formData.last_name.trim() || !formData.image_url) {
       setError('Please fill in all required fields');
       setSaving(false);
       return;
@@ -141,21 +135,12 @@ export default function OnboardingClient({ initialAccount, redirectTo }: Onboard
       return;
     }
 
-    const ageNum = parseInt(formData.age);
-    if (isNaN(ageNum) || ageNum < 18) {
-      setError('Age must be 18 or older');
-      setSaving(false);
-      return;
-    }
-
     try {
       // Update account using AccountService (handles auth, validation, error handling)
       await AccountService.updateCurrentAccount({
         username: formData.username.trim(),
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
-        gender: formData.gender,
-        age: ageNum,
         image_url: formData.image_url,
       });
 
@@ -366,42 +351,7 @@ export default function OnboardingClient({ initialAccount, redirectTo }: Onboard
 
           {/* Gender and Age - Grid */}
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label htmlFor="gender" className="block text-xs font-medium text-gray-900 mb-1">
-                Gender <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="gender"
-                required
-                value={formData.gender}
-                onChange={(e) => handleFormChange('gender', e.target.value)}
-                className="w-full px-[10px] py-[10px] border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:border-gray-900 focus:ring-gray-900 transition-colors"
-                disabled={saving}
-              >
-                <option value="">Select</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-                <option value="prefer_not_to_say">Prefer not to say</option>
-              </select>
-            </div>
 
-            <div>
-              <label htmlFor="age" className="block text-xs font-medium text-gray-900 mb-1">
-                Age <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="age"
-                type="number"
-                required
-                min="18"
-                value={formData.age}
-                onChange={(e) => handleFormChange('age', e.target.value)}
-                className="w-full px-[10px] py-[10px] border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:border-gray-900 focus:ring-gray-900 transition-colors"
-                placeholder="25"
-                disabled={saving}
-              />
-            </div>
           </div>
 
           {/* Submit Button */}

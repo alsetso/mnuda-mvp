@@ -12,7 +12,7 @@ export interface MapboxMapInstance {
   _removed?: boolean;
   _drawObserver?: MutationObserver;
   _keyboardHandler?: (e: KeyboardEvent) => void;
-  getSource: (sourceId: string) => { setData: (data: unknown) => void } | null;
+  getSource: (sourceId: string) => ({ type: string; setData: (data: GeoJSON.FeatureCollection) => void } & { type: 'geojson' }) | null;
   on: (event: string, handler: (e: unknown) => void) => void;
   once: (event: string, handler: (e: unknown) => void) => void;
   off: (event: string, handler?: unknown) => void;
@@ -31,6 +31,9 @@ export interface MapboxMapInstance {
     duration?: number;
   }) => void;
   remove: () => void;
+  addSource: (id: string, source: { type: string; data: GeoJSON.FeatureCollection }) => void;
+  addLayer: (layer: { id: string; type: string; source: string; [key: string]: unknown }) => void;
+  getLayer: (id: string) => { id: string; type: string; [key: string]: unknown } | null;
 }
 
 export interface MapboxMouseEvent {

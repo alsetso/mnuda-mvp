@@ -33,9 +33,7 @@ export function CompactFilterForm({
     selectedTagIds: [],
   });
   // Tags removed - tags table deleted
-  const tags: any[] = [];
   const isLoadingTags = false;
-  const tagsError = null;
 
   // Notify parent of visibility changes
   useEffect(() => {

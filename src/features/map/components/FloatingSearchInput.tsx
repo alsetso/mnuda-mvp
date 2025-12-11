@@ -50,7 +50,12 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
   
   // Use props if provided, otherwise fall back to defaults
   const currentSession = propsCurrentSession ?? null;
-  const addNode = propsAddNode ?? (() => {});
+  const addNodeRef = useRef(propsAddNode ?? (() => {}));
+  
+  // Update ref when prop changes
+  useEffect(() => {
+    addNodeRef.current = propsAddNode ?? (() => {});
+  }, [propsAddNode]);
   
   const { withApiToast, success, error } = useToast();
 
@@ -207,7 +212,7 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
           };
           
           // Call addNode - it may return void or a promise
-          const result: unknown = addNode(nodeData);
+          const result: unknown = addNodeRef.current(nodeData);
           
           // If it returns a promise, await it; otherwise ignore
           if (result && typeof result === 'object' && 'then' in result) {
@@ -222,7 +227,7 @@ export function FloatingSearchInput({ onSearchComplete, onFlyTo, onSaveProperty,
 
     // Collapse search input
     setIsExpanded(false);
-  }, [currentSession, addNode, onFlyTo, onSearchComplete, withApiToast]);
+  }, [currentSession, onFlyTo, onSearchComplete, withApiToast]);
 
   // Handle saving property
   const handleSaveProperty = useCallback(async () => {

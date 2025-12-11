@@ -103,18 +103,19 @@ export function useMediaUpload(
   }, []);
 
   const removeFile = useCallback((index: number) => {
-    const previewToRemove = previews[index];
-    if (previewToRemove?.url?.startsWith('blob:')) {
-      URL.revokeObjectURL(previewToRemove.url);
-    }
-
-    setPreviews((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => {
+      const previewToRemove = prev[index];
+      if (previewToRemove?.url?.startsWith('blob:')) {
+        URL.revokeObjectURL(previewToRemove.url);
+      }
+      const newPreviews = prev.filter((_, i) => i !== index);
+      if (newPreviews.length === 0) {
+        setStage('select');
+      }
+      return newPreviews;
+    });
     setFiles((prev) => prev.filter((_, i) => i !== index));
-
-    if (previews.length === 1) {
-      setStage('select');
-    }
-  }, [previews.length]);
+  }, []);
 
   const upload = useCallback(
     async (uploadOptions: MediaUploadOptions): Promise<UploadedMedia[]> => {
@@ -166,12 +167,6 @@ export function useMediaUpload(
     setError(null);
   }, []);
 
-  // Expose ready callback
-  const handleReady = useCallback(() => {
-    if (onMediaReady) {
-      onMediaReady(previews, files);
-    }
-  }, [onMediaReady, previews, files]);
 
   return {
     files,

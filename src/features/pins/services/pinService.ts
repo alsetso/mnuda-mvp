@@ -375,7 +375,7 @@ export class PinService {
     }
 
     // Transform the data to include tag object and ensure lng/long compatibility
-    const transformedPins = (data || []).map((pin: any) => {
+    const transformedPins = (data || []).map((pin: Pin & { tags?: unknown }) => {
       // Handle tag join - Supabase may return as object, array, or null
       let tag = null;
       if (pin.tags) {
@@ -579,7 +579,7 @@ export class PinService {
     }
 
     // Build update object
-    const updateData: any = {};
+    const updateData: Partial<UpdatePinData> = {};
 
     // Update fields
     if (data.name !== undefined) updateData.name = data.name;

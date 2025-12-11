@@ -117,7 +117,7 @@ export function usePostCreation(
     try {
       // Upload media files if any
       let uploadedMedia: UploadedMedia[] = [];
-      const mediaFiles = media.filter((m) => m.file).map((m) => m.file!);
+      const mediaFiles = media.filter((m): m is MediaPreview & { file: File } => !!m.file).map((m) => m.file);
 
       if (mediaFiles.length > 0) {
         setUploadProgress({ stage: 'uploading', progress: 0 });

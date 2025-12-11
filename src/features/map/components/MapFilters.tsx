@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { TagService, Tag } from '@/features/tags/services/tagService';
+import { TagService } from '@/features/tags/services/tagService';
+import type { PinCategory } from '@/features/pins/services/pinService';
 import { Pin } from '@/features/pins/services/pinService';
 import { useAuth } from '@/features/auth';
 import { EyeIcon, EyeSlashIcon, GlobeAltIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
@@ -36,37 +37,37 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
     showOthersPins: true,
     showAreas: true,
   });
-  const [isLoadingTags, setIsLoadingTags] = useState(true);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
-  // Load public tags for map filters
+  // Load public categories for map filters
   useEffect(() => {
-    const loadTags = async () => {
+    const loadCategories = async () => {
       try {
-        const [publicTags, allActive] = await Promise.all([
+        const [publicCategories, allActive] = await Promise.all([
           TagService.getPublicTagsByEntityType('pin'),
-          TagService.getTagsByEntityType('pin'), // Gets all active tags
+          TagService.getTagsByEntityType('pin'), // Gets all active categories
         ]);
-        setTags(publicTags);
-        setAllActiveTags(allActive);
-        // Select all public tags by default
-        const defaultTagIds = publicTags.map(t => t.id);
+        setCategories(publicCategories);
+        setAllActiveCategories(allActive);
+        // Select all public categories by default
+        const defaultCategoryIds = publicCategories.map(c => c.id);
         setFilters(prev => ({
           ...prev,
-          selectedTags: new Set(defaultTagIds),
+          selectedCategories: new Set(defaultCategoryIds),
         }));
-        // Immediately notify parent of default tags
-        if (onTagIdsChange && defaultTagIds.length > 0) {
-          onTagIdsChange(defaultTagIds);
+        // Immediately notify parent of default categories
+        if (onCategoryIdsChange && defaultCategoryIds.length > 0) {
+          onCategoryIdsChange(defaultCategoryIds);
         }
       } catch (err) {
-        console.error('Error loading tags:', err);
+        console.error('Error loading categories:', err);
       } finally {
-        setIsLoadingTags(false);
+        setIsLoadingCategories(false);
       }
     };
 
-    loadTags();
-  }, [onTagIdsChange]);
+    loadCategories();
+  }, [onCategoryIdsChange, setCategories, setAllActiveCategories]);
 
   // Toggle layer visibility
   const toggleLayerVisibility = useCallback((layerId: string, visible: boolean) => {
@@ -102,7 +103,7 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
     ]));
 
     onCategoryIdsChange(allSelectedCategoryIds);
-  }, [filters.selectedCategories, filters.additionalCategories, isLoadingCategories, onCategoryIdsChange]);
+  }, [filters.selectedCategories, filters.additionalCategories, isLoadingCategories]);
 
   // Filter pins by ownership (client-side, since server already filtered by category)
   useEffect(() => {
@@ -127,7 +128,7 @@ export function MapFilters({ map, pins, onFilteredPinsChange, onCategoryIdsChang
     }
 
     onFilteredPinsChange(filtered);
-  }, [pins, filters.showMyPins, filters.showOthersPins, user, onFilteredPinsChange, isLoadingCategories]);
+  }, [pins, filters.showMyPins, filters.showOthersPins, user, isLoadingCategories]);
 
   const toggleCategory = (categoryId: string) => {
     setFilters(prev => {

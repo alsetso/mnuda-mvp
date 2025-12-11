@@ -13,18 +13,18 @@ export interface DrawController {
  * Create draw controller instance
  * Stub implementation for future polygon drawing
  */
-export function createDrawController(map: MapboxMap): DrawController {
+export function createDrawController(_map: MapboxMap): DrawController {
   // Stub: drawInstance will be initialized when draw functionality is implemented
-  let drawInstance: import('@mapbox/mapbox-gl-draw').default | null = null;
+  const drawInstance: import('@mapbox/mapbox-gl-draw').default | null = null;
 
   const initializeDraw = async (): Promise<void> => {
     // Stub - will be implemented when draw functionality is needed
-    const MapboxDraw = await loadMapboxDraw();
+    await loadMapboxDraw();
     // drawInstance = new MapboxDraw({ ... });
     // map.addControl(drawInstance);
   };
 
-  const setDrawMode = (mode: string): void => {
+  const setDrawMode = (_mode: string): void => {
     // Stub
     if (drawInstance) {
       // drawInstance.changeMode(mode);

@@ -8,7 +8,7 @@ export interface County {
   name: string;
   population: number;
   area_sq_mi: number;
-  polygon: Record<string, any> | null;
+  polygon: Record<string, unknown> | null;
   meta_title: string | null;
   meta_description: string | null;
   website_url: string | null;

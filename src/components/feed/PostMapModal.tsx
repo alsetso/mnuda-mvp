@@ -25,7 +25,7 @@ export interface PostMapData {
   debugInfo?: {
     source: 'pin' | 'polygon_centroid' | 'manual';
     coordinates: [number, number];
-    geocodingResponse?: any;
+    geocodingResponse?: Record<string, unknown>;
     timestamp: string;
     error?: string;
   };
@@ -177,7 +177,7 @@ export default function PostMapModal({
 
   // Search UI state (kept separate as it's UI-specific)
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<MapboxSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
