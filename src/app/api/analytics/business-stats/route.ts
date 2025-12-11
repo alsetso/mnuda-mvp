@@ -88,23 +88,33 @@ export async function GET(request: NextRequest) {
     // Get page statistics using the appropriate database function
     if (pageSlug) {
       // Use slug-based stats (for landing pages)
-      const result = await (supabase.rpc('get_page_stats', {
+      // @ts-expect-error - RPC function types not fully defined in Database type
+      const { data, error: rpcError } = await supabase.rpc('get_page_stats', {
         p_page_slug: pageSlug,
         p_hours: hours,
-      }) as unknown) as Promise<{ data: PageStats[] | null; error: { code?: string; message: string; details?: string; hint?: string } | null }>;
-      const rpcResult = await result;
-      stats = rpcResult.data;
-      error = rpcResult.error;
+      });
+      stats = data as PageStats[] | null;
+      error = rpcError ? {
+        code: rpcError.code,
+        message: rpcError.message,
+        details: rpcError.details,
+        hint: rpcError.hint,
+      } : null;
     } else if (pageId) {
       // Use id-based stats (for individual pages)
       console.log('[business-stats] Fetching stats by ID:', { pageId, hours });
-      const result = await (supabase.rpc('get_page_stats_by_id', {
+      // @ts-expect-error - RPC function types not fully defined in Database type
+      const { data, error: rpcError } = await supabase.rpc('get_page_stats_by_id', {
         p_entity_id: pageId,
         p_hours: hours,
-      }) as unknown) as Promise<{ data: PageStats[] | null; error: { code?: string; message: string; details?: string; hint?: string } | null }>;
-      const rpcResult = await result;
-      stats = rpcResult.data;
-      error = rpcResult.error;
+      });
+      stats = data as PageStats[] | null;
+      error = rpcError ? {
+        code: rpcError.code,
+        message: rpcError.message,
+        details: rpcError.details,
+        hint: rpcError.hint,
+      } : null;
       
       console.log('[business-stats] RPC result:', {
         hasData: !!result.data,
